@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-07 22:37
+#  Last update: 2014-04-08 01:38
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -38,6 +38,7 @@ module Canis
     extend Forwardable
 
     dsl_property :show_selector # boolean
+    # should textpads content_cols also add left_margin ? XXX
     dsl_property :left_margin
     # already in textpad, so what was it doing in tablewidget?
     #dsl_accessor :print_footer
@@ -61,6 +62,7 @@ module Canis
       @selected_indices = []
       @selected_index = nil
       @selection_mode = :multiple # default is multiple, anything else given becomes single
+      @left_margin = 0
 
       super
       # textpad takes care of enter_row and press
@@ -75,7 +77,7 @@ module Canis
     end
 
     # all operations of selection are delegated to the ListSelectionModel
-    def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_row_selected?, :is_selection_empty?, :clear_selection, :remove_index, :selected_rows
+    def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_row_selected?, :is_selection_empty?, :clear_selection, :remove_index, :selected_rows, :select_all
 
     
 
@@ -196,7 +198,6 @@ module Canis
       @repaint_required = true
       case @selection_mode 
       when :multiple
-        @widget_scrolled = true # FIXME we need a better name
         if @selected_indices.include? crow
           @selected_indices.delete crow
           lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
@@ -216,8 +217,9 @@ module Canis
           lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         else
-          @old_selected_index = @selected_index # 2011-10-15 so we can unhighlight
           @selected_indices[0] = crow
+          @obj.fire_row_changed(@old_selected_index) if @old_selected_index
+          @old_selected_index = crow # 2011-10-15 so we can unhighlight
           lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         end
@@ -226,48 +228,54 @@ module Canis
       #alert "toggling #{@selected_indices.join(',')}"
     end
     #
+    # Range select.
     # Only for multiple mode.
-    # add an item to selection, if selection mode is multiple
-    # if item already selected, it is deselected, else selected
+    # Uses the last row clicked on, till the current one.
+    # If user clicks inside a selcted range, then deselect from last click till current (remove from earlier)
+    # If user clicks outside selected range, then select from last click till current (add to earlier)
     # typically bound to Ctrl-Space
     # @example
     #     bind_key(0) { add_to_selection }
-    def add_to_selection crow
+    def add_to_selection crow=@obj.current_index
+      #alert "add to selection fired #{@last_clicked}"
       @last_clicked ||= crow
       min = [@last_clicked, crow].min
       max = [@last_clicked, crow].max
       case @selection_mode 
       when :multiple
-        @widget_scrolled = true # FIXME we need a better name
         if @selected_indices.include? crow
           # delete from last_clicked until this one in any direction
-          min.upto(max){ |i| @selected_indices.delete i }
+          min.upto(max){ |i| @selected_indices.delete i 
+                         @obj.fire_row_changed i
+          }
           lse = ListSelectionEvent.new(min, max, self, :DELETE)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         else
           # add to selection from last_clicked until this one in any direction
-          min.upto(max){ |i| @selected_indices << i unless @selected_indices.include?(i) }
+          min.upto(max){ |i| @selected_indices << i unless @selected_indices.include?(i) 
+                         @obj.fire_row_changed i
+          }
           lse = ListSelectionEvent.new(min, max, self, :INSERT)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
       end
-      @repaint_required = true
+      @last_clicked = crow # 2014-04-08 - 01:21 this was missing, i think it is required
       self
     end
     # clears selected indices, typically called when multiple select
     # Key binding is application specific
     def clear_selection
       return if @selected_indices.nil? || @selected_indices.empty?
+      arr = @selected_indices.dup # to un highlight
       @selected_indices.clear
+      arr.each {|i| @obj.fire_row_changed(i) }
       @selected_index = nil
       @old_selected_index = nil
-      # Not sure what event type I should give, DELETE or a new one, user should
-      #  understand that selection has been cleared, and ignore first two params
-      lse = ListSelectionEvent.new(0, @list.size, self, :CLEAR)
+      #  User should ignore first two params
+      lse = ListSelectionEvent.new(0, arr.size, self, :CLEAR)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
-      @repaint_required = true
-      @widget_scrolled = true # FIXME we need a better name
+      arr = nil
     end
     def is_row_selected crow
       case @selection_mode 
@@ -299,10 +307,11 @@ module Canis
     # should only be used if multiple selection interval
     def add_selection_interval ix0, ix1
       return if @selection_mode != :multiple
-      @widget_scrolled = true # FIXME we need a better name
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
-      ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i }
+      ix0.upto(ix1) {|i| @selected_indices  << i unless @selected_indices.include? i
+                     @obj.fire_row_changed i
+      }
       lse = ListSelectionEvent.new(ix0, ix1, self, :INSERT)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
       #$log.debug " DLSM firing LIST_SELECTION EVENT #{lse}"
@@ -326,10 +335,9 @@ module Canis
     # if header row, then 1 else should be 0. Actually we should have a way to determine
     # this, and the default should be zero.
     def select_all start_row=0 #+@_header_adjustment
-      @repaint_required = true
       # don't select header row - need to make sure this works for all cases. we may 
       # need a variable instead of hardoded value
-      add_row_selection_interval start_row, row_count()
+      add_row_selection_interval start_row, @obj.list.count()
     end
     def invert_selection start_row=0 #+@_header_adjustment
       start_row.upto(row_count()){|i| invert_row_selection i }
@@ -443,6 +451,7 @@ module Canis
     def initialize obj
       @obj = obj
       @selected_indices = obj.selected_indices
+      @left_margin = obj.left_margin
     end
     #
     # @param pad for calling print methods on
@@ -469,13 +478,13 @@ module Canis
         # and oldindex as normal
       end
       FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-      FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
+      FFI::NCurses.mvwaddstr(pad, lineno, @left_margin, text)
       FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
 
       # the above only sets the attrib under the text not the whole line, we 
       # need the whole line to be REVERSE
       if sele
-        FFI::NCurses.mvwchgat(pad, y=lineno, x=0, @obj.width-2, att, cp, nil)
+        FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @obj.width-2, att, cp, nil)
       end
     end
   end
