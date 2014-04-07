@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2013-04-04 00:55
+#  Last update: 2014-04-07 21:12
 #
 #  == CHANGES
 #  == TODO 
@@ -58,6 +58,24 @@ module Canis
       #@list = []
       super
 
+      ## __calc_dimensions used to be here, but moved since flows do not set height immediately.
+      @_events << :PRESS
+      @_events << :ENTER_ROW
+      init_vars
+    end
+    def init_vars
+      $multiplier = 0
+      @oldindex = @current_index = 0
+      # column cursor
+      @prow = @pcol = @curpos = 0
+      if @row && @col
+        @lastrow = @row + @row_offset
+        @lastcol = @col + @col_offset
+      end
+      @repaint_required = true
+      map_keys unless @mapped_keys
+    end
+    def __calc_dimensions
       ## NOTE 
       #  ---------------------------------------------------
       #  Since we are using pads, you need to get your height, width and rows correct
@@ -89,21 +107,6 @@ module Canis
       @left = @col
       @lastrow = @row + @row_offset
       @lastcol = @col + @col_offset
-      @_events << :PRESS
-      @_events << :ENTER_ROW
-      init_vars
-    end
-    def init_vars
-      $multiplier = 0
-      @oldindex = @current_index = 0
-      # column cursor
-      @prow = @pcol = @curpos = 0
-      if @row && @col
-        @lastrow = @row + @row_offset
-        @lastcol = @col + @col_offset
-      end
-      @repaint_required = true
-      map_keys unless @mapped_keys
     end
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
@@ -211,6 +214,8 @@ module Canis
       @_populate_needed = true
     end
 
+    ## NOTE this breaks widgets and everyone's text which returns text of object
+    # also list by itself should return the list as in listbox,  not just set
     # Supply an array of string to be displayed
     # This will replace existing text
 
@@ -219,7 +224,15 @@ module Canis
     # @param Array of lines
     # @param format (optional) can be :tmux :ansi or :none
     # If a format other than :none is given, then formatted_text is called.
-    def text(lines, fmt=:none)
+    #def text(lines, fmt=:none)
+    def text(*val)
+      if val.empty?
+        return @content
+      end
+      lines = val[0]
+      fmt = val.size == 2 ? val[1] : :none
+
+
       # added so callers can have one interface and avoid an if condition
       return formatted_text(lines, fmt) unless fmt == :none
 
@@ -353,6 +366,10 @@ module Canis
       # may need to call padrefresh TODO TESTING
     end
     def repaint
+      unless @__first_time
+        __calc_dimensions
+        @__first_time = true
+      end
       ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
       # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
       # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
@@ -666,7 +683,8 @@ module Canis
     # in a header or footer as one traverses
     #
     def on_enter_row arow
-      return if @content.nil? || @content.size == 0
+      return nil if @content.nil? || @content.size == 0
+      ## can this be done once and stored, and one instance used since a lot of traversal will be done
       require 'canis/core/include/ractionevent'
       aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
       fire_handler :ENTER_ROW, aev
@@ -934,6 +952,22 @@ module Canis
       @curpos = 0
     end
 
+    ## some general methods for highlighting a row or changing attribute. However, these
+    # will change the moment panning is done, or a repaint happens.
+    # If these should be maintained then they should be called from the repaint method
+    #
+    def highlight_row index = @current_index, cfg={}
+      return unless index 
+      c = 0 # we are using pads so no col except for left_margin if present
+      # in a pad we don't need to convert index to printable
+      r = index
+      defcolor = cfg[:defaultcolor] || $promptcolor
+      acolor ||= get_color defcolor, cfg[:color], cfg[:bgcolor]
+      att = FFI::NCurses::A_REVERSE
+      att = get_attrib(cfg[:attrib]) if cfg[:attrib]
+      #@graphic.mvchgat(y=r, x=c, @width-2, att , acolor , nil)
+      FFI::NCurses.mvwchgat(@pad, y=r, x=c, @width-2, att, acolor, nil)
+    end
   end  # class textpad
 
   # a test renderer to see how things go
