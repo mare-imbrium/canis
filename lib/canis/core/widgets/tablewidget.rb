@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-05 13:18
+#  Last update: 2014-04-06 11:30
 # ----------------------------------------------------------------------------- #
 #   tablewidget.rb  Copyright (C) 2012-2014 kepler
 
@@ -828,10 +828,14 @@ module Canis
         select crow
       end
     end
+    # select given index
+    # TODO should we allow a second arg optional for range.
     def select ix
       @selected_indices << ix
       _fire_event ix, ix, :INSERT
     end
+    # unselect given index
+    # TODO should we allow a second arg optional for range.
     def unselect ix
       @selected_indices.delete ix
       _fire_event ix, ix, :DELETE
