@@ -162,7 +162,7 @@ App.new do
 
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
     lb = listbox :list => alist, :suppress_borders => false, :title => "[ brew packages ]",
-      :left_margin => 1, :width_pc => 50, :name => 'lb1'
+      :left_margin => 1, :width_pc => 50, :name => 'lb1', :selection_mode => :single
     lb.show_selector = false
     
     lb2 = listbox :list => list2, :justify => :left, :title => "[ gems ]", :suppress_borders => false,
