@@ -591,66 +591,6 @@ module Canis
     end
 
     # @group selection related
-    
-    # change selection of current row on pressing space bar
-    # If mode is multiple, then other selections are cleared and this is added
-    # NOTE: 2011-10-8 allow multiple select on spacebar. Using C-Space was quite unfriendly
-    # although it will still work
-    def OLDtoggle_row_selection crow=@current_index
-      @repaint_required = true
-      row = crow
-      case @selection_mode 
-      when :multiple
-        add_to_selection
-        #clear_selection
-        #@selected_indices[0] = crow #@current_index
-      else
-        if @selected_index == crow #@current_index
-          @selected_index = nil
-          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
-          fire_handler :LIST_SELECTION_EVENT, lse
-        else
-          @selected_index = crow #@current_index
-          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
-          fire_handler :LIST_SELECTION_EVENT, lse
-        end
-      end
-    end
-   #
-    # Only for multiple mode.
-    # add an item to selection, if selection mode is multiple
-    # if item already selected, it is deselected, else selected
-    # typically bound to Ctrl-Space
-    def OLDadd_to_selection
-      crow = @current_index
-      case @selection_mode 
-      when :multiple
-        if @selected_indices.include? @current_index
-          @selected_indices.delete @current_index
-          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
-          fire_handler :LIST_SELECTION_EVENT, lse
-        else
-          @selected_indices << @current_index
-          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
-          fire_handler :LIST_SELECTION_EVENT, lse
-        end
-      else
-      end
-      @repaint_required = true
-    end
-    # clears selected indices
-    def OLDclear_selection
-      @selected_indices = []
-      @repaint_required = true
-    end
-    def OLDis_row_selected crow=@current_index
-      case @selection_mode 
-      when :multiple
-        @selected_indices.include? crow
-      else
-        crow == @selected_index
-      end
-    end
     alias :is_selected? is_row_selected
     def goto_next_selection
       return if selected_rows().length == 0 
