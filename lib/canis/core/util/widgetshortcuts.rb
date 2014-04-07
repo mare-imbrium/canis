@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2013-03-21 00:55
+#  Last update: 2014-04-07 00:02
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -27,7 +27,9 @@
 # what is the real purpose of the shortcuts, is it to avoid putting nil
 # for form there if not required.
 # Or is it positioning, such as in a stack. or just a method ?
-require 'canis/core/widgets/rlist'
+#require 'canis/core/widgets/rlist'
+## trying out new list based on textpad 2014-04-07 - 00:02 CANIS
+require 'canis/core/widgets/listbox'
 require 'canis/core/widgets/rtextview'
 module Canis
   module WidgetShortcuts
@@ -175,7 +177,8 @@ module Canis
       #config[:width] ||= @stack.last.width if @stack.last
       useform = nil
       #useform = @form if @current_object.empty?
-      w = List.new useform, config
+      #w = List.new useform, config
+      w = Listbox.new useform, config
       w.width = :expand unless w.width
       w.height ||= :expand # TODO We may need to push this before _position so it can be accounted for in stack
       _position(w)
