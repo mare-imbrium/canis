@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-07 21:12
+#  Last update: 2014-04-08 00:48
 #
 #  == CHANGES
 #  == TODO 
@@ -745,6 +745,7 @@ module Canis
       setrowcol @crow, @curpos+c
       lastcurpos @crow, @curpos+c
       if @oldindex != @current_index
+        on_leave_row @oldindex if respond_to? :on_leave_row
         on_enter_row @current_index
         @oldindex = @current_index
       end
