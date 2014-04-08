@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 01:38
+#  Last update: 2014-04-08 14:32
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -129,12 +129,15 @@ module Canis
       }
     }
 
-    # TODO needs to be called from whereever on_enter_row is called
+    # This is called whenever user leaves a row
+    # Fires handler for leave_row
     def on_leave_row arow
       fire_handler :LEAVE_ROW, self
     end
+    # This is called whenever user enters a row
     def on_enter_row arow
       super
+      # TODO check if user wants focus to be showed
       ## this results in the row being entered and left being evaluated and repainted
       # which means that the focussed row can be bolded. The renderer's +render+ method will be triggered
       fire_row_changed @oldindex
@@ -147,24 +150,6 @@ module Canis
       unbind_key(32)
 
       bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection @current_index }
-    end
-
-    def repaintXX
-
-
-      super
-
-      # in pads index of row does not need to be converted to printable_row as was the case in window
-      # here we can just go and highlight a row straight onto the pad, we can check that the pad has that
-      # height.
-      #
-      # this is happening after the next keystroke
-      # also repaint itself needs to take care of this when it draws a new pad
-      #
-      if @selected_indices.size > 0
-        highlight_row @selected_indices.last, { :defaultcolor => $datacolor, :color => @selected_color ||  @color, :bgcolor => @selected_bgcolor || @bgcolor, :attrib => FFI::NCurses::A_REVERSE} 
-      #highlight_row @selected_indices.last, { :color => @selected_color, :bgcolor => @selected_bgcolor, :attrib => FFI::NCurses::A_REVERSE} 
-      end
     end
 
 
@@ -188,11 +173,11 @@ module Canis
     # @group selection related
 
     # change selection of current row on pressing space bar
-    # If mode is multiple, then other selections are cleared and this is added
+    # If mode is multiple, then this row is added to previous selections
     # @example
     #     bind_key(32) { toggle_row_selection }
-    # current_index is not account for header_adjustment
-    # if current row is selected in mulitple we should deselect ?? FIXME
+    # 
+    # 
     def toggle_row_selection crow=@obj.current_index
       @last_clicked = crow
       @repaint_required = true
@@ -235,8 +220,8 @@ module Canis
     # If user clicks outside selected range, then select from last click till current (add to earlier)
     # typically bound to Ctrl-Space
     # @example
-    #     bind_key(0) { add_to_selection }
-    def add_to_selection crow=@obj.current_index
+    #     bind_key(0) { range_select }
+    def range_select crow=@obj.current_index
       #alert "add to selection fired #{@last_clicked}"
       @last_clicked ||= crow
       min = [@last_clicked, crow].min
@@ -277,6 +262,9 @@ module Canis
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
       arr = nil
     end
+
+    # returns +true+ if given row has been selected
+    # Now that we use only the array, the multiple check is good enough
     def is_row_selected crow
       case @selection_mode 
       when :multiple
@@ -305,7 +293,7 @@ module Canis
     end
     # add the following range to selected items, unless already present
     # should only be used if multiple selection interval
-    def add_selection_interval ix0, ix1
+    def add_row_selection_interval ix0, ix1
       return if @selection_mode != :multiple
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
@@ -316,20 +304,22 @@ module Canis
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
       #$log.debug " DLSM firing LIST_SELECTION EVENT #{lse}"
     end
-    alias :add_row_selection_interval :add_selection_interval
-    def remove_selection_interval ix0, ix1
+
+    # remove selected indices between given indices inclusive
+    def remove_row_selection_interval ix0, ix1
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
-      @selected_indices.delete_if {|x| x >= ix0 and x <= ix1}
+      arr = @selected_indices.dup # to un highlight
+      @selected_indices.delete_if {|x| x >= ix0 and x <= ix1 }
+      arr.each {|i| @obj.fire_row_changed(i) }
       lse = ListSelectionEvent.new(ix0, ix1, self, :DELETE)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
     end
-    alias :remove_row_selection_interval :remove_selection_interval
     # convenience method to select next len rows
     def insert_index_interval ix0, len
       @anchor_selection_index = ix0
       @lead_selection_index = ix0+len
-      add_selection_interval @anchor_selection_index, @lead_selection_index
+      add_row_selection_interval @anchor_selection_index, @lead_selection_index
     end
     # select all rows, you may specify starting row.
     # if header row, then 1 else should be 0. Actually we should have a way to determine
@@ -339,10 +329,15 @@ module Canis
       # need a variable instead of hardoded value
       add_row_selection_interval start_row, @obj.list.count()
     end
+
+    # toggle selection of entire list
+    # Requires application specific key binding
     def invert_selection start_row=0 #+@_header_adjustment
-      start_row.upto(row_count()){|i| invert_row_selection i }
+      start_row.upto(@obj.list.count()){|i| invert_row_selection i }
     end
      
+    # toggles selection for given row
+    # Typically called by invert_selection
     def invert_row_selection row=@obj.current_index
       @repaint_required = true
       if is_selected? row
@@ -372,10 +367,11 @@ module Canis
         remove_row_selection_interval row, row unless row.nil?
       end
     end
-    # please override this, this is just very basic and default
-    # Please implement get_matching_indices(String).
+    #
+    # Asks user to enter a string or pattern for selecting rows
+    # Selects rows based on pattern, leaving other selections as-is
     def ask_select prompt="Enter selection pattern: "
-      ret = ask(prompt, String) {|q| yield q if block_given? }
+      ret = get_string prompt
       return if ret.nil? || ret ==  ""
       indices = get_matching_indices ret
       return if indices.nil? || indices.empty?
@@ -383,13 +379,31 @@ module Canis
         # will not work if single select !! FIXME
         add_row_selection_interval e,e
       }
+    end
+    # returns a list of matching indices using a simple regex match on given pattern
+    # returns an empty list if no match
+    def get_matching_indices pattern
+      matches = []
+      @obj.content.each_with_index { |e,i| 
+        if e  =~ /#{pattern}/
+          matches << i
+        end
+      }
+      return matches
+    end 
+    # Asks user to enter a string or pattern for UNselecting rows
+    # UNSelects rows based on pattern, leaving other selections as-is
+    def ask_unselect prompt="Enter selection pattern: "
+      ret = get_string prompt
+      return if ret.nil? || ret ==  ""
+      indices = get_matching_indices ret
+      return if indices.nil? || indices.empty?
+      indices.each { |e|
+        # will not work if single select !! FIXME
+        remove_row_selection_interval e,e
+      }
       @repaint_required = true
     end
-    def get_matching_indices pattern
-      alert "please implement this method get_matching_indices(pattern)->[] in your class  "
-      return []
-    end # mod
-    # Applications may call this or just copy and modify
 
     ## 
     # bindings related to selection
@@ -400,11 +414,11 @@ module Canis
       @obj.bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection }
       # 2013-03-24 - 14:46 added condition so single select does not get these
       if @selection_mode == :multiple
-        @obj.bind_key(0, 'range select') { add_to_selection }
-        @obj.bind_key(?+, :ask_select) # --> calls select_values
-        @obj.bind_key(?-, :ask_unselect) # please implement FIXME TODO
+        @obj.bind_key(0, 'range select') { range_select }
+        @obj.bind_key(?+, 'ask_select') { ask_select } 
+        @obj.bind_key(?-, 'ask_unselect') { ask_unselect } 
         @obj.bind_key(?a, :select_all)
-        @obj.bind_key(?*, :invert_selection)
+        @obj.bind_key(?*, 'invert_selection') { invert_selection }
         @obj.bind_key(?u, :clear_selection)
       end
       @_header_adjustment ||= 0 #  incase caller does not use
@@ -416,6 +430,7 @@ module Canis
       @selected_index = nil
       @old_selected_index = nil
       #@row_selected_symbol = ''
+      ## FIXME we are not doing selectors at present. should we, else remove this
       if @show_selector
         @row_selected_symbol ||= '*'
         @row_unselected_symbol ||= ' '
