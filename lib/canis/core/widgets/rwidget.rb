@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-03-24 00:11
+  * Last update: 2014-04-09 00:02
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -182,7 +182,9 @@ module Canis
         require 'canis/core/include/chunk'
         cp = Chunks::ColorParser.new color_parser
         l = []
-        formatted_text.each { |e| l << cp.convert_to_chunk(e) }
+        formatted_text.each { |e| 
+          l << cp.convert_to_chunk(e) 
+        }
         return l
       end
 
