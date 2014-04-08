@@ -13,13 +13,15 @@
 # getch loop. It gives more control.
 # The new style is to use App which does the ncurses setup and teardown, as well
 # as manages keys. It also takes care of logger and includes major stuff.
+# NOTE : this is the new listbox (based on Textpad version, the original
+#  version has been moved to deprecated. 2014-04-08 - 18:32 
 require 'logger'
 require 'canis'
-require 'canis/core/widgets/rlist'
+require 'canis/core/widgets/listbox'
 require 'canis/core/widgets/rtextview'
 require 'canis/core/include/vieditable'
 #require 'canis/experimental/widgets/undomanager'
-class Canis::List
+class Canis::Listbox
   # vieditable includes listeditable which
   # does bring in some functions which can crash program like x and X TODO
   # also, f overrides list f mapping. TODO
@@ -104,29 +106,29 @@ if $0 == __FILE__
       w = 25
       #0.upto(100) { |v| mylist << "#{v} scrollable data" }
       #
-      listb = List.new @form, :name   => "mylist" ,
+      listb = Listbox.new @form, :name   => "mylist" ,
         :row  => r ,
         :col  => 1 ,
         :width => w,
         :height => h,
         :list => mylist,
-        :selection_mode => :SINGLE,
+        :selection_mode => :single,
         :show_selector => true,
         #row_selected_symbol "[X] "
         #row_unselected_symbol "[ ] "
         :title => " Ruby Classes "
         #title_attrib 'reverse'
-      listb.one_key_selection = false # this allows us to map keys to methods
+      #listb.one_key_selection = false # this allows us to map keys to methods
       listb.vieditable_init_listbox
       include Io
       listb.bind_key(?r, 'get file'){ get_file("Get a file:") }
       listb.bind(:PRESS) { 
         w = @form.by_name["tv"]; 
-        lines = `ri -f bs #{listb.text}`.split("\n")
+        lines = `ri -f bs #{listb.current_value}`.split("\n")
         #w.set_content(lines, :ansi)
-        w.add_content(lines, :content_type => :ansi, :title => listb.text)
+        w.add_content(lines, :content_type => :ansi, :title => listb.current_value)
         w.buffer_last
-        #w.title = listb.text
+        #w.title = listb.current_value
       }
 
       tv = Canis::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
