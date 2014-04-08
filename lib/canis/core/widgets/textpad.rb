@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 20:41
+#  Last update: 2014-04-09 00:01
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -232,6 +232,20 @@ module Canis
       end
       lines = val[0]
       fmt = val.size == 2 ? val[1] : :none
+      case fmt
+      when Hash
+        c = fmt[:content_type] 
+        t = fmt[:title]
+        @title = t if t
+        fmt = c
+        raise "textpad.text expected content_type in Hash" unless fmt
+      when Symbol
+      else
+        raise "textpad.text expected symbol or content_type in Hash" 
+      end
+
+      ## some programs like testlistbox which uses multibuffers calls this with a config
+      # in arg2 containing :content_type and :title 
 
 
       # added so callers can have one interface and avoid an if condition
