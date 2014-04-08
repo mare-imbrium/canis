@@ -20,6 +20,8 @@ tmp
 *.o
 *.a
 mkmf.log
+*.log
+*.sqlite
 *.bak
 todo
 issues
