@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 00:01
+#  Last update: 2014-04-09 00:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -37,6 +37,7 @@ module Canis
     dsl_accessor :print_footer
     attr_reader :current_index
     attr_reader :rows , :cols
+    dsl_accessor :footer_attrib   # bold, reverse, normal
     # adding these only for debugging table, to see where cursor is.
     attr_reader :lastrow, :lastcol
     # for external methods or classes to advance cursor
@@ -234,11 +235,12 @@ module Canis
       fmt = val.size == 2 ? val[1] : :none
       case fmt
       when Hash
+        #raise "textpad.text expected content_type in Hash : #{fmt}" 
         c = fmt[:content_type] 
         t = fmt[:title]
         @title = t if t
         fmt = c
-        raise "textpad.text expected content_type in Hash" unless fmt
+        #raise "textpad.text expected content_type in Hash : #{fmt}" unless fmt
       when Symbol
       else
         raise "textpad.text expected symbol or content_type in Hash" 
