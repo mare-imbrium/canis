@@ -18,7 +18,7 @@
 require 'logger'
 require 'canis'
 require 'canis/core/widgets/listbox'
-require 'canis/core/widgets/rtextview'
+#require 'canis/core/widgets/rtextview'
 require 'canis/core/include/vieditable'
 #require 'canis/experimental/widgets/undomanager'
 class Canis::Listbox
