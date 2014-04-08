@@ -1,12 +1,17 @@
-require 'canis/core/widgets/rtextview'
+#require 'canis/core/widgets/rtextview'
+require 'canis/core/widgets/textpad'
 require 'fileutils'
 
+# A file or array viewer.
+#
+# CHANGES
+#   - 2014-04-09 - 00:58 changed textview to textpad 
 # NOTE: experimental, not yet firmed up
 # If you use in application, please copy to some application folder in case i change this.
 # Can be used for print_help_page
 # TODO: add vi_keys here
 # SUGGESTIONS WELCOME.
-# @since 1.2.0
+
 module Canis
   # a data viewer for viewing some text or filecontents
   # view filename, :close_key => KEY_ENTER
@@ -48,7 +53,7 @@ module Canis
       back = 235 if colors >= 256
       blue_white = get_color($datacolor, :white, back)
       #blue_white = Canis::Utils.get_color($datacolor, :white, 235)
-      textview = TextView.new v_form do
+      textview = TextPad.new v_form do
         name   "Viewer" 
         row  0
         col  0
@@ -61,6 +66,7 @@ module Canis
         #border_attrib :reverse
         border_color blue_white
       end
+      # why multibuffers ?
       require 'canis/core/include/multibuffer'
       textview.extend(Canis::MultiBuffers)
 
@@ -79,6 +85,7 @@ module Canis
       }
       # yielding textview so you may further configure or bind keys or events
       begin
+        # why the add_content ?
       textview.set_content content, :content_type => type
       textview.add_content content, :content_type => type
       # the next can also be used to use formatted_text(text, :ansi)
