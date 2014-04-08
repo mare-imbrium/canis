@@ -7,7 +7,9 @@ require 'canis/core/include/rinputdataevent'
 module ListEditable
 
     def remove_all
-      @list = []
+      # don't create a new object, other dependents like selection model may suffer 2014-04-08 - 20:00 
+      #@list = []
+      @list.clear
       set_modified  # added 2009-02-13 22:28 so repaints
     end
     # current behav is a mix of vim's D and C-k from alpine, i don;t know how i screwed it up like this
@@ -69,8 +71,7 @@ module ListEditable
     # warning: delete buffer can now be an array
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE_LINE, line, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
-    @widget_scrolled = true
-    @repaint_required = true
+    fire_dimension_changed
   end
     def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 unless @editable
