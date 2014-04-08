@@ -126,12 +126,12 @@ if $0 == __FILE__
         w = @form.by_name["tv"]; 
         lines = `ri -f bs #{listb.current_value}`.split("\n")
         #w.set_content(lines, :ansi)
-        w.add_content(lines, :content_type => :ansi, :title => listb.current_value)
+        w.add_content(lines, {:content_type => :ansi, :title => listb.current_value})
         w.buffer_last
         #w.title = listb.current_value
       }
 
-      tv = Canis::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
+      tv = Canis::TextPad.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
       :name => "tv", :title => "Press Enter on method"
       tv.set_content ["Press Enter on list to view ri information in this area.", 
         "Press ENTER on method name to see details"]
