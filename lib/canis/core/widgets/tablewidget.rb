@@ -5,10 +5,12 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-06 11:30
+#  Last update: 2014-04-08 19:58
 # ----------------------------------------------------------------------------- #
 #   tablewidget.rb  Copyright (C) 2012-2014 kepler
 
+# CHANGES: 
+#  - changed @content to @list since all multirow wids and utils expect @list
 require 'logger'
 require 'canis'
 require 'canis/core/widgets/textpad'
@@ -371,7 +373,7 @@ module Canis
       # hash of column info objects, for some reason a hash and not an array
       @chash = []
       # chash should be an array which is basically the order of rows to be printed
-      #  it contains index, which is the offset of the row in the data @content
+      #  it contains index, which is the offset of the row in the data @list
       #  When printing we should loop through chash and get the index in data
       #
       # should be zero here, but then we won't get textpad correct
@@ -489,7 +491,7 @@ module Canis
       x = _convert_curpos_to_column
       unless w
         # expand to width of current cell
-        s = @content[@current_index][x]
+        s = @list[@current_index][x]
         w = s.to_s.length + 1
       end
       column_width x, w
@@ -536,8 +538,8 @@ module Canis
       # should we just clear column, otherwise there's no way to set the whole thing with new data
       # but then if we need to change columns what do it do, on moving or hiding a column ?
       # Maybe we need a separate clear method or remove_all TODO
-      @content ||= []
-      @content << array
+      @list ||= []
+      @list << array
       # This needs to go elsewhere since this method will not be called if file contains
       # column titles as first row.
       _init_model array
@@ -546,7 +548,7 @@ module Canis
 
     # returns array of column names as Strings
     def columns
-      @content[0]
+      @list[0]
     end
 
     # size each column based on widths of this row of data.
@@ -561,7 +563,7 @@ module Canis
       @column_pointer = Circular.new array.size()-1
     end
     def model_row index
-      array = @content[index]
+      array = @list[index]
       array.each_with_index { |c,i| 
         # if columns added later we could be overwriting the width
         ch = get_column(i)
@@ -585,31 +587,31 @@ module Canis
     # set column array and data array in one shot
     # Erases any existing content
     def resultset columns, data
-      @content = []
+      @list = []
       _init_model columns
-      @content << columns
+      @list << columns
       @_header_adjustment = 1
       
-      @content.concat( data)
+      @list.concat( data)
       fire_dimension_changed
     end
 
 
       ## add a row to the table
     def add array
-      unless @content
+      unless @list
         # columns were not added, this most likely is the title
-        @content ||= []
+        @list ||= []
         _init_model array
       end
-      @content << array
+      @list << array
       fire_dimension_changed
       self
     end
     def delete_at ix
-      return unless @content
+      return unless @list
       fire_dimension_changed
-      @content.delete_at ix
+      @list.delete_at ix
     end
     alias :<< :add
     # convenience method to set width of a column
@@ -658,7 +660,7 @@ module Canis
     def calculate_column_width col, maxrows=99
       ret = 3
       ctr = 0
-      @content.each_with_index { |r, i| 
+      @list.each_with_index { |r, i| 
         #next if i < @toprow # this is also a possibility, it checks visible rows
         break if ctr > maxrows
         ctr += 1
@@ -688,8 +690,8 @@ module Canis
     end
 
     def create_default_sorter
-      raise "Data not sent in." unless @content
-      @table_row_sorter = DefaultTableRowSorter.new @content
+      raise "Data not sent in." unless @list
+      @table_row_sorter = DefaultTableRowSorter.new @list
     end
     def header_row?
       @prow == 0
@@ -721,7 +723,7 @@ module Canis
       _calculate_column_offsets unless @coffsets
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
-      @content.each_with_index do |fields, ix|
+      @list.each_with_index do |fields, ix|
         #col = line.index str
         #fields.each_with_index do |f, jx|
         #@chash.each_with_index do |c, jx|
@@ -749,7 +751,7 @@ module Canis
       raise "block required for matching_indices" unless block_given?
       @indices = []
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
-      @content.each_with_index do |fields, ix|
+      @list.each_with_index do |fields, ix|
         flag = yield ix, fields
         if flag
           @indices << ix 
@@ -795,11 +797,11 @@ module Canis
     def render_all
       if @indices && @indices.count > 0
         @indices.each_with_index do |ix, jx|
-          render @pad, jx, @content[ix]
+          render @pad, jx, @list[ix]
         end
       else
-        @content.each_with_index { |line, ix|
-          #FFI::NCurses.mvwaddstr(@pad,ix, 0, @content[ix])
+        @list.each_with_index { |line, ix|
+          #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
           render @pad, ix, line
         }
       end
