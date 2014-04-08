@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 16:06
+#  Last update: 2014-04-08 20:46
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -82,12 +82,12 @@ module Canis
 
     ## append a row to the list
     def append text
-      unless @content
+      unless @list
         # columns were not added, this most likely is the title
-        @content ||= []
+        @list ||= []
       end
-      #@content << array
-      @content.push text
+      #@list << array
+      @list.push text
       fire_dimension_changed
       self
     end
@@ -98,22 +98,22 @@ module Canis
     # @return [Object] element
     # @since 1.2.0  2010-09-06 14:33 making life easier for others.
     def [](off0)
-      @content[off0]
+      @list[off0]
     end
     # return object under cursor
     def current_value
-      @content[@current_index]
+      @list[@current_index]
     end
     # clear the list completely
     # FIXME what about selection. SHould be cleared
     def remove_all
-      return if @content.nil? || @content.empty? 
-      @content = []
+      return if @list.nil? || @list.empty? 
+      @list.clear
       @selected_indices.clear
       init_vars
     end
     # delegate some operations to Array
-    def_delegators :@content, :include?, :each, :values, :size
+    def_delegators :@list, :include?, :each, :values, :size
 
     # delegate some modify operations to Array: insert, clear, delete_at, []= <<
     # However, we should check if content array is nil ?
@@ -122,7 +122,7 @@ module Canis
       eval %{
       def #{e}(*args)
          fire_dimension_changed
-         @content.send(:#{e}, *args)
+         @list.send(:#{e}, *args)
       end
       }
     }
@@ -467,6 +467,11 @@ module Canis
     # @param pad for calling print methods on
     # @param lineno the line number on the pad to print on
     # @param text data to print
+    #--
+    # NOTE: in some cases like testlistbox.rb if a line is updated then the newly printed
+    # value may not overwrite the entire line, addstr seems to only write the text no more
+    # Fixed with +clear_row+ 
+    #++
     def render pad, lineno, text
       sele = false
       bg = @obj.bgcolor
@@ -493,9 +498,22 @@ module Canis
 
       # the above only sets the attrib under the text not the whole line, we 
       # need the whole line to be REVERSE
+      # Strangely in testlistbox1 unselecting removes the entire lines REVERSE
+      # but in testlistbox.rb the previous selected lines REV only partially goes
+      # so we have to make the entire line in current attrib
+      sele = true
       if sele
         FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @obj.width-2, att, cp, nil)
       end
+    end
+    # clear row before writing so previous contents are erased and don't show through
+    # I could do this everytime i write but trying to make it faster
+    # and only call this if +fire_row_changed+ is called.
+    # @param - pad
+    # @param - line number (index of row to clear)
+    def clear_row pad, lineno
+      clearstring = " " * (@obj.width - @left_margin)
+      FFI::NCurses.mvwaddstr(pad,lineno, @left_margin, clearstring) 
     end
   end
 end # module
