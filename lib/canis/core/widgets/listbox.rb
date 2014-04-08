@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 14:32
+#  Last update: 2014-04-08 16:06
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -40,16 +40,14 @@ module Canis
     dsl_property :show_selector # boolean
     # should textpads content_cols also add left_margin ? XXX
     dsl_property :left_margin
-    # already in textpad, so what was it doing in tablewidget?
-    #dsl_accessor :print_footer
+
+
     # selection mode :multiple, :single and :none 
     dsl_accessor :selection_mode
     dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
     # justify text to :left :right or :center TODO
     dsl_accessor :justify # will be picked up by renderer
-    # index of selected row
-    attr_accessor :selected_index
-    # index of selected rows, if multiple selection asked for
+    # index of selected row/s
     dsl_accessor :selected_indices
     # model that takes care of selection operations
     attr_accessor :list_selection_model
@@ -60,16 +58,17 @@ module Canis
     def initialize form = nil, config={}, &block
 
       @selected_indices = []
-      @selected_index = nil
-      @selection_mode = :multiple # default is multiple, anything else given becomes single
+      @selection_mode = :multiple # default is multiple
       @left_margin = 0
 
       super
       # textpad takes care of enter_row and press
       @_events.push(*[:LEAVE_ROW, :LIST_SELECTION_EVENT])
 
-      unless @list_selection_model
-        @list_selection_model = DefaultListSelectionModel.new self
+      unless @selection_mode == :none
+        unless @list_selection_model
+          @list_selection_model = DefaultListSelectionModel.new self
+        end
       end
       unless @renderer
         @renderer = ListRenderer.new self
@@ -81,8 +80,8 @@ module Canis
 
     
 
-    ## add a row to the list
-    def add text
+    ## append a row to the list
+    def append text
       unless @content
         # columns were not added, this most likely is the title
         @content ||= []
@@ -92,7 +91,6 @@ module Canis
       fire_dimension_changed
       self
     end
-    alias :append :add
     # http://www.opensource.apple.com/source/gcc/gcc-5483/libjava/javax/swing/table/DefaultTableColumnModel.java
     #
     # get element at
@@ -103,15 +101,15 @@ module Canis
       @content[off0]
     end
     # return object under cursor
-    # Note: this should not be confused with selected row/s. User may not have selected this.
-    # This is only useful since in some demos we like to change a status bar as a user scrolls down
-    # @since 1.2.0  2010-09-06 14:33 making life easier for others.
     def current_value
       @content[@current_index]
     end
+    # clear the list completely
+    # FIXME what about selection. SHould be cleared
     def remove_all
       return if @content.nil? || @content.empty? 
       @content = []
+      @selected_indices.clear
       init_vars
     end
     # delegate some operations to Array
@@ -144,20 +142,19 @@ module Canis
       fire_row_changed arow
     end
 
-    def map_keys
-      super
-
-      unbind_key(32)
-
-      bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection @current_index }
-    end
-
 
   end # class listbox
 
+  # Whenever user selects one or more rows, this object is sent via event
+  # giving start row and last row of selection, object
+  # and type which is :INSERT :DELETE :CLEAR
   class ListSelectionEvent < Struct.new(:firstrow, :lastrow, :source, :type)
   end
 
+  ##
+  # Object that takes care of selection of rows
+  # This may be replace with a custom object at time of instantiation of list
+  #
   ## I am copying this from listselectable. that was a module so was included and shared variables
   # but now this is a class, and cannot access state as directly
 
@@ -165,14 +162,14 @@ module Canis
 
     def initialize component
       @obj = component
-      #@selected_indices = []
+    
       @selected_indices = @obj.selected_indices
       @selection_mode = @obj.selection_mode
       list_bindings
     end
     # @group selection related
 
-    # change selection of current row on pressing space bar
+    # change selection of current row on pressing space bar (or keybinding)
     # If mode is multiple, then this row is added to previous selections
     # @example
     #     bind_key(32) { toggle_row_selection }
@@ -402,17 +399,14 @@ module Canis
         # will not work if single select !! FIXME
         remove_row_selection_interval e,e
       }
-      @repaint_required = true
     end
 
     ## 
     # bindings related to selection
     #
     def list_bindings
-      # what about users wanting 32 and ENTER to also go to next row automatically
-      # should make that optional, TODO
       @obj.bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection }
-      # 2013-03-24 - 14:46 added condition so single select does not get these
+      
       if @selection_mode == :multiple
         @obj.bind_key(0, 'range select') { range_select }
         @obj.bind_key(?+, 'ask_select') { ask_select } 
@@ -440,7 +434,8 @@ module Canis
     # paint the selector. Called from repaint, prior to printing data row
     # remember to set left_margin at top of repaint method as:
     #    @left_margin ||= @row_selected_symbol.length
-    def paint_selector crow, r, c, acolor, attrib
+    #    FIXME UNUSED
+    def XXXpaint_selector crow, r, c, acolor, attrib
       selected = is_row_selected crow
       selection_symbol = ''
       if @show_selector
