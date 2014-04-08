@@ -112,11 +112,11 @@ module Canis
       ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
       $log.debug " rbgetstr returned #{ret} , #{str} "
       return if ret != 0
+      # we possibly cou;d have done []= but maybe in textpad or something that would replace a row pointer ??
       self[lineno].replace(str)
       fire_handler :CHANGE, InputDataEvent.new(0,oldline.length, self, :DELETE_LINE, lineno, oldline)     #  2008-12-24 18:34 
       fire_handler :CHANGE, InputDataEvent.new(0,str.length, self, :INSERT_LINE, lineno, str)
-      @repaint_required = true
-      @widget_scrolled = true
+      fire_row_changed lineno
     end
     ##
     # insert a line 
@@ -131,11 +131,14 @@ module Canis
       #ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
       $log.debug " rbgetstr returned #{ret} , #{str} "
       return if ret != 0
+
+      # pad based expect @content not list
+      # remove list after a while FIXME
+      @list ||= @content
       @list.insert lineno, str
       ## added handler on 2010-05-23 11:46 - undo works - tested in testlistbox.rb
       fire_handler :CHANGE, InputDataEvent.new(0,str.length, self, :INSERT_LINE, lineno, str)
-      @widget_scrolled = true
-      @repaint_required = true
+      fire_dimension_changed
     end
     ##
     # common method to edit given string
