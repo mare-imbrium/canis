@@ -8,9 +8,10 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 00:48
+#  Last update: 2014-04-08 20:41
 #
 #  == CHANGES
+#   - changed @content to @list since all multirow widgets use that and so do utils etc
 #  == TODO 
 #  Take care of 3 cases:
 #     1. complete data change, then recreate pad, and call init_vars resetting row, col and curpos etc
@@ -124,7 +125,7 @@ module Canis
     # create and populate pad
     def populate_pad
       @_populate_needed = false
-      @content_rows = @content.count
+      @content_rows = @list.count
       @content_cols = content_cols()
       @content_rows = @rows if @content_rows < @rows
       @content_cols = @cols if @content_cols < @cols
@@ -148,8 +149,8 @@ module Canis
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
     # override this for better control
     def render_all
-      @content.each_with_index { |line, ix|
-        #FFI::NCurses.mvwaddstr(@pad,ix, 0, @content[ix])
+      @list.each_with_index { |line, ix|
+        #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
         render @pad, ix, line
       }
     end
@@ -178,7 +179,7 @@ module Canis
         att = NORMAL
         FFI::NCurses.wattron(@pad, @cp | att)
         FFI::NCurses.mvwaddstr(@pad,lineno, 0, @clearstring) if @clearstring
-        FFI::NCurses.mvwaddstr(@pad,lineno, 0, @content[lineno])
+        FFI::NCurses.mvwaddstr(@pad,lineno, 0, @list[lineno])
 
         #FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
         FFI::NCurses.wattroff(@pad, @cp | att)
@@ -186,7 +187,7 @@ module Canis
     end
 
     # supply a filename as source for textpad
-    # Reads up file into @content
+    # Reads up file into @list
     # One can optionally send in a method which takes a filename and returns an array of data
     # This is required if you are processing files which are binary such as zip/archives and wish
     # to print the contents. (e.g. cygnus gem sends in :get_file_contents).
@@ -200,12 +201,12 @@ module Canis
       end
       @filetype = File.extname filename
       if reader
-        @content = reader.call(filename)
+        @list = reader.call(filename)
       else
-        @content = File.open(filename,"r").readlines
+        @list = File.open(filename,"r").readlines
       end
       if @filetype == ""
-        if @content.first.index("ruby")
+        if @list.first.index("ruby")
           @filetype = ".rb"
         end
       end
@@ -227,7 +228,7 @@ module Canis
     #def text(lines, fmt=:none)
     def text(*val)
       if val.empty?
-        return @content
+        return @list
       end
       lines = val[0]
       fmt = val.size == 2 ? val[1] : :none
@@ -236,8 +237,8 @@ module Canis
       # added so callers can have one interface and avoid an if condition
       return formatted_text(lines, fmt) unless fmt == :none
 
-      return @content if lines.empty?
-      @content = lines
+      return @list if lines.empty?
+      @list = lines
       @_populate_needed = true
       @repaint_all = true
       init_vars
@@ -247,8 +248,8 @@ module Canis
     # for compat with textview
     alias :set_content :text
     def content
-      raise "content is nil " unless @content
-      return @content
+      raise "content is nil " unless @list
+      return @list
     end
     alias :get_content :content
 
@@ -342,7 +343,7 @@ module Canis
     # which inc the length but won't be printed. Such lines actually have less length when printed
     # So in such cases, give more space to the pad.
     def content_cols
-      longest = @content.max_by(&:length)
+      longest = @list.max_by(&:length)
       ## 2013-03-06 - 20:41 crashes here for some reason when man gives error message no man entry
       return 0 unless longest
       longest.length
@@ -362,8 +363,23 @@ module Canis
     # repaint only one row since content of that row has changed. 
     # No recreate of pad is done.
     def fire_row_changed ix
-      render @pad, ix, @content[ix]
+      clear_row @pad, ix
+      render @pad, ix, @list[ix]
       # may need to call padrefresh TODO TESTING
+    end
+
+    # before updating a single row in a table 
+    # we need to clear the row otherwise previous contents can show through
+    def clear_row pad, lineno
+      if @renderer
+        if @renderer.respond_to? :clear_row
+          @renderer.clear_row pad, lineno
+        end
+      else
+        @clearstring = " " * @width
+        # what about bg color ??? XXX
+        FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
+      end
     end
     def repaint
       unless @__first_time
@@ -478,7 +494,7 @@ module Canis
         goto_line $multiplier - 1
         return
       end
-      @current_index = @content.count() - 1
+      @current_index = @list.count() - 1
       @prow = @current_index - @scrollatrows
       $multiplier = 0
     end
@@ -610,7 +626,7 @@ module Canis
     #
     #
     def handle_key ch
-      return :UNHANDLED unless @content
+      return :UNHANDLED unless @list
 
 
       @oldrow = @prow
@@ -668,7 +684,7 @@ module Canis
     # event when user hits enter on a row, user would bind :PRESS
     #
     def fire_action_event
-      return if @content.nil? || @content.size == 0
+      return if @list.nil? || @list.size == 0
       require 'canis/core/include/ractionevent'
       aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
       fire_handler :PRESS, aev
@@ -676,14 +692,14 @@ module Canis
     #
     # returns current value (what cursor is on)
     def current_value
-      @content[@current_index]
+      @list[@current_index]
     end
     # 
     # execute binding when a row is entered, used more in lists to display some text
     # in a header or footer as one traverses
     #
     def on_enter_row arow
-      return nil if @content.nil? || @content.size == 0
+      return nil if @list.nil? || @list.size == 0
       ## can this be done once and stored, and one instance used since a lot of traversal will be done
       require 'canis/core/include/ractionevent'
       aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
@@ -729,7 +745,7 @@ module Canis
     def bounds_check
       r,c = rowcol
       @current_index = 0 if @current_index < 0
-      @current_index = @content.count()-1 if @current_index > @content.count()-1
+      @current_index = @list.count()-1 if @current_index > @list.count()-1
       ensure_visible
 
       check_prow
@@ -768,7 +784,7 @@ module Canis
       @prow = 0 if @prow < 0
       @pcol = 0 if @pcol < 0
 
-      cc = @content.count
+      cc = @list.count
 
       if cc < @rows
         @prow = 0
@@ -829,7 +845,7 @@ module Canis
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       ## =~ does not give an error, but it does not work.
-      @content.each_with_index do |line, ix|
+      @list.each_with_index do |line, ix|
         col = line.index str
         if col
           first ||= [ ix, col ]
@@ -857,14 +873,14 @@ module Canis
     def forward_word
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @content[line].to_s
+      buff = @list[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
         found = buff.index(/[[:punct:][:space:]]\w/, pos)
         if !found
           # if not found, we've lost a counter
-          if line+1 < @content.length
+          if line+1 < @list.length
             line += 1
           else
             return
@@ -884,7 +900,7 @@ module Canis
     def backward_word
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @content[line].to_s
+      buff = @list[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
@@ -895,7 +911,7 @@ module Canis
             pos = 0
           elsif line > 0
             line -= 1
-            pos = @content[line].to_s.size
+            pos = @list[line].to_s.size
           else
             return
           end
@@ -941,7 +957,7 @@ module Canis
     def cursor_eol
       # pcol is based on max length not current line's length
       @pcol = @content_cols - @cols - 1
-      @curpos = @content[@current_index].size
+      @curpos = @list[@current_index].size
       @repaint_required = true
     end
     # 
