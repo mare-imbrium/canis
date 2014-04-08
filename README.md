@@ -1,9 +1,8 @@
 # Canis
 
-ncurses library with essential components/controls only
+ncurses library for ruby with essential components/controls only
 
 ## Installation
-
 
     gem install canis
 

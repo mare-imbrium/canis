@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Canis::VERSION
   spec.authors       = ["kepler"]
   spec.email         = ["githubkepler.50s@gishpuppy.com"]
-  spec.summary       = %q{ncurses library for easy application development}
-  spec.description   = %q{ncurses library for easy application development providing most controls, minimal source}
+  spec.summary       = %q{ruby ncurses library for easy application development}
+  spec.description   = %q{ruby ncurses library for easy application development providing most controls, minimal source}
   spec.homepage      = "https://github.com/mare-imbrium/canis"
   spec.license       = "MIT"
 
