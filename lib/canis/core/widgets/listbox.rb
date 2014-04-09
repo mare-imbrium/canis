@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-08 20:46
+#  Last update: 2014-04-09 13:58
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -37,7 +37,7 @@ module Canis
 
     extend Forwardable
 
-    dsl_property :show_selector # boolean
+    dsl_property :show_selector # boolean TODO
     # should textpads content_cols also add left_margin ? XXX
     dsl_property :left_margin
 
@@ -65,11 +65,13 @@ module Canis
       # textpad takes care of enter_row and press
       @_events.push(*[:LEAVE_ROW, :LIST_SELECTION_EVENT])
 
+      # if user has not specified a selection model, install default
       unless @selection_mode == :none
         unless @list_selection_model
           @list_selection_model = DefaultListSelectionModel.new self
         end
       end
+      # if user has not specified a renderer, install default
       unless @renderer
         @renderer = ListRenderer.new self
       end
@@ -100,10 +102,6 @@ module Canis
     def [](off0)
       @list[off0]
     end
-    # return object under cursor
-    def current_value
-      @list[@current_index]
-    end
     # clear the list completely
     # FIXME what about selection. SHould be cleared
     def remove_all
@@ -112,6 +110,8 @@ module Canis
       @selected_indices.clear
       init_vars
     end
+    ## NOTE: why are these not in textpad ?
+    #
     # delegate some operations to Array
     def_delegators :@list, :include?, :each, :values, :size
 
