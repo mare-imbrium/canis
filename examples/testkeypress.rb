@@ -5,9 +5,10 @@
 # or terminal emulator may not give correct values or may give different values
 # from what we are expecting.
 # Exit using 'q'.
+# # see window.rb for keycodes related to shift+F C_LEFT C_RIGHT etc.
 require 'logger'
 require 'canis'
-require 'canis/core/widgets/rtextview'
+#require 'canis/core/widgets/rtextview'
 if $0 == __FILE__
   include Canis
   include Canis::Utils
@@ -25,16 +26,18 @@ if $0 == __FILE__
       colors = Ncurses.COLORS
       $log.debug "START #{colors} colors  ---------"
       @form = Form.new @window
-      r = 1; c = 30;
+      r = 1; c = 1;
+      w = Ncurses.COLS - c
+      h = Ncurses.LINES - 4
 
       # please use a hash to pass these values, avoid this old style
       # i want to move away from it as it comlpicates code
-        texta = TextView.new @form do
+        texta = TextPad.new @form do
           name   "mytext" 
           row  r
           col  c
-          width 60
-          height 15
+          width w
+          height h
           #editable false
           focusable false
           title "[ Keypresses ]"
@@ -43,8 +46,10 @@ if $0 == __FILE__
         end
       help = "q to quit. Check keys. F1..10, C-a..z, Alt a-zA-Z0-9, C-left,rt, Sh-F5..10 .: #{$0}"
       help1 = "Press in quick succession: 1) M-[, w     and (2)  M-[, M-w.        (3)  M-Sh-O, w."  
-      Canis::Label.new @form, {'text' => help, "row" => 21, "col" => 2, "color" => "yellow"}
-      Canis::Label.new @form, {'text' => help1, "row" => 22, "col" => 2, "color" => "green"}
+      Canis::Label.new @form, {'text' => help, "row" => r+h+1, "col" => 2, "color" => "yellow"}
+      Canis::Label.new @form, {'text' => help1, "row" => r+h+2, "col" => 2, "color" => "green"}
+      texta.text = ["Press any key, Function, control, alt etc to see ","if it works.",
+        "See window.rb for keycodes if something is not being trapped properly"]
 
       @form.repaint
       @window.wrefresh
