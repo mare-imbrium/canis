@@ -31,22 +31,26 @@ App.new do
 
   flow :width => FFI::NCurses.COLS , :height => FFI::NCurses.LINES-2 do
     stack :margin_top => 1, :width_pc => 20 do
-      t = Tabular.new(['a', 'b'], [1, 2], [3, 4])
+      t = Tabular.new(['a', 'b'], [1, 2], [3, 4], [5,6])
       listbox :list => t.render
 
       t = Tabular.new ['a', 'b']
       t << [1, 2]
       t << [3, 4]
       t << [4, 6]
+      t << [8, 6]
+      t << [2, 6]
       #list_box :list => t.to_s.split("\n")
       listbox :list => t.render
     end # stack
+
+
     file = "data/tasks.csv"
     lines = File.open(file,'r').readlines 
     heads = %w[ id sta type prio title ]
     t = Tabular.new do |t|
       t.headings = heads
-      lines.each { |e| t.add_row e.split '|'   }
+      lines.each { |e| t.add_row e.chomp.split '|'   }
     end
 
     t = t.render
