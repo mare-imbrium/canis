@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 13:58
+#  Last update: 2014-04-09 17:51
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -52,14 +52,15 @@ module Canis
     # model that takes care of selection operations
     attr_accessor :list_selection_model
 
-    # avoiding for the while
-    #dsl_accessor :should_show_focus
+    # should focussed line be shown in a different way, usually BOLD
+    dsl_accessor :should_show_focus
 
     def initialize form = nil, config={}, &block
 
       @selected_indices = []
       @selection_mode = :multiple # default is multiple
       @left_margin = 0
+      @should_show_focus = true
 
       super
       # textpad takes care of enter_row and press
@@ -138,8 +139,10 @@ module Canis
       # TODO check if user wants focus to be showed
       ## this results in the row being entered and left being evaluated and repainted
       # which means that the focussed row can be bolded. The renderer's +render+ method will be triggered
-      fire_row_changed @oldindex
-      fire_row_changed arow
+      if @should_show_focus
+        fire_row_changed @oldindex
+        fire_row_changed arow
+      end
     end
 
 
@@ -462,6 +465,8 @@ module Canis
       @obj = obj
       @selected_indices = obj.selected_indices
       @left_margin = obj.left_margin
+      # internal width based on both borders - earlier internal_width which we need
+      @int_w = 3 
     end
     #
     # @param pad for calling print methods on
@@ -503,7 +508,7 @@ module Canis
       # so we have to make the entire line in current attrib
       sele = true
       if sele
-        FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @obj.width-2, att, cp, nil)
+        FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @obj.width - @left_margin - @int_w, att, cp, nil)
       end
     end
     # clear row before writing so previous contents are erased and don't show through
@@ -512,7 +517,7 @@ module Canis
     # @param - pad
     # @param - line number (index of row to clear)
     def clear_row pad, lineno
-      clearstring = " " * (@obj.width - @left_margin)
+      clearstring = " " * (@obj.width - @left_margin - @int_w)
       FFI::NCurses.mvwaddstr(pad,lineno, @left_margin, clearstring) 
     end
   end
