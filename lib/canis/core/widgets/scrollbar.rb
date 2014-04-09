@@ -50,8 +50,12 @@ module Canis
       @orientation = :V
       if @parent
         @parent.bind :ENTER_ROW do |p|
+          # textview sent self, textpad sends textactionevent
+          if p.instance_of? TextActionEvent
+            p = p.source
+          end
           # parent must implement row_count, and have a @current_index
-          raise StandardError, "Parent must implement row_count" unless p.respond_to? :row_count
+          raise StandardError, "Parent (#{p.class.to_s}) must implement row_count" unless p.respond_to? :row_count
           self.current_index = p.current_index
           @repaint_required = true  #requred otherwise at end when same value sent, prop handler
           # will not be fired (due to optimization).
