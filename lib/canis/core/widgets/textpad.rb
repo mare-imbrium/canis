@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 14:05
+#  Last update: 2014-04-09 17:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -393,7 +393,7 @@ module Canis
         end
       else
         @clearstring = " " * @width
-        # what about bg color ??? XXX
+        # what about bg color ??? XXX, left_margin and internal width
         FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
       end
     end
@@ -1018,6 +1018,7 @@ module Canis
       self
     end
     alias :<< :append
+    def row_count ; @list.length ; end  
   end  # class textpad
 
   # a test renderer to see how things go
