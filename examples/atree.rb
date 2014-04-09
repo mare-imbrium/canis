@@ -82,7 +82,9 @@ App.new do
         end
         #stack :margin_top => 2 do
         stack :margin_top => 0, :width_pc => "40", :height => :expand do
-          t = textview  :suppress_borders => true, :height_pc => 100
+          # using height_pc as 100 was causing prefresh to fail if file lines went beyond 31
+          # tput lines gives 32 so only when file length exceeded was it actually writing beyond screen
+          t = textview  :suppress_borders => true, :height_pc => 90
             var.command do |filename| 
               filename = filename.value
               if File.directory? filename
@@ -90,6 +92,7 @@ App.new do
                 t.set_content lines
               elsif File.exist? filename
                 lines = File.open(filename,'r').readlines 
+                # next line bombs on binary files. normally we would check file type using +file+ command
                 t.set_content lines
               else
                 alert " #{filename} does not appear to be a file "
