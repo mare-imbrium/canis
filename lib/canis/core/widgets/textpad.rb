@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 17:54
+#  Last update: 2014-04-10 01:28
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -36,6 +36,8 @@ module Canis
     dsl_accessor :suppress_borders
     dsl_accessor :print_footer
     attr_reader :current_index
+    # rows is the actual number of rows the pad has which is slightly less than height (taking
+    #  into account borders. Same for cols and width.
     attr_reader :rows , :cols
     dsl_accessor :footer_attrib   # bold, reverse, normal
     # adding these only for debugging table, to see where cursor is.
@@ -337,14 +339,20 @@ module Canis
 
     # write pad onto window
     #private
+    # padrefresh can fail if width is greater than NCurses.COLS
+    # padrefresh can fail if height (@rows + sr) is greater than NCurses.LINES or tput lines
+    #   try reducing height when creating textpad.
     def padrefresh
       top = @window.top
       left = @window.left
       sr = @startrow + top
       sc = @startcol + left
       retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , @rows + sr , @cols+ sc );
-      $log.warn "XXX:  PADREFRESH #{retval}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
+      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
       # padrefresh can fail if width is greater than NCurses.COLS
+      # or if height exceeds tput lines. As long as content is less, it will work
+      # the moment content_rows exceeds then this issue happens. 
+      # @rows + sr < tput lines
       #FFI::NCurses.prefresh(@pad,@prow,@pcol, @startrow + top, @startcol + left, @rows + @startrow + top, @cols+@startcol + left);
     end
 
@@ -402,6 +410,8 @@ module Canis
         __calc_dimensions
         @__first_time = true
       end
+      return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32 
+
       ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
       # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
       # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
