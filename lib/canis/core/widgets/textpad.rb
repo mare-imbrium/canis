@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 00:54
+#  Last update: 2014-04-09 14:05
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1001,6 +1001,23 @@ module Canis
       #@graphic.mvchgat(y=r, x=c, @width-2, att , acolor , nil)
       FFI::NCurses.mvwchgat(@pad, y=r, x=c, @width-2, att, acolor, nil)
     end
+
+    ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
+    #    formatting of data
+    #    But what if data is not formatted. This imposes a severe limitation. listbox does have linewise
+    #    operations, so lets try them
+    #
+    ## append a row to the list
+    def append text
+      unless @list
+        # columns were not added, this most likely is the title
+        @list ||= []
+      end
+      @list.push text
+      fire_dimension_changed
+      self
+    end
+    alias :<< :append
   end  # class textpad
 
   # a test renderer to see how things go
