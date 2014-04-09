@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-07 00:02
+#  Last update: 2014-04-09 16:36
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -158,7 +158,8 @@ module Canis
       #config[:width] ||= @stack.last.width if @stack.last
       useform = nil
       #useform = @form if @current_object.empty?
-      w = TextView.new useform, config
+      #w = TextView.new useform, config
+      w = TextPad.new useform, config
       w.width = :expand unless w.width
       w.height ||= :expand # TODO This has to come before other in stack next one will overwrite.
       _position(w)
