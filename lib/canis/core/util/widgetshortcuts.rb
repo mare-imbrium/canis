@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-09 16:36
+#  Last update: 2014-04-10 10:08
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -248,15 +248,16 @@ module Canis
     end
     # creates a simple readonly table, that allows users to click on rows
     # and also on the header. Header clicking is for column-sorting.
-    def tabular_widget config={}, &block
-      require 'canis/core/widgets/tabularwidget'
+    def table config={}, &block
+    #def tabular_widget config={}, &block
+      require 'canis/core/widgets/table'
       events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ]
       block_event = nil
       # if no width given, expand to stack width
       #config.delete :title
       useform = nil
 
-      w = TabularWidget.new useform, config # NO BLOCK GIVEN
+      w = Table.new useform, config # NO BLOCK GIVEN
       w.width ||= :expand 
       w.height ||= :expand # TODO This has to come before other in stack next one will overwrite.
       _position(w)
@@ -267,7 +268,6 @@ module Canis
       end
       return w
     end
-    alias :table :tabular_widget
     # NOTE UNTESTED
     def vimsplit config={}, &block
       require 'canis/extras/widgets/rvimsplit'
