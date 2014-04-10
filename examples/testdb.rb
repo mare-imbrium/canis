@@ -7,7 +7,7 @@
 # TODO : menu on C-x to delete a column, hide unhide expand etc, use pad menu
 require 'logger'
 require 'canis'
-require 'canis/core/widgets/tablewidget'
+require 'canis/core/widgets/table'
 require 'sqlite3'
 #
 def get_data
@@ -104,7 +104,7 @@ begin
     #file = "movies1000.txt"
 
     arr = get_data
-    tv = Canis::TableWidget.new @form, :row => 1, :col => 0, :height => h, :width => w, :name => "tv", :suppress_borders => false do |b|
+    tv = Canis::Table.new @form, :row => 1, :col => 0, :height => h, :width => w, :name => "tv", :suppress_borders => false do |b|
 
       b.resultset $columns, arr
 
