@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-10 01:28
+#  Last update: 2014-04-11 00:51
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -26,12 +26,14 @@
 #
 require 'canis'
 require 'canis/core/include/bordertitle'
+require 'forwardable'
 
 include Canis
 module Canis
   extend self
   class TextPad < Widget
     include BorderTitle
+    extend Forwardable
 
     dsl_accessor :suppress_borders
     dsl_accessor :print_footer
@@ -387,6 +389,7 @@ module Canis
     # repaint only one row since content of that row has changed. 
     # No recreate of pad is done.
     def fire_row_changed ix
+      return if ix >= @list.length
       clear_row @pad, ix
       render @pad, ix, @list[ix]
       # may need to call padrefresh TODO TESTING
@@ -1018,17 +1021,58 @@ module Canis
     #    operations, so lets try them
     #
     ## append a row to the list
+    # @deprecated pls use << or push as per Array semantics
     def append text
-      unless @list
-        # columns were not added, this most likely is the title
-        @list ||= []
-      end
+      raise "append: deprecated pls use << or push as per Array semantics"
+      @list ||= []
       @list.push text
       fire_dimension_changed
       self
     end
-    alias :<< :append
+    # @deprecated : row_count used just for compat, use length or size
     def row_count ; @list.length ; end  
+
+    ## ------ LIST / ARRAY OPERATIONS ----
+    # All multirow widgets must use Array semantics 2014-04-10 - 17:29 
+    # NOTE some operations will make selected indices in selection modules invalid
+    # clear will need to clear indices, delete_at and insert may need to also adjust
+    # selection or focus index/es.
+    #
+    # delegate some operations to Array
+    # ---- operations that reference Array, no modifications
+    def_delegators :@list, :include?, :each, :values, :size, :length, :[]
+
+    # ---- operations that modify data
+    # delegate some modify operations to Array: insert, clear, delete_at, []= <<
+    # However, we should check if content array is nil ?
+    # fire_dim is called, although it is not required in []=
+    %w[ insert delete_at << push].each { |e| 
+      eval %{
+      def #{e}(*args)
+        @list ||= []
+        fire_dimension_changed
+        @list.send(:#{e}, *args)
+        self
+      end
+      }
+    }
+    # clear all items in the object.
+    # NOTE: requires to be separate since init_vars is called to reset index of focus etc.
+    # Also, listbox will extend this to clear selected_indices
+    def clear
+      return unless @list
+      @list.clear
+      fire_dimension_changed
+      init_vars
+    end
+    # update the value at index with given value, returning self
+    def []=(index, val)
+      @list[index]=val
+      fire_row_changed index
+      self
+    end
+    #
+    #
   end  # class textpad
 
   # a test renderer to see how things go
