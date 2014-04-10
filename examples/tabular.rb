@@ -1,4 +1,5 @@
 require 'canis/core/util/app'
+require 'canis/core/include/listselectionmodel'
 
 App.new do 
   # TODO: combine this with widget menu
@@ -131,14 +132,19 @@ end
   arr = []
   lines.each { |l| arr << l.split("|") }
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
-    tw = tabular_widget :print_footer => true, :name => "tab"
-    tw.columns = h
+    tw = table :print_footer => true, :name => "tab"
+    tw.columns h
     tw.column_align 0, :right
-    tw.set_content arr
+    tw.text arr
+    tw.model_row 1
+    tw.estimate_column_widths
+    # set_content goes to textpads text which overwrites @list
+    #tw.set_content arr
     tw.bind_key([?d,?d], 'delete row') { tw.delete_line }
     tw.bind_key(?U, 'undo delete') { tw.undo_delete }
     tw.bind_key(?e, 'edit row') {  edit_row tw }
     tw.bind_key(?o, 'insert row') {  insert_row tw }
+    tw.extend Canis::DefaultListSelection
   end # stack
   status_line :row => FFI::NCurses.LINES-1
   @form.bind_key(?:, 'menu') {  app_menu }
