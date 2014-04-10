@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-09 17:51
+#  Last update: 2014-04-10 20:57
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -19,13 +19,18 @@ require 'forwardable'
 # Contains a scrollable array of Strings. The list is selectable too.
 # In place editing is not provided, however editing in a separate box
 # has been implemented in various examples.
+# Essentially, the listbox only adds selection to the textpad.
 # TODO
-#   _ compare to rlist and see what's missing
+# ----
 #   [ ] selected_color - IMP we have no way of knowing what is selected right now
 #   [ ] focussed color - this could be part of textpad too. row under cursor
+#   [ ] rlist has menu actions that can use prompt menu or popup ?
+#   [ ] move listselectionhandler into independent class so others can use, such as table
 #
 #
-#   old rlist actually does a coloring of selected rows in the repaint loop checking each rows select status
+# CHANGES
+# -------
+# - removed Array operations to Textpad, some renaming 2014-04-10 - 20:50 
 #
 #
 module Canis
@@ -83,50 +88,14 @@ module Canis
 
     
 
-    ## append a row to the list
-    def append text
-      unless @list
-        # columns were not added, this most likely is the title
-        @list ||= []
-      end
-      #@list << array
-      @list.push text
-      fire_dimension_changed
-      self
-    end
     # http://www.opensource.apple.com/source/gcc/gcc-5483/libjava/javax/swing/table/DefaultTableColumnModel.java
     #
-    # get element at
-    # @param [Fixnum] index for element
-    # @return [Object] element
-    # @since 1.2.0  2010-09-06 14:33 making life easier for others.
-    def [](off0)
-      @list[off0]
-    end
     # clear the list completely
-    # FIXME what about selection. SHould be cleared
-    def remove_all
-      return if @list.nil? || @list.empty? 
-      @list.clear
+    def clear
       @selected_indices.clear
-      init_vars
+      super
     end
-    ## NOTE: why are these not in textpad ?
-    #
-    # delegate some operations to Array
-    def_delegators :@list, :include?, :each, :values, :size
-
-    # delegate some modify operations to Array: insert, clear, delete_at, []= <<
-    # However, we should check if content array is nil ?
-    # fire_dim is called, although it is not required in []=
-    %w[ insert clear delete_at []= << ].each { |e| 
-      eval %{
-      def #{e}(*args)
-         fire_dimension_changed
-         @list.send(:#{e}, *args)
-      end
-      }
-    }
+    alias :remove_all :clear
 
     # This is called whenever user leaves a row
     # Fires handler for leave_row
@@ -432,22 +401,6 @@ module Canis
         @row_selected_symbol ||= '*'
         @row_unselected_symbol ||= ' '
         @left_margin ||= @row_selected_symbol.length
-      end
-    end
-    # paint the selector. Called from repaint, prior to printing data row
-    # remember to set left_margin at top of repaint method as:
-    #    @left_margin ||= @row_selected_symbol.length
-    #    FIXME UNUSED
-    def XXXpaint_selector crow, r, c, acolor, attrib
-      selected = is_row_selected crow
-      selection_symbol = ''
-      if @show_selector
-        if selected
-          selection_symbol = @row_selected_symbol
-        else
-          selection_symbol =  @row_unselected_symbol
-        end
-        @graphic.printstring r, c, selection_symbol, acolor,attrib
       end
     end
     def selected_rows
