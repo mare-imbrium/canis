@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-11 14:43
+#  Last update: 2014-04-12 00:11
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -295,12 +295,10 @@ module Canis
         cp = @color_pair
         att = @attrib
         # added for selection, but will crash if selection is not extended !!! XXX
-        if @source.respond_to? :is_row_selected
-          if @source.is_row_selected lineno
+          if @source.is_row_selected? lineno
             att = REVERSE
             # FIXME currentl this overflows into next row
           end
-        end
         
         FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
         FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
@@ -373,6 +371,7 @@ module Canis
   # so scrolling works fine, otherwise textpad will have issues scrolling.
   # Making a pad of the content but not column header complicates stuff,
   # do we make a pad of that, or print it like the old thing.
+    require 'canis/core/include/listselectionmodel'
   class Table < TextPad
 
     dsl_accessor :print_footer
@@ -391,14 +390,22 @@ module Canis
       @_header_adjustment = 0 #1
       @col_min_width = 3
 
+      self.extend DefaultListSelection
       super
       create_default_renderer unless @renderer # 2014-04-10 - 11:01 
+      $log.debug "XXX: jtable constructor after super"
       bind_key(?w, "next column") { self.next_column }
       bind_key(?b, "prev column") { self.prev_column }
       bind_key(?-, "contract column") { self.contract_column }
       bind_key(?+, "expand column") { self.expand_column }
       bind_key(?=, "expand column to width") { self.expand_column_to_width }
       bind_key(?\M-=, "expand column to width") { self.expand_column_to_max_width }
+      #@list_selection_model ||= DefaultListSelectionModel.new self
+      set_default_selection_model unless @list_selection_model
+    end
+    def set_default_selection_model
+      @list_selection_model = nil
+      @list_selection_model = Canis::DefaultListSelectionModel.new self
     end
     
     # retrieve the column info structure for the given offset. The offset
@@ -688,6 +695,12 @@ module Canis
       @list.delete_at ix
     end
     alias :<< :add
+    #
+    # clear the list completely
+    def clear
+      @selected_indices.clear
+      super
+    end
     # convenience method to set width of a column
     # @param index of column
     # @param width
@@ -892,71 +905,4 @@ module Canis
 
   end # class Table
 
-  ##
-  # Handles selection of items in a list or table or tree that uses stable indices.
-  # Indexes are in the order they were places, not sorted.
-  # This is just a wrapper over an array, except that it fires an event so users can bind
-  # to row selection and deselection
-  # TODO - fire events to listeners
-  #
-  class ListSelectionModel
-    ##
-    # obj is the source object, I am wondering whether i need it or not
-    def initialize component
-      @obj = component
-      @selected_indices = []
-    end
-    def toggle_row_selection crow
-      if is_row_selected? crow
-        unselect crow
-      else
-        select crow
-      end
-    end
-    # select given index
-    # TODO should we allow a second arg optional for range.
-    def select ix
-      @selected_indices << ix
-      _fire_event ix, ix, :INSERT
-    end
-    # unselect given index
-    # TODO should we allow a second arg optional for range.
-    def unselect ix
-      @selected_indices.delete ix
-      _fire_event ix, ix, :DELETE
-    end
-    alias :add_to_selection :select
-    alias :remove_from_selection :unselect
-    def clear_selection
-      @selected_indices = []
-      _fire_event 0, 0, :CLEAR
-    end
-    def is_row_selected? crow
-      @selected_indices.include? crow
-    end
-    def is_selection_empty?
-      return @selected_indices.empty?
-    end
-    # if row deleted in list, then synch with list
-    # (No listeners  are informed)
-    def remove_index crow
-      @selected_indices.delete crow
-    end
-    def _fire_event firsti, lasti, event
-      lse = ListSelectionEvent.new(firsti, lasti, self, event)
-      fire_handler :LIST_SELECTION_EVENT, lse
-    end
-
-    def select_all
-      # how do we do this since we don't know what the indices are. 
-      # What is the user using as identifier?
-    end
-     
-    # returns a list of selected indices in the same order as added
-    def selected_rows
-      @selected_indices
-    end
-  end # class
-  #class TableSelectionEvent < Struct.new(:firstrow, :lastrow, :source, :type)
-  #end
 end # module
