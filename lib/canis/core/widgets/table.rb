@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-11 01:25
+#  Last update: 2014-04-11 14:43
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -194,8 +194,8 @@ module Canis
         @y = '|'
         @x = '+'
         @coffsets = []
-        @header_color = :red
-        @header_bgcolor = :white
+        @header_color = :white
+        @header_bgcolor = :red
         @header_attrib = NORMAL
         @color = :white
         @bgcolor = :black
@@ -273,7 +273,6 @@ module Canis
         return render_header pad, lineno, 0, str if lineno == 0
         #text = str.join " | "
         #text = @fmstr % str
-        $log.debug "XXXx table calling conv #{lineno}, #{str}"
         text = convert_value_to_text str
         if @_check_coloring
           #$log.debug "XXX:  INSIDE COLORIIN"
@@ -841,7 +840,7 @@ module Canis
           @indices << ix 
         end
       end
-      $log.debug "XXX:  INDICES found #{@indices}"
+      #$log.debug "XXX:  INDICES found #{@indices}"
       if @indices.count > 0
         fire_dimension_changed
         init_vars
