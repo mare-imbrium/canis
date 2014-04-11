@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-11 14:44
+#  Last update: 2014-04-12 00:24
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1079,7 +1079,6 @@ module Canis
       fire_row_changed index
       self
     end
-    #
     #
   end  # class textpad
 
