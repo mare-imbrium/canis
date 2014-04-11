@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-11 00:51
+#  Last update: 2014-04-11 14:44
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -122,6 +122,7 @@ module Canis
     ## XXX in list text returns the selected row, list returns the full thing, keep consistent
     def create_pad
       destroy if @pad
+      #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
       #@pad = FFI::NCurses.newpad(@content_rows, @content_cols)
       @pad = @window.get_pad(@content_rows, @content_cols )
     end
@@ -208,7 +209,7 @@ module Canis
       if reader
         @list = reader.call(filename)
       else
-        @list = File.open(filename,"r").readlines
+        @list = File.open(filename,"r").read.split("\n")
       end
       if @filetype == ""
         if @list.first.index("ruby")
@@ -265,7 +266,7 @@ module Canis
       self
     end
     alias :list :text
-    # for compat with textview
+    # for compat with textview, FIXME keep one consistent name for this
     alias :set_content :text
     def content
       raise "content is nil " unless @list
@@ -274,8 +275,9 @@ module Canis
     alias :get_content :content
 
     # print footer containing line and position
-    # XXX UNTESTED TODO TESTING
+    # XXX UNTESTED FiXME not updated since it requires repaint_all to be true
     def print_foot #:nodoc:
+      return unless @print_footer
       @footer_attrib ||= Ncurses::A_REVERSE
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
       $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
@@ -421,6 +423,7 @@ module Canis
       # it would get rejected. UNfortunately this may happen more often we want, but we never know
       # when something pops up on the screen.
       unless @repaint_required
+        print_foot if @repaint_footer_required  # set in on_enter_row
         padrefresh 
         return 
       end
@@ -729,11 +732,16 @@ module Canis
     #
     def on_enter_row arow
       return nil if @list.nil? || @list.size == 0
+
+      # is this the right place to put it, otherwise it requires a repaint_all and repaint_required
+      #print_foot if @print_footer
+      @repaint_footer_required = true
+
       ## can this be done once and stored, and one instance used since a lot of traversal will be done
       require 'canis/core/include/ractionevent'
       aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
       fire_handler :ENTER_ROW, aev
-      @repaint_required = true
+      #@repaint_required = true
     end
 
     # destroy the pad, this needs to be called from somewhere, like when the app
