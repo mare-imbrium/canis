@@ -128,7 +128,7 @@ end
 
   h = %w[ Id Title Priority Status]
   file = "data/table.txt"
-  lines = File.open(file,'r').readlines 
+  lines = File.open(file,'r').read.split("\n") 
   arr = []
   lines.each { |l| arr << l.split("|") }
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
