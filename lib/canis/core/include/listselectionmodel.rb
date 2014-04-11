@@ -5,11 +5,12 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-11 01:13
+#  Last update: 2014-04-11 14:48
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
 #
+require 'forwardable'
 
 # The +DefaultListSelection+ mixin provides Textpad derived classes with
 # selection methods and bindings.
@@ -24,11 +25,15 @@ module Canis
   extend self
   module DefaultListSelection
     def self.extended(obj)
+      extend Forwardable
       dsl_accessor :selection_mode
       dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
       dsl_accessor :selected_indices
       # model that takes care of selection operations
       attr_accessor :list_selection_model
+      #
+      # all operations of selection are delegated to the ListSelectionModel
+      def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_row_selected?, :is_selection_empty?, :clear_selection, :remove_index, :selected_rows, :select_all
 
       def is_row_selected row
         @list_selection_model.is_row_selected row
