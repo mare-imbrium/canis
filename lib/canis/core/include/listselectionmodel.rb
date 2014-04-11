@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-12 00:15
+#  Last update: 2014-04-12 00:24
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -50,7 +50,7 @@ module Canis
       attr_accessor :list_selection_model
       #
       # all operations of selection are delegated to the ListSelectionModel
-      def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all
+      def_delegators :@list_selection_model, :is_row_selected?, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all
 
 
       obj.instance_exec {
