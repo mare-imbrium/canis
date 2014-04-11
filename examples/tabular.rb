@@ -1,5 +1,4 @@
 require 'canis/core/util/app'
-require 'canis/core/include/listselectionmodel'
 
 App.new do 
   # TODO: combine this with widget menu
@@ -138,13 +137,14 @@ end
     tw.text arr
     tw.model_row 1
     tw.estimate_column_widths
+    #tw.selection_mode :single
     # set_content goes to textpads text which overwrites @list
     #tw.set_content arr
     tw.bind_key([?d,?d], 'delete row') { tw.delete_line }
     tw.bind_key(?U, 'undo delete') { tw.undo_delete }
     tw.bind_key(?e, 'edit row') {  edit_row tw }
     tw.bind_key(?o, 'insert row') {  insert_row tw }
-    tw.extend Canis::DefaultListSelection
+  
   end # stack
   status_line :row => FFI::NCurses.LINES-1
   @form.bind_key(?:, 'menu') {  app_menu }
