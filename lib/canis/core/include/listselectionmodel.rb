@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-11 14:48
+#  Last update: 2014-04-12 00:15
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -15,37 +15,52 @@ require 'forwardable'
 # The +DefaultListSelection+ mixin provides Textpad derived classes with
 # selection methods and bindings.
 # == Example
-#     table.extend Canis::DefaultListSelection
+#  Inside the constructor of the multiline object use the following line, before the call to `super()`
+#
+#      self.extend DefaultListSelection
+#      
+# At any other portion, for example after the call to `super()` you may set the 
+# default model if the user has not done so in the calling block
+#
+#      @list_selection_model ||= Canis::DefaultListSelectionModel.new self
+# 
+# When clearing data, as in `clear`, +selected_indices+ should also be cleared.
 #
 # == Note
-#  This does not take care of rendering a selected row. This must still be handled
-#  by the default or custom renderer.
+#
+#  This module does not take care of rendering a selected row. This must still be handled
+#  by the default or custom renderer using `is_row_selected?`.
+#
+#  Note that changing the order of data, or deleting, inserting etc will not correct the selection
+#  indices. Indices are assumed to be stable, and they may be cleared using `clear` on +@selected_indices+
+#  if the data indices change.
 #
 module Canis
   extend self
   module DefaultListSelection
     def self.extended(obj)
       extend Forwardable
+      # selection modes may be :multiple, :single or :none
       dsl_accessor :selection_mode
+      # color of selected rows, and attribute of selected rows
       dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+      # indices of selected rows
       dsl_accessor :selected_indices
       # model that takes care of selection operations
       attr_accessor :list_selection_model
       #
       # all operations of selection are delegated to the ListSelectionModel
-      def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_row_selected?, :is_selection_empty?, :clear_selection, :remove_index, :selected_rows, :select_all
+      def_delegators :@list_selection_model, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all
 
-      def is_row_selected row
-        @list_selection_model.is_row_selected row
-      end
 
       obj.instance_exec {
         @selected_indices = []
-        @selection_mode = :multiple # default is multiple
-        @list_selection_model = DefaultListSelectionModel.new obj
+        @selection_mode = :multiple # default is multiple intervals
+        #@list_selection_model = DefaultListSelectionModel.new obj
       }
 
     end
+  end # mod DefaultListSelection
   # Whenever user selects one or more rows, this object is sent via event
   # giving start row and last row of selection, object
   # and type which is :INSERT :DELETE :CLEAR
@@ -53,8 +68,12 @@ module Canis
   end
 
   ##
-  # Object that takes care of selection of rows
+  # Object that takes care of selection of rows.
   # This may be replace with a custom object at time of instantiation of list
+  # Note that there are only two selection modes: single and multiple.
+  # Multiple refers to multiple intervals. There is also a multiple row selection
+  # mode, single interval, which only allows one range to be selected, much like a
+  # text object, i.e. any text editor.
   #
   ## I am copying this from listselectable. that was a module so was included and shared variables
   # but now this is a class, and cannot access state as directly
@@ -62,6 +81,7 @@ module Canis
   class DefaultListSelectionModel
 
     def initialize component
+      raise "Components passed to DefaultListSelectionModel is nil" unless component
       @obj = component
     
       @selected_indices = @obj.selected_indices
@@ -70,7 +90,6 @@ module Canis
       @selection_mode = @obj.selection_mode
       list_bindings
     end
-    # @group selection related
 
     # change selection of current row on pressing space bar (or keybinding)
     # If mode is multiple, then this row is added to previous selections
@@ -81,7 +100,7 @@ module Canis
     def toggle_row_selection crow=@obj.current_index
       @last_clicked = crow
       @repaint_required = true
-      case @selection_mode 
+      case @obj.selection_mode 
       when :multiple
         if @selected_indices.include? crow
           @selected_indices.delete crow
@@ -118,15 +137,18 @@ module Canis
     # Uses the last row clicked on, till the current one.
     # If user clicks inside a selcted range, then deselect from last click till current (remove from earlier)
     # If user clicks outside selected range, then select from last click till current (add to earlier)
-    # typically bound to Ctrl-Space
+    # typically bound to Ctrl-Space (0)
+    #
     # @example
+    #
     #     bind_key(0) { range_select }
+    #
     def range_select crow=@obj.current_index
       #alert "add to selection fired #{@last_clicked}"
       @last_clicked ||= crow
       min = [@last_clicked, crow].min
       max = [@last_clicked, crow].max
-      case @selection_mode 
+      case @obj.selection_mode 
       when :multiple
         if @selected_indices.include? crow
           # delete from last_clicked until this one in any direction
@@ -165,8 +187,8 @@ module Canis
 
     # returns +true+ if given row has been selected
     # Now that we use only the array, the multiple check is good enough
-    def is_row_selected crow
-      case @selection_mode 
+    def is_row_selected? crow
+      case @obj.selection_mode 
       when :multiple
         @selected_indices.include? crow
       else
@@ -174,7 +196,7 @@ module Canis
         crow == @selected_index
       end
     end
-    alias :is_selected? is_row_selected
+    alias :is_selected? is_row_selected?
     # FIXME add adjustment and test
     def goto_next_selection
       return if selected_rows().length == 0 
@@ -194,7 +216,7 @@ module Canis
     # add the following range to selected items, unless already present
     # should only be used if multiple selection interval
     def add_row_selection_interval ix0, ix1
-      return if @selection_mode != :multiple
+      return if @obj.selection_mode != :multiple
       @anchor_selection_index = ix0
       @lead_selection_index = ix1
       ix0.upto(ix1) {|i| 
@@ -311,7 +333,8 @@ module Canis
     def list_bindings
       @obj.bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection }
       
-      if @selection_mode == :multiple
+      # the mode may be set to single after the constructor, so this would have taken effect.
+      if @obj.selection_mode == :multiple
         @obj.bind_key(0, 'range select') { range_select }
         @obj.bind_key(?+, 'ask_select') { ask_select } 
         @obj.bind_key(?-, 'ask_unselect') { ask_unselect } 
@@ -339,5 +362,4 @@ module Canis
       @selected_indices
     end
   end # class
-end # mod DefaultListSelection
 end # mod Canis
