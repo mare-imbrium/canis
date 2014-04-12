@@ -1,4 +1,5 @@
 require 'canis/core/util/app'
+require 'canis/core/widgets/listfooter'
 
 App.new do 
   # TODO: combine this with widget menu
@@ -118,6 +119,11 @@ def resize
   tab.height = (tab.height_pc * rows).floor
   tab.width = (tab.width_pc * cols).floor
 end
+
+lf = Canis::ListFooter.new :attrib => BOLD
+lf.command(){ |comp|
+  "#{comp.current_index} of #{comp.size}  "
+}
   header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"Fat-free !", 
       :color => :black, :bgcolor => :green #, :attr => :bold 
   message "Press F10 to exit, F1 for help, : for menu"
@@ -136,6 +142,7 @@ end
     tw.column_align 0, :right
     tw.text arr
     tw.model_row 1
+    tw.list_footer lf
     tw.estimate_column_widths
     #tw.selection_mode :single
     # set_content goes to textpads text which overwrites @list
