@@ -121,8 +121,18 @@ def resize
 end
 
 lf = Canis::ListFooter.new :attrib => BOLD
-lf.command(){ |comp|
-  "#{comp.current_index} of #{comp.size}  "
+lf.command(lf){ |comp, lf|
+  f = lf[0]
+  if comp.current_index == 0
+    f.attrib = REVERSE
+    " Header "
+  else
+    f.attrib = BOLD
+  "#{comp.current_index} of #{comp.size} "
+  end
+}
+lf.command_right(){ |comp|
+  " [#{comp.size} tasks]"
 }
   header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"Fat-free !", 
       :color => :black, :bgcolor => :green #, :attr => :bold 
