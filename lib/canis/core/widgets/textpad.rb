@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 15:28
+#  Last update: 2014-04-12 21:23
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -39,6 +39,7 @@ module Canis
 # ---- Section initialization start ----- {
     dsl_accessor :suppress_borders
     dsl_accessor :print_footer
+    dsl_accessor :list_footer
     attr_reader :current_index
     # rows is the actual number of rows the pad has which is slightly less than height (taking
     #  into account borders. Same for cols and width.
@@ -475,10 +476,13 @@ module Canis
     # XXX UNTESTED FiXME not updated since it requires repaint_all to be true
     def print_foot #:nodoc:
       return unless @print_footer
-      @footer_attrib ||= Ncurses::A_REVERSE
-      footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+      if @list_footer
+        footer = @list_footer.text(self)
+        footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
+        #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+        $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+        @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
+      end
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
 
@@ -487,7 +491,7 @@ module Canis
     # convenience method to return byte
     private
     def key x
-      x.getbyte(0)
+      x.window.getbyte(0)
     end
 
 
@@ -751,6 +755,7 @@ module Canis
     end
 #---- Section: movement end -----# }
 #---- Section: internal stuff start -----# {
+    public
     #
     def handle_key ch
       return :UNHANDLED unless @list
@@ -910,6 +915,7 @@ module Canis
       # 
       return
     end
+    public
     def repaint
       unless @__first_time
         __calc_dimensions
@@ -1079,7 +1085,8 @@ module Canis
     # will change the moment panning is done, or a repaint happens.
     # If these should be maintained then they should be called from the repaint method
     #
-    def highlight_row index = @current_index, cfg={}
+    # This was just indicative, and is not used anywhere
+    def DEADhighlight_row index = @current_index, cfg={}
       return unless index 
       c = 0 # we are using pads so no col except for left_margin if present
       # in a pad we don't need to convert index to printable
