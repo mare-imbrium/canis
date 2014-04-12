@@ -8,9 +8,13 @@ module Canis
   #
   class ListFooter
     attr_accessor :config
+    attr_accessor :color_pair
+    attr_accessor :attrib
 
     def initialize config={}, &block
       @config = config
+      @color_pair = get_color($datacolor, config[:color], config[:bgcolor]) 
+      @attrib = config[:attrib]
       instance_eval &block if block_given?
     end
     #
@@ -32,34 +36,45 @@ module Canis
       @right_args = args
     end
     def text(comp)
-      @command_text.call(comp, @args) 
+      @command_text.call(comp, @command_args) 
+    end
+    def right_text(comp)
+      @right_text.call(comp, @right_args) 
     end
 
-    # NOTE: I have not put a check of repaint_required, so this will print on each key-stroke OR
-    #   rather whenever form.repaint is called.
+    # supply a default print function. The user program need not call this. It may be overridden
     def print comp
+      config = @config
       row = comp.row + comp.height - 1
       col = comp.col + 2
-      @color_pair ||= get_color($datacolor, @color, @bgcolor) 
-      len = comp.width - col
-      g = comp.window
+      len = comp.width - col 
+      g = comp.form.window
+      # we check just in case user nullifies it deliberately, since he may have changed config values
+      @color_pair ||= get_color($datacolor, config[:color], config[:bgcolor]) 
+      @attrib ||= config[:attrib] || Ncurses::A_REVERSE
+      
 
       # first print dashes through
-      g.printstring row, col, "%s" % "-" * len, @color_pair, Ncurses::A_REVERSE
+      #g.printstring row, col, "%s" % "-" * len, @color_pair, Ncurses::A_REVERSE
 
-      # now call the block to get current values
-      if @text
-        ftext = @text.call(comp, @args) 
+      # now call the block to get current values for footer text on left
+      ftext = nil
+      if @command_text
+        ftext = text(comp) 
       else
-        #ftext = " %-20s | %s" % [Time.now, status] # should we print a default value just in case user doesn't
-        ftext = "Dummy"
+        if !@right_text
+          # user has not specified right or left, so we use a default on left
+          ftext = "#{comp.current_index} of #{comp.size}   "
+        end
       end
+      g.printstring(row, col, ftext, @color_pair, @attrib) if ftext
 
+      # user has specified text for right, print it
       if @right_text
         len = comp.width
-        ftext = @right_text.call(self, @right_args) 
-        c = len - ftext.length
-        g.printstring @row, c, ftext, @color_pair, Ncurses::A_REVERSE
+        ftext = right_text(comp)
+        c = len - ftext.length - 2
+        g.printstring row, c, ftext, @color_pair, @attrib
       end
     end
 
