@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# header {
+# vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: textpad.rb
 #  Description: A class that displays text using a pad.
@@ -8,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 00:24
+#  Last update: 2014-04-12 15:28
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -20,9 +22,8 @@
 #        ignore recreate of pad if width or ht is less than w and h of container.
 #     3. only rewrite a row - row data changed, no recreate pad or anything else
 #
-#
-#
 # ----------------------------------------------------------------------------- #
+# header }
 #
 require 'canis'
 require 'canis/core/include/bordertitle'
@@ -31,10 +32,11 @@ require 'forwardable'
 include Canis
 module Canis
   extend self
-  class TextPad < Widget
+  class TextPad < Widget # -- {
     include BorderTitle
     extend Forwardable
 
+# ---- Section initialization start ----- {
     dsl_accessor :suppress_borders
     dsl_accessor :print_footer
     attr_reader :current_index
@@ -117,6 +119,8 @@ module Canis
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
     end
+# ---- Section initialization end ----- }
+# ---- Section pad related start ----------- {
 
     private
     ## XXX in list text returns the selected row, list returns the full thing, keep consistent
@@ -150,6 +154,65 @@ module Canis
       render_all
 
     end
+    # destroy the pad, this needs to be called from somewhere, like when the app
+    # closes or the current window closes , or else we could have a seg fault
+    # or some ugliness on the screen below this one (if nested).
+
+    # Now since we use get_pad from window, upon the window being destroyed,
+    # it will call this. Else it will destroy pad
+    def destroy
+      FFI::NCurses.delwin(@pad) if @pad # when do i do this ? FIXME
+      @pad = nil
+    end
+    # write pad onto window
+    #private
+    # padrefresh can fail if width is greater than NCurses.COLS
+    # padrefresh can fail if height (@rows + sr) is greater than NCurses.LINES or tput lines
+    #   try reducing height when creating textpad.
+    def padrefresh
+      top = @window.top
+      left = @window.left
+      sr = @startrow + top
+      sc = @startcol + left
+      retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , @rows + sr , @cols+ sc );
+      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
+      # padrefresh can fail if width is greater than NCurses.COLS
+      # or if height exceeds tput lines. As long as content is less, it will work
+      # the moment content_rows exceeds then this issue happens. 
+      # @rows + sr < tput lines
+      #FFI::NCurses.prefresh(@pad,@prow,@pcol, @startrow + top, @startcol + left, @rows + @startrow + top, @cols+@startcol + left);
+    end
+    # length of longest string in array
+    # This will give a 'wrong' max length if the array has ansi color escape sequences in it
+    # which inc the length but won't be printed. Such lines actually have less length when printed
+    # So in such cases, give more space to the pad.
+    def content_cols
+      longest = @list.max_by(&:length)
+      ## 2013-03-06 - 20:41 crashes here for some reason when man gives error message no man entry
+      return 0 unless longest
+      longest.length
+    end
+    public
+    # to be called with program / user has added a row or changed column widths so that 
+    # the pad needs to be recreated. However, cursor positioning is maintained since this
+    # is considered to be a minor change. 
+    # We do not call init_vars since user is continuing to do some work on a row/col.
+    def fire_dimension_changed
+      # recreate pad since width or ht has changed (row count or col width changed)
+      @_populate_needed = true
+      @repaint_required = true
+      @repaint_all = true
+    end
+    # repaint only one row since content of that row has changed. 
+    # No recreate of pad is done.
+    def fire_row_changed ix
+      return if ix >= @list.length
+      clear_row @pad, ix
+      render @pad, ix, @list[ix]
+      # may need to call padrefresh TODO TESTING
+    end
+# ---- end pad related ----- }
+# ---- Section render related  ----- {
     #
     # iterate through content rendering each row
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
@@ -191,7 +254,79 @@ module Canis
         FFI::NCurses.wattroff(@pad, @cp | att)
       end
     end
+    ## ---- the next 2 methods deal with printing chunks
+    # we should put it int a common module and include it
+    # in Window and Pad stuff and perhaps include it conditionally.
 
+    ## 2013-03-07 - 19:57 changed width to @content_cols since data not printing
+    # in some cases fully when ansi sequences were present int some line but not in others
+    # lines without ansi were printing less by a few chars.
+    # This was prolly copied from rwindow, where it is okay since its for a specific width
+    def print(string, _width = @content_cols)
+      #return unless visible?
+      w = _width == 0? Ncurses.COLS : _width
+      FFI::NCurses.waddnstr(@pad,string.to_s, w) # changed 2011 dts  
+    end
+
+    def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
+      #return unless visible?
+      chunks.each do |chunk| #|color, chunk, attrib|
+        case chunk
+        when Chunks::Chunk
+          color = chunk.color
+          attrib = chunk.attrib
+          text = chunk.text
+        when Array
+          # for earlier demos that used an array
+          color = chunk[0]
+          attrib = chunk[2]
+          text = chunk[1]
+        end
+
+        color ||= defcolor
+        attrib ||= defattr || NORMAL
+
+        #cc, bg = ColorMap.get_colors_for_pair color
+        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} "
+        FFI::NCurses.wcolor_set(@pad, color,nil) if color
+        FFI::NCurses.wattron(@pad, attrib) if attrib
+        print(text)
+        FFI::NCurses.wattroff(@pad, attrib) if attrib
+      end
+    end
+
+    # 
+    # pass in formatted text along with parser (:tmux or :ansi)
+    # NOTE this does not call init_vars, i think it should, text() does
+    def formatted_text text, fmt
+
+      require 'canis/core/include/chunk'
+      @formatted_text = text
+      @color_parser = fmt
+      @repaint_required = true
+      _convert_formatted
+      # don't know if start is always required. so putting in caller
+      #goto_start
+      #remove_all
+    end
+    # before updating a single row in a table 
+    # we need to clear the row otherwise previous contents can show through
+    def clear_row pad, lineno
+      if @renderer
+        if @renderer.respond_to? :clear_row
+          @renderer.clear_row pad, lineno
+        end
+      else
+        @clearstring = " " * @width
+        # what about bg color ??? XXX, left_margin and internal width
+        FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
+      end
+    end
+
+
+    # ---- Section render related  end ----- }
+# ---- Section data related start {
+    
     # supply a filename as source for textpad
     # Reads up file into @list
     # One can optionally send in a method which takes a filename and returns an array of data
@@ -273,6 +408,68 @@ module Canis
       return @list
     end
     alias :get_content :content
+    #
+    # returns current value (what cursor is on)
+    def current_value
+      @list[@current_index]
+    end
+    ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
+    #    formatting of data
+    #    But what if data is not formatted. This imposes a severe limitation. listbox does have linewise
+    #    operations, so lets try them
+    #
+    ## append a row to the list
+    # @deprecated pls use << or push as per Array semantics
+    def append text
+      raise "append: deprecated pls use << or push as per Array semantics"
+      @list ||= []
+      @list.push text
+      fire_dimension_changed
+      self
+    end
+    # @deprecated : row_count used just for compat, use length or size
+    def row_count ; @list.length ; end  
+
+    ## ------ LIST / ARRAY OPERATIONS ----
+    # All multirow widgets must use Array semantics 2014-04-10 - 17:29 
+    # NOTE some operations will make selected indices in selection modules invalid
+    # clear will need to clear indices, delete_at and insert may need to also adjust
+    # selection or focus index/es.
+    #
+    # delegate some operations to Array
+    # ---- operations that reference Array, no modifications
+    def_delegators :@list, :include?, :each, :values, :size, :length, :[]
+
+    # ---- operations that modify data
+    # delegate some modify operations to Array: insert, clear, delete_at, []= <<
+    # However, we should check if content array is nil ?
+    # fire_dim is called, although it is not required in []=
+    %w[ insert delete_at << push].each { |e| 
+      eval %{
+      def #{e}(*args)
+        @list ||= []
+        fire_dimension_changed
+        @list.send(:#{e}, *args)
+        self
+      end
+      }
+    }
+    # clear all items in the object.
+    # NOTE: requires to be separate since init_vars is called to reset index of focus etc.
+    # Also, listbox will extend this to clear selected_indices
+    def clear
+      return unless @list
+      @list.clear
+      fire_dimension_changed
+      init_vars
+    end
+    # update the value at index with given value, returning self
+    def []=(index, val)
+      @list[index]=val
+      fire_row_changed index
+      self
+    end
+    # ---- Section data related end }
 
     # print footer containing line and position
     # XXX UNTESTED FiXME not updated since it requires repaint_all to be true
@@ -285,80 +482,7 @@ module Canis
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
 
-    ## ---- the next 2 methods deal with printing chunks
-    # we should put it int a common module and include it
-    # in Window and Pad stuff and perhaps include it conditionally.
 
-    ## 2013-03-07 - 19:57 changed width to @content_cols since data not printing
-    # in some cases fully when ansi sequences were present int some line but not in others
-    # lines without ansi were printing less by a few chars.
-    # This was prolly copied from rwindow, where it is okay since its for a specific width
-    def print(string, _width = @content_cols)
-      #return unless visible?
-      w = _width == 0? Ncurses.COLS : _width
-      FFI::NCurses.waddnstr(@pad,string.to_s, w) # changed 2011 dts  
-    end
-
-    def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
-      #return unless visible?
-      chunks.each do |chunk| #|color, chunk, attrib|
-        case chunk
-        when Chunks::Chunk
-          color = chunk.color
-          attrib = chunk.attrib
-          text = chunk.text
-        when Array
-          # for earlier demos that used an array
-          color = chunk[0]
-          attrib = chunk[2]
-          text = chunk[1]
-        end
-
-        color ||= defcolor
-        attrib ||= defattr || NORMAL
-
-        #cc, bg = ColorMap.get_colors_for_pair color
-        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} "
-        FFI::NCurses.wcolor_set(@pad, color,nil) if color
-        FFI::NCurses.wattron(@pad, attrib) if attrib
-        print(text)
-        FFI::NCurses.wattroff(@pad, attrib) if attrib
-      end
-    end
-
-    # 
-    # pass in formatted text along with parser (:tmux or :ansi)
-    # NOTE this does not call init_vars, i think it should, text() does
-    def formatted_text text, fmt
-
-      require 'canis/core/include/chunk'
-      @formatted_text = text
-      @color_parser = fmt
-      @repaint_required = true
-      _convert_formatted
-      # don't know if start is always required. so putting in caller
-      #goto_start
-      #remove_all
-    end
-
-    # write pad onto window
-    #private
-    # padrefresh can fail if width is greater than NCurses.COLS
-    # padrefresh can fail if height (@rows + sr) is greater than NCurses.LINES or tput lines
-    #   try reducing height when creating textpad.
-    def padrefresh
-      top = @window.top
-      left = @window.left
-      sr = @startrow + top
-      sc = @startcol + left
-      retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , @rows + sr , @cols+ sc );
-      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
-      # padrefresh can fail if width is greater than NCurses.COLS
-      # or if height exceeds tput lines. As long as content is less, it will work
-      # the moment content_rows exceeds then this issue happens. 
-      # @rows + sr < tput lines
-      #FFI::NCurses.prefresh(@pad,@prow,@pcol, @startrow + top, @startcol + left, @rows + @startrow + top, @cols+@startcol + left);
-    end
 
     # convenience method to return byte
     private
@@ -366,144 +490,9 @@ module Canis
       x.getbyte(0)
     end
 
-    # length of longest string in array
-    # This will give a 'wrong' max length if the array has ansi color escape sequences in it
-    # which inc the length but won't be printed. Such lines actually have less length when printed
-    # So in such cases, give more space to the pad.
-    def content_cols
-      longest = @list.max_by(&:length)
-      ## 2013-03-06 - 20:41 crashes here for some reason when man gives error message no man entry
-      return 0 unless longest
-      longest.length
-    end
 
-    public
-    # to be called with program / user has added a row or changed column widths so that 
-    # the pad needs to be recreated. However, cursor positioning is maintained since this
-    # is considered to be a minor change. 
-    # We do not call init_vars since user is continuing to do some work on a row/col.
-    def fire_dimension_changed
-      # recreate pad since width or ht has changed (row count or col width changed)
-      @_populate_needed = true
-      @repaint_required = true
-      @repaint_all = true
-    end
-    # repaint only one row since content of that row has changed. 
-    # No recreate of pad is done.
-    def fire_row_changed ix
-      return if ix >= @list.length
-      clear_row @pad, ix
-      render @pad, ix, @list[ix]
-      # may need to call padrefresh TODO TESTING
-    end
 
-    # before updating a single row in a table 
-    # we need to clear the row otherwise previous contents can show through
-    def clear_row pad, lineno
-      if @renderer
-        if @renderer.respond_to? :clear_row
-          @renderer.clear_row pad, lineno
-        end
-      else
-        @clearstring = " " * @width
-        # what about bg color ??? XXX, left_margin and internal width
-        FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
-      end
-    end
-    def repaint
-      unless @__first_time
-        __calc_dimensions
-        @__first_time = true
-      end
-      return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32 
-
-      ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
-      # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
-      # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
-      # it would get rejected. UNfortunately this may happen more often we want, but we never know
-      # when something pops up on the screen.
-      unless @repaint_required
-        print_foot if @repaint_footer_required  # set in on_enter_row
-        padrefresh 
-        return 
-      end
-      # I can't recall why we are doing this late. Is the rreason relevant any longer
-      # Some methods that expect data are crashing like tablewidgets model_row
-      _convert_formatted
-
-      @window ||= @graphic
-      populate_pad if @_populate_needed
-      #HERE we need to populate once so user can pass a renderer
-
-      _do_borders
-
-      padrefresh
-      Ncurses::Panel.update_panels
-      @repaint_required = false
-      @repaint_all = false
-    end
-
-    def _do_borders
-      unless @suppress_borders
-        if @repaint_all
-          ## XXX im not getting the background color.
-          #@window.print_border_only @top, @left, @height-1, @width, $datacolor
-          clr = get_color $datacolor, @color, @bgcolor
-          #@window.print_border @top, @left, @height-1, @width, clr
-          @window.print_border_only @top, @left, @height-1, @width, clr
-          print_title
-
-          @repaint_footer_required = true if @oldrow != @current_index 
-          print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
-
-          @window.wrefresh
-        end
-      end
-    end
-    def _convert_formatted
-      if @formatted_text
-
-        l = Canis::Utils.parse_formatted_text(@color_parser,
-                                               @formatted_text)
-
-        text(l)
-        @formatted_text = nil
-      end
-    end
-
-    #
-    # key mappings
-    #
-    def map_keys
-      @mapped_keys = true
-      bind_key([?g,?g], 'goto_start'){ goto_start } # mapping double keys like vim
-      bind_key(279, 'goto_start'){ goto_start } 
-      bind_keys([?G,277], 'goto end'){ goto_end } 
-      bind_keys([?k,KEY_UP], "Up"){ up } 
-      bind_keys([?j,KEY_DOWN], "Down"){ down } 
-      bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down } 
-      bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
-      bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward } 
-      bind_keys([?\C-b,339]){ scroll_backward } 
-      # the next one invalidates the single-quote binding for bookmarks
-      #bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
-      bind_key(?/, :ask_search)
-      bind_key(?n, :find_more)
-      bind_key([?\C-x, ?>], :scroll_right)
-      bind_key([?\C-x, ?<], :scroll_left)
-      bind_key(?\M-l, :scroll_right)
-      bind_key(?\M-h, :scroll_left)
-      bind_key(?L, :bottom_of_window)
-      bind_key(?M, :middle_of_window)
-      bind_key(?H, :top_of_window)
-      bind_key(?w, :forward_word)
-      bind_key(?b, :backward_word)
-      bind_key(?l, :cursor_forward)
-      bind_key(?h, :cursor_backward)
-      bind_key(?$, :cursor_eol)
-      bind_key(KEY_ENTER, :fire_action_event)
-    end
-
+   #---- Section: movement -----# {
     # goto first line of file
     def goto_start
       #@oldindex = @current_index
@@ -654,257 +643,6 @@ module Canis
       @pcol -= 1
     end
     #
-    #
-    #
-    #
-    def handle_key ch
-      return :UNHANDLED unless @list
-
-
-      @oldrow = @prow
-      @oldcol = @pcol
-      $log.debug "XXX: PAD got #{ch} prow = #{@prow}"
-      begin
-        case ch
-      when ?0.getbyte(0)..?9.getbyte(0)
-        if ch == ?0.getbyte(0) && $multiplier == 0
-          cursor_bol
-          return 0
-        end
-        # storing digits entered so we can multiply motion actions
-        $multiplier *= 10 ; $multiplier += (ch-48)
-        return 0
-        when ?\C-c.getbyte(0)
-          $multiplier = 0
-          return 0
-        else
-          # check for bindings, these cannot override above keys since placed at end
-          begin
-            ret = process_key ch, self
-            $multiplier = 0
-            bounds_check
-            ## If i press C-x > i get an alert from rwidgets which blacks the screen
-            # if i put a padrefresh here it becomes okay but only for one pad,
-            # i still need to do it for all pads.
-          rescue => err
-            $log.error " TEXTPAD ERROR INS #{err} "
-            $log.debug(err.backtrace.join("\n"))
-            textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
-          end
-          ## NOTE if textpad does not handle the event and it goes to form which pops
-          # up a messagebox, then padrefresh does not happen, since control does not 
-          # come back here, so a black rect is left on screen
-          # please note that a bounds check will not happen for stuff that 
-          # is triggered by form, so you'll have to to it yourself or 
-          # call setrowcol explicity if the cursor is not updated
-          return :UNHANDLED if ret == :UNHANDLED
-        end
-      rescue => err
-        $log.error " TEXTPAD ERROR 591 #{err} "
-        $log.debug( err) if err
-        $log.debug(err.backtrace.join("\n")) if err
-        textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
-        $error_message.value = ""
-      ensure
-        padrefresh
-        Ncurses::Panel.update_panels
-      end
-      return 0
-    end # while loop
-
-    #
-    # event when user hits enter on a row, user would bind :PRESS
-    #
-    def fire_action_event
-      return if @list.nil? || @list.size == 0
-      require 'canis/core/include/ractionevent'
-      aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
-      fire_handler :PRESS, aev
-    end
-    #
-    # returns current value (what cursor is on)
-    def current_value
-      @list[@current_index]
-    end
-    # 
-    # execute binding when a row is entered, used more in lists to display some text
-    # in a header or footer as one traverses
-    #
-    def on_enter_row arow
-      return nil if @list.nil? || @list.size == 0
-
-      # is this the right place to put it, otherwise it requires a repaint_all and repaint_required
-      #print_foot if @print_footer
-      @repaint_footer_required = true
-
-      ## can this be done once and stored, and one instance used since a lot of traversal will be done
-      require 'canis/core/include/ractionevent'
-      aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
-      fire_handler :ENTER_ROW, aev
-      #@repaint_required = true
-    end
-
-    # destroy the pad, this needs to be called from somewhere, like when the app
-    # closes or the current window closes , or else we could have a seg fault
-    # or some ugliness on the screen below this one (if nested).
-
-    # Now since we use get_pad from window, upon the window being destroyed,
-    # it will call this. Else it will destroy pad
-    def destroy
-      FFI::NCurses.delwin(@pad) if @pad # when do i do this ? FIXME
-      @pad = nil
-    end
-    # 
-    # return true if the given row is visible
-    def is_visible? index
-      j = index - @prow #@toprow
-      j >= 0 && j <= @scrollatrows
-    end
-    #
-    # called when this widget is entered, by form
-    def on_enter
-      set_form_row
-    end
-    # called by form
-    def set_form_row
-      setrowcol @lastrow, @lastcol
-    end
-    # called by form
-    def set_form_col
-    end
-
-    private
-    
-    # check that current_index and prow are within correct ranges
-    # sets row (and someday col too)
-    # sets repaint_required
-
-    def bounds_check
-      r,c = rowcol
-      @current_index = 0 if @current_index < 0
-      @current_index = @list.count()-1 if @current_index > @list.count()-1
-      ensure_visible
-
-      check_prow
-      #$log.debug "XXX: PAD BOUNDS ci:#{@current_index} , old #{@oldrow},pr #{@prow}, max #{@maxrow} pcol #{@pcol} maxcol #{@maxcol}"
-      @crow = @current_index + r - @prow
-      @crow = r if @crow < r
-      # 2 depends on whetehr suppressborders
-      if @suppress_borders
-        @crow = @row + @height -1 if @crow >= r + @height -1
-      else
-        @crow = @row + @height -2 if @crow >= r + @height -2
-      end
-      setrowcol @crow, @curpos+c
-      lastcurpos @crow, @curpos+c
-      if @oldindex != @current_index
-        on_leave_row @oldindex if respond_to? :on_leave_row
-        on_enter_row @current_index
-        @oldindex = @current_index
-      end
-      if @oldrow != @prow || @oldcol != @pcol
-        # only if scrolling has happened.
-        @repaint_required = true
-      end
-    end
-    # 
-    # save last cursor position so when reentering, cursor can be repositioned
-    def lastcurpos r,c
-      @lastrow = r
-      @lastcol = c
-    end
-
-
-    # check that prow and pcol are within bounds
-    #
-    def check_prow
-      @prow = 0 if @prow < 0
-      @pcol = 0 if @pcol < 0
-
-      cc = @list.count
-
-      if cc < @rows
-        @prow = 0
-      else
-        maxrow = cc - @rows - 1
-        if @prow > maxrow
-          @prow = maxrow
-        end
-      end
-      # we still need to check the max that prow can go otherwise
-      # the pad shows earlier stuff.
-      # 
-      return
-    end
-    public
-    ## 
-    # Ask user for string to search for
-    # This uses the dialog, but what if user wants the old style.
-    # Isn't there a cleaner way to let user override style, or allow user
-    # to use own UI for getting pattern and then passing here.
-    # @param str default nil. If not passed, then user is prompted using get_string dialog
-    #    This allows caller to use own method to prompt for string such as 'get_line' or 'rbgetstr' /
-    #    'ask()'
-    def ask_search str=nil
-      # the following is a change that enables callers to prompt for the string
-      # using some other style, basically the classical style and send the string in
-      str = get_string("Enter pattern: ") unless str
-      return if str.nil? 
-      str = @last_regex if str == ""
-      return if str == ""
-      ix = next_match str
-      return unless ix
-      @last_regex = str
-
-      #@oldindex = @current_index
-      @current_index = ix[0]
-      @curpos = ix[1]
-      ensure_visible
-    end
-    ## 
-    # Find next matching row for string accepted in ask_search
-    #
-    def find_more
-      return unless @last_regex
-      ix = next_match @last_regex
-      return unless ix
-      #@oldindex = @current_index
-      @current_index = ix[0]
-      @curpos = ix[1]
-      ensure_visible
-    end
-
-    ## 
-    # Find the next row that contains given string
-    # @return row and col offset of match, or nil
-    # @param String to find
-    def next_match str
-      first = nil
-      ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
-      ## =~ does not give an error, but it does not work.
-      @list.each_with_index do |line, ix|
-        col = line.index str
-        if col
-          first ||= [ ix, col ]
-          if ix > @current_index
-            return [ix, col]
-          end
-        end
-      end
-      return first
-    end
-    ## 
-    # Ensure current row is visible, if not make it first row
-    # NOTE - need to check if its at end and then reduce scroll at rows, check_prow does that
-    # 
-    # @param current_index (default if not given)
-    #
-    def ensure_visible row = @current_index
-      unless is_visible? row
-          @prow = @current_index
-      end
-    end
-    #
     # jumps cursor to next work, like vim's w key
     #
     def forward_word
@@ -1005,7 +743,338 @@ module Canis
       @pcol = 0
       @curpos = 0
     end
+    # 
+    # return true if the given row is visible
+    def is_visible? index
+      j = index - @prow #@toprow
+      j >= 0 && j <= @scrollatrows
+    end
+#---- Section: movement end -----# }
+#---- Section: internal stuff start -----# {
+    #
+    def handle_key ch
+      return :UNHANDLED unless @list
 
+
+      @oldrow = @prow
+      @oldcol = @pcol
+      $log.debug "XXX: PAD got #{ch} prow = #{@prow}"
+      begin
+        case ch
+      when ?0.getbyte(0)..?9.getbyte(0)
+        if ch == ?0.getbyte(0) && $multiplier == 0
+          cursor_bol
+          return 0
+        end
+        # storing digits entered so we can multiply motion actions
+        $multiplier *= 10 ; $multiplier += (ch-48)
+        return 0
+        when ?\C-c.getbyte(0)
+          $multiplier = 0
+          return 0
+        else
+          # check for bindings, these cannot override above keys since placed at end
+          begin
+            ret = process_key ch, self
+            $multiplier = 0
+            bounds_check
+            ## If i press C-x > i get an alert from rwidgets which blacks the screen
+            # if i put a padrefresh here it becomes okay but only for one pad,
+            # i still need to do it for all pads.
+          rescue => err
+            $log.error " TEXTPAD ERROR INS #{err} "
+            $log.debug(err.backtrace.join("\n"))
+            textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
+          end
+          ## NOTE if textpad does not handle the event and it goes to form which pops
+          # up a messagebox, then padrefresh does not happen, since control does not 
+          # come back here, so a black rect is left on screen
+          # please note that a bounds check will not happen for stuff that 
+          # is triggered by form, so you'll have to to it yourself or 
+          # call setrowcol explicity if the cursor is not updated
+          return :UNHANDLED if ret == :UNHANDLED
+        end
+      rescue => err
+        $log.error " TEXTPAD ERROR 591 #{err} "
+        $log.debug( err) if err
+        $log.debug(err.backtrace.join("\n")) if err
+        textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
+        $error_message.value = ""
+      ensure
+        padrefresh
+        Ncurses::Panel.update_panels
+      end
+      return 0
+    end # while loop
+
+    #
+    # event when user hits enter on a row, user would bind :PRESS
+    #
+    def fire_action_event
+      return if @list.nil? || @list.size == 0
+      require 'canis/core/include/ractionevent'
+      aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
+      fire_handler :PRESS, aev
+    end
+    # 
+    # execute binding when a row is entered, used more in lists to display some text
+    # in a header or footer as one traverses
+    #
+    def on_enter_row arow
+      return nil if @list.nil? || @list.size == 0
+
+      # is this the right place to put it, otherwise it requires a repaint_all and repaint_required
+      #print_foot if @print_footer
+      @repaint_footer_required = true
+
+      ## can this be done once and stored, and one instance used since a lot of traversal will be done
+      require 'canis/core/include/ractionevent'
+      aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
+      fire_handler :ENTER_ROW, aev
+      #@repaint_required = true
+    end
+
+    #
+    # called when this widget is entered, by form
+    def on_enter
+      set_form_row
+    end
+    # called by form
+    def set_form_row
+      setrowcol @lastrow, @lastcol
+    end
+    # called by form
+    def set_form_col
+    end
+
+    private
+    
+    # check that current_index and prow are within correct ranges
+    # sets row (and someday col too)
+    # sets repaint_required
+
+    def bounds_check
+      r,c = rowcol
+      @current_index = 0 if @current_index < 0
+      @current_index = @list.count()-1 if @current_index > @list.count()-1
+      ensure_visible
+
+      check_prow
+      #$log.debug "XXX: PAD BOUNDS ci:#{@current_index} , old #{@oldrow},pr #{@prow}, max #{@maxrow} pcol #{@pcol} maxcol #{@maxcol}"
+      @crow = @current_index + r - @prow
+      @crow = r if @crow < r
+      # 2 depends on whetehr suppressborders
+      if @suppress_borders
+        @crow = @row + @height -1 if @crow >= r + @height -1
+      else
+        @crow = @row + @height -2 if @crow >= r + @height -2
+      end
+      setrowcol @crow, @curpos+c
+      lastcurpos @crow, @curpos+c
+      if @oldindex != @current_index
+        on_leave_row @oldindex if respond_to? :on_leave_row
+        on_enter_row @current_index
+        @oldindex = @current_index
+      end
+      if @oldrow != @prow || @oldcol != @pcol
+        # only if scrolling has happened.
+        @repaint_required = true
+      end
+    end
+    # 
+    # save last cursor position so when reentering, cursor can be repositioned
+    def lastcurpos r,c
+      @lastrow = r
+      @lastcol = c
+    end
+
+
+    # check that prow and pcol are within bounds
+    #
+    def check_prow
+      @prow = 0 if @prow < 0
+      @pcol = 0 if @pcol < 0
+
+      cc = @list.count
+
+      if cc < @rows
+        @prow = 0
+      else
+        maxrow = cc - @rows - 1
+        if @prow > maxrow
+          @prow = maxrow
+        end
+      end
+      # we still need to check the max that prow can go otherwise
+      # the pad shows earlier stuff.
+      # 
+      return
+    end
+    def repaint
+      unless @__first_time
+        __calc_dimensions
+        @__first_time = true
+      end
+      return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32 
+
+      ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
+      # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
+      # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
+      # it would get rejected. UNfortunately this may happen more often we want, but we never know
+      # when something pops up on the screen.
+      unless @repaint_required
+        print_foot if @repaint_footer_required  # set in on_enter_row
+        padrefresh 
+        return 
+      end
+      # I can't recall why we are doing this late. Is the rreason relevant any longer
+      # Some methods that expect data are crashing like tablewidgets model_row
+      _convert_formatted
+
+      @window ||= @graphic
+      populate_pad if @_populate_needed
+      #HERE we need to populate once so user can pass a renderer
+
+      _do_borders
+
+      padrefresh
+      Ncurses::Panel.update_panels
+      @repaint_required = false
+      @repaint_all = false
+    end
+
+    def _do_borders
+      unless @suppress_borders
+        if @repaint_all
+          ## XXX im not getting the background color.
+          #@window.print_border_only @top, @left, @height-1, @width, $datacolor
+          clr = get_color $datacolor, @color, @bgcolor
+          #@window.print_border @top, @left, @height-1, @width, clr
+          @window.print_border_only @top, @left, @height-1, @width, clr
+          print_title
+
+          @repaint_footer_required = true if @oldrow != @current_index 
+          print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
+
+          @window.wrefresh
+        end
+      end
+    end
+    def _convert_formatted
+      if @formatted_text
+
+        l = Canis::Utils.parse_formatted_text(@color_parser,
+                                               @formatted_text)
+
+        text(l)
+        @formatted_text = nil
+      end
+    end
+
+    #
+    # key mappings
+    #
+    def map_keys
+      @mapped_keys = true
+      bind_key([?g,?g], 'goto_start'){ goto_start } # mapping double keys like vim
+      bind_key(279, 'goto_start'){ goto_start } 
+      bind_keys([?G,277], 'goto end'){ goto_end } 
+      bind_keys([?k,KEY_UP], "Up"){ up } 
+      bind_keys([?j,KEY_DOWN], "Down"){ down } 
+      bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down } 
+      bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
+      bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward } 
+      bind_keys([?\C-b,339]){ scroll_backward } 
+      # the next one invalidates the single-quote binding for bookmarks
+      #bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
+      bind_key(?/, :ask_search)
+      bind_key(?n, :find_more)
+      bind_key([?\C-x, ?>], :scroll_right)
+      bind_key([?\C-x, ?<], :scroll_left)
+      bind_key(?\M-l, :scroll_right)
+      bind_key(?\M-h, :scroll_left)
+      bind_key(?L, :bottom_of_window)
+      bind_key(?M, :middle_of_window)
+      bind_key(?H, :top_of_window)
+      bind_key(?w, :forward_word)
+      bind_key(?b, :backward_word)
+      bind_key(?l, :cursor_forward)
+      bind_key(?h, :cursor_backward)
+      bind_key(?$, :cursor_eol)
+      bind_key(KEY_ENTER, :fire_action_event)
+    end
+# ----------- end internal stuff --------------- }
+    public
+# ---- Section search related start ----- {
+    ## 
+    # Ask user for string to search for
+    # This uses the dialog, but what if user wants the old style.
+    # Isn't there a cleaner way to let user override style, or allow user
+    # to use own UI for getting pattern and then passing here.
+    # @param str default nil. If not passed, then user is prompted using get_string dialog
+    #    This allows caller to use own method to prompt for string such as 'get_line' or 'rbgetstr' /
+    #    'ask()'
+    def ask_search str=nil
+      # the following is a change that enables callers to prompt for the string
+      # using some other style, basically the classical style and send the string in
+      str = get_string("Enter pattern: ") unless str
+      return if str.nil? 
+      str = @last_regex if str == ""
+      return if str == ""
+      ix = next_match str
+      return unless ix
+      @last_regex = str
+
+      #@oldindex = @current_index
+      @current_index = ix[0]
+      @curpos = ix[1]
+      ensure_visible
+    end
+    ## 
+    # Find next matching row for string accepted in ask_search
+    #
+    def find_more
+      return unless @last_regex
+      ix = next_match @last_regex
+      return unless ix
+      #@oldindex = @current_index
+      @current_index = ix[0]
+      @curpos = ix[1]
+      ensure_visible
+    end
+
+    ## 
+    # Find the next row that contains given string
+    # @return row and col offset of match, or nil
+    # @param String to find
+    def next_match str
+      first = nil
+      ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
+      ## =~ does not give an error, but it does not work.
+      @list.each_with_index do |line, ix|
+        col = line.index str
+        if col
+          first ||= [ ix, col ]
+          if ix > @current_index
+            return [ix, col]
+          end
+        end
+      end
+      return first
+    end
+    ## 
+    # Ensure current row is visible, if not make it first row
+    # NOTE - need to check if its at end and then reduce scroll at rows, check_prow does that
+    # 
+    # @param current_index (default if not given)
+    #
+    def ensure_visible row = @current_index
+      unless is_visible? row
+          @prow = @current_index
+      end
+    end
+
+    # ---- Section search related end ----- }
     ## some general methods for highlighting a row or changing attribute. However, these
     # will change the moment panning is done, or a repaint happens.
     # If these should be maintained then they should be called from the repaint method
@@ -1023,65 +1092,9 @@ module Canis
       FFI::NCurses.mvwchgat(@pad, y=r, x=c, @width-2, att, acolor, nil)
     end
 
-    ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
-    #    formatting of data
-    #    But what if data is not formatted. This imposes a severe limitation. listbox does have linewise
-    #    operations, so lets try them
     #
-    ## append a row to the list
-    # @deprecated pls use << or push as per Array semantics
-    def append text
-      raise "append: deprecated pls use << or push as per Array semantics"
-      @list ||= []
-      @list.push text
-      fire_dimension_changed
-      self
-    end
-    # @deprecated : row_count used just for compat, use length or size
-    def row_count ; @list.length ; end  
-
-    ## ------ LIST / ARRAY OPERATIONS ----
-    # All multirow widgets must use Array semantics 2014-04-10 - 17:29 
-    # NOTE some operations will make selected indices in selection modules invalid
-    # clear will need to clear indices, delete_at and insert may need to also adjust
-    # selection or focus index/es.
-    #
-    # delegate some operations to Array
-    # ---- operations that reference Array, no modifications
-    def_delegators :@list, :include?, :each, :values, :size, :length, :[]
-
-    # ---- operations that modify data
-    # delegate some modify operations to Array: insert, clear, delete_at, []= <<
-    # However, we should check if content array is nil ?
-    # fire_dim is called, although it is not required in []=
-    %w[ insert delete_at << push].each { |e| 
-      eval %{
-      def #{e}(*args)
-        @list ||= []
-        fire_dimension_changed
-        @list.send(:#{e}, *args)
-        self
-      end
-      }
-    }
-    # clear all items in the object.
-    # NOTE: requires to be separate since init_vars is called to reset index of focus etc.
-    # Also, listbox will extend this to clear selected_indices
-    def clear
-      return unless @list
-      @list.clear
-      fire_dimension_changed
-      init_vars
-    end
-    # update the value at index with given value, returning self
-    def []=(index, val)
-      @list[index]=val
-      fire_row_changed index
-      self
-    end
-    #
-  end  # class textpad
-
+  end  # class textpad }
+# renderer {
   # a test renderer to see how things go
   class DefaultFileRenderer
     #
@@ -1128,4 +1141,5 @@ module Canis
 
     end
   end
-end
+# renderer }
+end # mod
