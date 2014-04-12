@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 21:23
+#  Last update: 2014-04-13 00:07
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -473,15 +473,19 @@ module Canis
     # ---- Section data related end }
 
     # print footer containing line and position
-    # XXX UNTESTED FiXME not updated since it requires repaint_all to be true
     def print_foot #:nodoc:
       return unless @print_footer
       if @list_footer
-        footer = @list_footer.text(self)
-        footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
-        #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-        $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-        @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
+        if false
+          # if we want to print ourselves
+          footer = @list_footer.text(self)
+          footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
+          #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+          $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+          @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
+        end
+        # use default print method which only prints on left
+        @list_footer.print self
       end
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
@@ -828,8 +832,6 @@ module Canis
     def on_enter_row arow
       return nil if @list.nil? || @list.size == 0
 
-      # is this the right place to put it, otherwise it requires a repaint_all and repaint_required
-      #print_foot if @print_footer
       @repaint_footer_required = true
 
       ## can this be done once and stored, and one instance used since a lot of traversal will be done
