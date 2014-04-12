@@ -1,17 +1,29 @@
 #!/usr/bin/env ruby
+# header {
+# vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: table.rb
 #  Description: A tabular widget based on textpad
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 00:11
+#  Last update: 2014-04-12 10:53
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
-# CHANGES: 
+# == CHANGES: 
 #  - changed @content to @list since all multirow wids and utils expect @list
 #  - changed name from tablewidget to table
+#
+# == TODO
+#   _ compare to tabular_widget and see what's missing
+#   _ filtering rows without losing data
+#   . selection stuff
+#   x test with resultset from sqlite to see if we can use Array or need to make model
+#     should we use a datamodel so resultsets can be sent in, what about tabular
+#   _ header to handle events ?
+#  header }
+
 require 'logger'
 require 'canis'
 require 'canis/core/widgets/textpad'
@@ -21,16 +33,10 @@ require 'canis/core/widgets/textpad'
 # is based on textview etc which have a lot of complex processing and rendering
 # whereas textpad is quite simple. It is easy to just add one's own renderer
 # making the code base simpler to understand and maintain.
-# TODO
-#   _ compare to tabular_widget and see what's missing
-#   _ filtering rows without losing data
-#   . selection stuff
-#   x test with resultset from sqlite to see if we can use Array or need to make model
-#     should we use a datamodel so resultsets can be sent in, what about tabular
-#   _ header to handle events ?
 #
 #
 module Canis
+# structures {
   # column data, one instance for each column
   # index is the index in the data of this column. This index will not change.
   # Order of printing columns is determined by the ordering of the objects.
@@ -69,7 +75,8 @@ module Canis
       @current_index == @max_index
     end
   end
-
+# structures }
+# sorter {
     # This is our default table row sorter.
     # It does a multiple sort and allows for reverse sort also.
     # It's a pretty simple sorter and uses sort, not sort_by.
@@ -180,6 +187,9 @@ module Canis
         @sort_keys = list
       end
     end #class
+
+    # sorter }
+    # renderer {
   #
   # TODO see how jtable does the renderers and columns stuff.
   #
@@ -234,10 +244,6 @@ module Canis
         fmt = nil
         field = nil
         # we need to loop through chash and get index from it and get that row from r
-        #r.each_with_index { |e, i| 
-        #c = @chash[i]
-        #@chash.each_with_index { |c, i| 
-        #next if c.hidden
         each_column {|c,i|
           e = r[c.index]
           w = c.width
@@ -326,8 +332,6 @@ module Canis
       # row in one shot
       def check_colors
         each_column {|c,i|
-          #@chash.each_with_index { |c, i| 
-          #next if c.hidden
           if c.color || c.bgcolor || c.attrib
             @_check_coloring = true
             return
@@ -345,9 +349,6 @@ module Canis
         # the incoming data is already in the order of display based on chash,
         # so we cannot run chash on it again, so how do we get the color info
         _offset = 0
-        # we need to get coffsets here FIXME
-        #@chash.each_with_index { |c, i| 
-        #next if c.hidden
         each_column {|c,i|
           text = r[i]
           color = c.color
@@ -365,6 +366,7 @@ module Canis
         }
       end
     end
+# renderer }
 
   # If we make a pad of the whole thing then the columns will also go out when scrolling
   # So then there's no point storing columns separately. Might as well keep in content
@@ -640,15 +642,8 @@ module Canis
       ret
     end
 
-    ## 
-    # insert entire database in one shot
-    # WARNING: overwrites columns if put there, should contain columns already as in CSV data
-    # @param lines is an array or arrays
-    def OLDtext lines, fmt=:none
-      _init_model lines[0]
-      fire_dimension_changed
-      super
-    end
+    #------- data modification methods ------#
+
     # I am assuming the column has been set using +columns=+
     # Now only data is being sent in
     # NOTE : calling set_content sends to TP's +text()+ which resets @list
@@ -689,18 +684,43 @@ module Canis
       fire_dimension_changed
       self
     end
+    alias :<< :add
+
+    # delete a data row
+    # NOTE : adjusts for the header 2014-04-12 - 10:36 
     def delete_at ix
       return unless @list
       fire_dimension_changed
-      @list.delete_at ix
+      @list.delete_at(ix + @_header_adjustment)
     end
-    alias :<< :add
     #
     # clear the list completely
     def clear
       @selected_indices.clear
       super
     end
+
+    # get the value at the cell at row and col
+    # @return String
+    def get_value_at row,col
+      actrow = row + @_header_adjustment
+      @list[actrow, col]
+    end
+
+    # set value at the cell at row and col
+    # @param int row
+    # @param int col
+    # @param String value
+    # @return self
+    def set_value_at row,col,val
+      actrow = row + @_header_adjustment
+      @list[actrow , col] = val
+      fire_row_changed actrow
+      self
+    end
+    
+    #------- column related methods ------#
+    #
     # convenience method to set width of a column
     # @param index of column
     # @param width
