@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-13 00:07
+#  Last update: 2014-04-13 17:06
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -475,6 +475,9 @@ module Canis
     # print footer containing line and position
     def print_foot #:nodoc:
       return unless @print_footer
+      footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+=begin
       if @list_footer
         if false
           # if we want to print ourselves
@@ -487,6 +490,7 @@ module Canis
         # use default print method which only prints on left
         @list_footer.print self
       end
+=end
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
 
@@ -502,6 +506,7 @@ module Canis
 
    #---- Section: movement -----# {
     # goto first line of file
+    public
     def goto_start
       #@oldindex = @current_index
       $multiplier ||= 0
@@ -833,6 +838,7 @@ module Canis
       return nil if @list.nil? || @list.size == 0
 
       @repaint_footer_required = true
+      #alert "on_enter rr #{@repaint_required}, #{@repaint_all} oi #{@oldindex}, ci #{@current_index}, or #{@oldrow}  "
 
       ## can this be done once and stored, and one instance used since a lot of traversal will be done
       require 'canis/core/include/ractionevent'
@@ -935,6 +941,9 @@ module Canis
         padrefresh 
         return 
       end
+      # if repaint is required, print_foot not called. unless repaint_all is set, and that 
+      # is rarely set.
+      
       # I can't recall why we are doing this late. Is the rreason relevant any longer
       # Some methods that expect data are crashing like tablewidgets model_row
       _convert_formatted
@@ -944,6 +953,7 @@ module Canis
       #HERE we need to populate once so user can pass a renderer
 
       _do_borders
+      print_foot if @repaint_footer_required  # if still not done
 
       padrefresh
       Ncurses::Panel.update_panels
@@ -961,7 +971,8 @@ module Canis
           @window.print_border_only @top, @left, @height-1, @width, clr
           print_title
 
-          @repaint_footer_required = true if @oldrow != @current_index 
+          # oldrow changed to oldindex 2014-04-13 - 16:55 
+          @repaint_footer_required = true if @oldindex != @current_index 
           print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
 
           @window.wrefresh
