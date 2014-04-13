@@ -120,6 +120,8 @@ def resize
   tab.width = (tab.width_pc * cols).floor
 end
 
+=begin
+
 lf = Canis::ListFooter.new :attrib => BOLD
 lf.command(lf){ |comp, lf|
   f = lf[0]
@@ -134,6 +136,7 @@ lf.command(lf){ |comp, lf|
 lf.command_right(){ |comp|
   " [#{comp.size} tasks]"
 }
+=end
   header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"Fat-free !", 
       :color => :black, :bgcolor => :green #, :attr => :bold 
   message "Press F10 to exit, F1 for help, : for menu"
@@ -148,11 +151,12 @@ lf.command_right(){ |comp|
   lines.each { |l| arr << l.split("|") }
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
     tw = table :print_footer => true, :name => "tab"
-    tw.columns h
+    tw.filename(file, :delimiter => '|', :columns => h)
+    #tw.columns h
+    #tw.text arr
     tw.column_align 0, :right
-    tw.text arr
     tw.model_row 1
-    tw.list_footer lf
+    #tw.list_footer lf
     tw.estimate_column_widths
     #tw.selection_mode :single
     # set_content goes to textpads text which overwrites @list
