@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-13 22:58
+#  Last update: 2014-04-14 00:14
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -416,11 +416,12 @@ module Canis
       self.extend DefaultListSelection
       super
       create_default_renderer unless @renderer # 2014-04-10 - 11:01 
+      # NOTE listselection takes + and - for ask_select
       $log.debug "XXX: jtable constructor after super"
       bind_key(?w, "next column") { self.next_column }
       bind_key(?b, "prev column") { self.prev_column }
-      bind_key(?-, "contract column") { self.contract_column }
-      bind_key(?+, "expand column") { self.expand_column }
+      bind_key(?\M-\-, "contract column") { self.contract_column }
+      bind_key(?\M-+, "expand column") { self.expand_column }
       bind_key(?=, "expand column to width") { self.expand_column_to_width }
       bind_key(?\M-=, "expand column to width") { self.expand_column_to_max_width }
       bind_key(?\C-s, "Save as") { self.save_as(nil) }
