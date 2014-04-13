@@ -73,8 +73,10 @@ end
 def edit_row tw
   row = tw.current_value
   h   = tw.columns
-  _edit h, row, " Edit "
-  tw.repaint_required true
+  ret = _edit h, row, " Edit "
+  if ret
+    tw[tw.current_index] = row
+  end
 end
 def insert_row tw
   h   = tw.columns
@@ -82,8 +84,7 @@ def insert_row tw
   h.each { |e| row << "" }
   ret = _edit h, row, "Insert"
   if ret
-    tw.insert tw.real_index(), row
-    tw.repaint_required true
+    tw.insert tw.current_index, row
   end
 end
 
@@ -146,9 +147,7 @@ lf.command_right(){ |comp|
 
   h = %w[ Id Title Priority Status]
   file = "data/table.txt"
-  lines = File.open(file,'r').read.split("\n") 
-  arr = []
-  lines.each { |l| arr << l.split("|") }
+
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
     tw = table :print_footer => true, :name => "tab"
     tw.filename(file, :delimiter => '|', :columns => h)
