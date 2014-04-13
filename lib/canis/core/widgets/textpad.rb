@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-13 17:06
+#  Last update: 2014-04-13 19:36
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -210,7 +210,7 @@ module Canis
       return if ix >= @list.length
       clear_row @pad, ix
       render @pad, ix, @list[ix]
-      # may need to call padrefresh TODO TESTING
+    
     end
 # ---- end pad related ----- }
 # ---- Section render related  ----- {
