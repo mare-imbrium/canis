@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-12 00:24
+#  Last update: 2014-04-14 01:00
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -197,21 +197,23 @@ module Canis
       end
     end
     alias :is_selected? is_row_selected?
-    # FIXME add adjustment and test
+   
+    # after selecting, traverse selections forward
     def goto_next_selection
       return if selected_rows().length == 0 
       row = selected_rows().sort.find { |i| i > @obj.current_index }
       row ||= @obj.current_index
-      @obj.current_index = row
-      @repaint_required = true # fire list_select XXX
+      #@obj.current_index = row
+      @obj.goto_line row
     end
-    # FIXME add adjustment and test
+    
+    # after selecting, traverse selections backward
     def goto_prev_selection
       return if selected_rows().length == 0 
       row = selected_rows().sort{|a,b| b <=> a}.find { |i| i < @obj.current_index }
       row ||= @obj.current_index
-      @obj.current_index = row
-      @repaint_required = true # fire list_select XXX
+      #@obj.current_index = row
+      @obj.goto_line row
     end
     # add the following range to selected items, unless already present
     # should only be used if multiple selection interval
@@ -272,6 +274,7 @@ module Canis
     # selects all rows with the values given, leaving existing selections
     # intact. Typically used after accepting search criteria, and getting a list of values
     # to select (such as file names). Will not work with tables (array or array)
+    # TODO is this even needed, scrap
     def select_values values
       return unless values
       values.each do |val|
@@ -279,6 +282,7 @@ module Canis
         add_row_selection_interval row, row unless row.nil?
       end
     end
+    # TODO is this even needed, scrap
     # unselects all rows with the values given, leaving all other rows intact
     # You can map "-" to ask_select and call this from there.
     #   bind_key(?+, :ask_select) # --> calls select_values
@@ -297,6 +301,7 @@ module Canis
       ret = get_string prompt
       return if ret.nil? || ret ==  ""
       indices = get_matching_indices ret
+      #$log.debug "listselectionmodel: ask_select got matches#{@indices} "
       return if indices.nil? || indices.empty?
       indices.each { |e|
         # will not work if single select !! FIXME
@@ -308,6 +313,8 @@ module Canis
     def get_matching_indices pattern
       matches = []
       @obj.content.each_with_index { |e,i| 
+        # convert to string for tables
+        e = e.to_s unless e.is_a? String
         if e  =~ /#{pattern}/
           matches << i
         end
@@ -341,6 +348,8 @@ module Canis
         @obj.bind_key(?a, 'select_all') {select_all}
         @obj.bind_key(?*, 'invert_selection') { invert_selection }
         @obj.bind_key(?u, :clear_selection)
+        @obj.bind_key([?g,?n], 'goto next selection'){ goto_next_selection } # mapping double keys like vim
+        @obj.bind_key([?g,?p], 'goto prev selection'){ goto_prev_selection } # mapping double keys like vim
       end
       @_header_adjustment ||= 0 #  incase caller does not use
       #@obj._events << :LIST_SELECTION_EVENT unless @obj._events.include? :LIST_SELECTION_EVENT
