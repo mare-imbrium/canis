@@ -43,6 +43,9 @@ module Canis
     end
 
     # supply a default print function. The user program need not call this. It may be overridden
+    # The idea of passing a component at this stage is that one footer can be created for several
+    # tables or text components, each will pass +self+ when calling print.
+    # @param comp : the calling textpad component (usually passed as +self+)
     def print comp
       config = @config
       row = comp.row + comp.height - 1
