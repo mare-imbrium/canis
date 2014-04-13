@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 10:53
+#  Last update: 2014-04-13 17:07
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -276,7 +276,8 @@ module Canis
       # @param text data to print
       def render pad, lineno, str
         #lineno += 1 # header_adjustment
-        return render_header pad, lineno, 0, str if lineno == 0
+        # header_adjustment means columns have been set
+        return render_header pad, lineno, 0, str if lineno == 0 && @source.header_adjustment > 0
         #text = str.join " | "
         #text = @fmstr % str
         text = convert_value_to_text str
@@ -544,6 +545,9 @@ module Canis
     def renderer r
       @renderer = r
     end
+    def header_adjustment
+      @_header_adjustment
+    end
 
   ##
   # getter and setter for columns
@@ -652,6 +656,7 @@ module Canis
       # maybe we can check this out
       # should we not erase data, will user keep one column and resetting data ?
       # set_content assumes data is gone.
+      @list ||= []  # this would work if no columns
       @list.concat( lines)
       fire_dimension_changed
       self
@@ -670,6 +675,24 @@ module Canis
       @list.concat( data)
       fire_dimension_changed
       self
+    end
+    def filename name, _config = {}
+      arr = File.open(name,"r").read.split("\n")
+      lines = []
+      sep = _config[:separator] || _config[:delimiter] || '\t'
+      arr.each { |l| lines << l.split(sep) }
+      cc = _config[:columns]
+      if cc.is_a? Array
+        columns(cc)
+        text(lines)
+      elsif cc
+        columns(lines[0])
+        text(lines[1..-1])
+      else
+        _init_model lines[0]
+        text(lines)
+      end
+
     end
 #
 
@@ -921,6 +944,16 @@ module Canis
           render @pad, ix, line
         }
       end
+    end
+    # print footer containing line and total, overriding textpad which prints column offset also
+    # This is called internally by +repaint()+ but can be overridden for more complex printing.
+    def print_foot
+      return unless @print_footer
+      ha = @_header_adjustment
+      # ha takes into account whether there are headers or not
+      footer = "#{@current_index+1-ha} of #{@list.length-ha} "
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+      @repaint_footer_required = false 
     end
 
   end # class Table
