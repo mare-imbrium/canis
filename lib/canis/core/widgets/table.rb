@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-13 17:07
+#  Last update: 2014-04-13 22:58
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -369,11 +369,31 @@ module Canis
     end
 # renderer }
 
+    #--
   # If we make a pad of the whole thing then the columns will also go out when scrolling
   # So then there's no point storing columns separately. Might as well keep in content
   # so scrolling works fine, otherwise textpad will have issues scrolling.
   # Making a pad of the content but not column header complicates stuff,
   # do we make a pad of that, or print it like the old thing.
+    #++
+    # A table widget containing rows and columns and the ability to resize and hide or align
+    # columns. Also may have first row as column names.
+    #
+    # == NOTE
+    #   The most important methods to use probably are `text()` or `resultset` or `filename` to load
+    #   data. With `text` you will want to first specify column names with `columns()`.
+    #
+    #   +@current_index+ inherited from +Textpad+ continues to be the index of the list that has user's
+    #   focus, and should be used for row operations.
+    #
+    #   In order to use Textpad easily, the first row of the table model is the column names. Data is maintained
+    #   in an Array. Several operations are delegated to Array, or have the same name. You can get the list 
+    #   using `list()` to run other Array operations on it.
+    #
+    #   If you modify the Array directly, you may have to use `fire_row_changed(index)` to reflect the update to 
+    #   a single row. If you delete or add a row, you will have to use `fire_dimension_changed()`. However,
+    #   internal functions do this automatically.
+    #
     require 'canis/core/include/listselectionmodel'
   class Table < TextPad
 
@@ -403,6 +423,7 @@ module Canis
       bind_key(?+, "expand column") { self.expand_column }
       bind_key(?=, "expand column to width") { self.expand_column_to_width }
       bind_key(?\M-=, "expand column to width") { self.expand_column_to_max_width }
+      bind_key(?\C-s, "Save as") { self.save_as(nil) }
       #@list_selection_model ||= DefaultListSelectionModel.new self
       set_default_selection_model unless @list_selection_model
     end
@@ -676,6 +697,24 @@ module Canis
       fire_dimension_changed
       self
     end
+    # Takes the name of a file containing delimited data
+    #  and load it into the table.
+    # This method will load and split the file into the table.
+    # @param name is the file name
+    # @param config is a hash containing:
+    #   - :separator - field separator, default is TAB
+    #   - :columns  - array of column names
+    #                or true - first row is column names
+    #                or false - no columns.
+    #
+    # == NOTE
+    #   if columns is not mentioned, then it defaults to false
+    #
+    # == Example
+    #
+    #     table = Table.new ...
+    #     table.filename 'contacts.tsv', :separator => '|', :columns => true
+    #   
     def filename name, _config = {}
       arr = File.open(name,"r").read.split("\n")
       lines = []
@@ -686,17 +725,37 @@ module Canis
         columns(cc)
         text(lines)
       elsif cc
+        # cc is true, use first row as column names
         columns(lines[0])
         text(lines[1..-1])
       else
+        # cc is false - no columns
         _init_model lines[0]
         text(lines)
       end
+    end
+    alias :load :filename
 
+    # save the table as a file
+    # @param String name of output file. If nil, user is prompted
+    # Currently, tabs are used as delimiter, but this could be based on input
+    # separator, or prompted.
+    def save_as outfile
+      unless outfile
+        outfile = get_string "Enter file name to save as "
+        return unless outfile
+      end
+      File.open(outfile, 'w') {|f| 
+        @list.each {|r|
+          line = r.join "\t"
+          f.puts line
+        }
+      }
     end
 #
 
-      ## add a row to the table
+    ## add a row to the table
+    # The name add will be removed soon, pls use << instead.
     def add array
       unless @list
         # columns were not added, this most likely is the title
@@ -709,12 +768,18 @@ module Canis
     end
     alias :<< :add
 
-    # delete a data row
-    # NOTE : adjusts for the header 2014-04-12 - 10:36 
+    # delete a data row at index 
+    #
+    # NOTE : This does not adjust for header_adjustment. So zero will refer to the header if there is one.
+    #   This is to keep consistent with textpad which does not know of header_adjustment and uses the actual
+    #   index. Usually, programmers will be dealing with +@current_index+
+    #
     def delete_at ix
       return unless @list
+      raise ArgumentError, "Argument must be within 0 and #{@list.length}" if ix < 0 or ix >=  @list.length 
       fire_dimension_changed
-      @list.delete_at(ix + @_header_adjustment)
+      #@list.delete_at(ix + @_header_adjustment)
+      @list.delete_at(ix)
     end
     #
     # clear the list completely
