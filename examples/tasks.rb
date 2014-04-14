@@ -1,27 +1,6 @@
 require 'canis/core/util/app'
-require 'canis/core/widgets/rlist'
+#require 'canis/core/widgets/rlist'
 
-# a simple example of how to get colored row rendering.
-# also see rfe.rb for a more complete example
-class CellRenderer
-  attr_accessor :display_length
-  def repaint g, r, c, crow, content, focus_type, selected
-    color = $datacolor
-    att = NORMAL
-    att = REVERSE if selected
-    color = get_color($datacolor, :yellow, :red) if content =~ /^.1/
-    color = get_color($datacolor, :red, :blue) if content =~ /^.2/
-    color = get_color($datacolor, :white, :black) if content =~ /^.3/
-    color = get_color($datacolor, :green, :black) if content =~ /^.4/
-    color = get_color($datacolor, :red, :black) if content =~ /^.5/
-    color = get_color($datacolor, :cyan, :black) if content =~ /^.6/
-    color = get_color($datacolor, :magenta, :black) if content =~ /^.[7-9]/
-    color = get_color($datacolor, :blue, :black) if content =~ /^x/
-    g.wattron(Ncurses.COLOR_PAIR(color) | att)
-    g.mvwprintw(r, c, "%s", :string, content);
-    g.wattroff(Ncurses.COLOR_PAIR(color) | att)
-  end
-end
 App.new do 
 def resize
   tab = @form.by_name["tasklist"]
@@ -49,12 +28,25 @@ end
     #pri.overwrite_mode = true
     # u,se voerwrite mode for this TODO and catch exception
 
+    # modify the default file renderer
+    dr = DefaultFileRenderer.new
+    dr.insert_mapping /^x/, [:blue, :black]
+    dr.insert_mapping /^.1/, [:yellow, :red]
+    dr.insert_mapping /^.2/, [:red, :blue]
+    dr.insert_mapping /^.3/, [:white, :black]
+    dr.insert_mapping /^.4/, [:green, :black]
+    dr.insert_mapping /^.5/, [:red, :black]
+    dr.insert_mapping /^.6/, [:cyan, :black]
+    dr.insert_mapping /^.[7-9]/, [:magenta, :black]
+
+    $data_modified = false
     lb = listbox :list => alist.sort, :title => "[ todos ]", :name => "tasklist", :row => 1, :height => Ncurses.LINES-4, :width => Ncurses.COLS-1
     lb.should_show_focus = false
-    lb.cell_renderer CellRenderer.new
+    lb.renderer dr
     lb.bind_key(?d, "Delete Row"){ 
       if confirm("Delete #{lb.current_value} ?")
         lb.delete_at lb.current_index 
+        $data_modified = true
         # TODO reposition cursor at 0. use list_data_changed ?
       end
     }
@@ -62,6 +54,7 @@ end
       if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value, :maxlen => 80, :display_length => 70)) != nil)
 
         lb[lb.current_index]=value
+        $data_modified = true
       end
     }
     lb.bind_key(?a, "Add Record"){ 
@@ -91,6 +84,7 @@ end
         _l = w.list
         _l << val
         w.list(_l.sort)
+        $data_modified = true
       end
     else # CANCEL
       #return nil
@@ -105,6 +99,7 @@ end
         line[1,1] = p.to_s
         lb[lb.current_index]=line
         lb.list(lb.list.sort)
+        $data_modified = true
       end
     }
     # increase priority
@@ -116,6 +111,7 @@ end
         line[1,1] = p.to_s
         lb[lb.current_index]=line
         lb.list(lb.list.sort)
+        $data_modified = true
         # how to get the new row of that item and position it there. so one
         # can do consecutive increases or decreases
         # cursor on old row, but current has become zero. FIXME
@@ -128,6 +124,7 @@ end
       line[0,1] = "x"
       lb[lb.current_index]=line
       lb.list(lb.list.sort)
+      $data_modified = true
     }
     # flag task with a single character
     lb.bind_key(?!, 'flag'){ 
@@ -140,6 +137,7 @@ end
         line[0,1] = value[0,1]
         lb[lb.current_index]=line
         lb.list(lb.list.sort)
+        $data_modified = true
       end
     }
   #end # stack
@@ -164,6 +162,7 @@ end
     confirm "Sure you wanna quit?", :default_button => 1
   end
   @window.close_command do
+    if $data_modified
     w = @form.by_name["tasklist"]
     if confirm("Save tasks?", :default_button => 0)
       system("cp #{file} #{file}.bak")
@@ -173,6 +172,7 @@ end
         } 
       } 
     end
+    end # if modif
   end
   
 end # app
