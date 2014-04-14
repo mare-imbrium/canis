@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-10 10:08
+#  Last update: 2014-04-14 20:43
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -12,7 +12,6 @@
 #      - Walter Bender
 #
 #  == TODO
-#     add multirow comps like textview and textarea, list
 #     add blocks that make sense like in app
 #     - what if user does not want form attached - app uses useform ot
 #       to check for this, if current_object don't add form
@@ -30,7 +29,7 @@
 #require 'canis/core/widgets/rlist'
 ## trying out new list based on textpad 2014-04-07 - 00:02 CANIS
 require 'canis/core/widgets/listbox'
-require 'canis/core/widgets/rtextview'
+#require 'canis/core/widgets/rtextview'
 module Canis
   module WidgetShortcuts
     class Ws
@@ -149,7 +148,7 @@ module Canis
       end
       return w
     end
-    def textview config={}, &block
+    def textpad config={}, &block
       events = [ :LEAVE, :ENTER ]
       block_event = events[0]
       #_process_args args, config, block_event, events
@@ -169,6 +168,8 @@ module Canis
       end
       return w
     end
+    # deprecate and move textview soon TODO
+    alias :textview :textpad
     def listbox config={}, &block
       events = [ :PRESS, :ENTER_ROW, :LEAVE, :ENTER ]
       block_event = events[0]
