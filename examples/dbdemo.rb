@@ -248,7 +248,7 @@ App.new do
       if !$current_db
         text = "Select DB first. Press Alt-D"
       end
-      tlist = basiclist :name => "tlist", :list => [text], :title => "Tables", :height => 10,
+      tlist = listbox :name => "tlist", :list => [text], :title => "Tables", :height => 10,
         :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
         :help_text => "Enter to View complete table, Space to select table and view columns",
         :should_show_focus => true,
@@ -266,20 +266,21 @@ App.new do
         # too much confusion between selected and focussed row
         #$current_table = eve.text if $db
       #end
-      clist = basiclist :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
+      clist = listbox :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
         :selection_mode => :multiple,
         :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
         :help_text => "Enter to View selected fields, Space to select columns, w - where, o-order"
       tlist.bind(:LIST_SELECTION_EVENT) do |eve|
         $selected_table = eve.source[eve.firstrow]
         $current_table = $selected_table
-        clist.data = get_column_names $selected_table
+        clist.list( get_column_names $selected_table)
       end
       clist.bind(:PRESS) do |eve|
         # get data of table
         if $selected_table
           cols = "*"
-          c = clist.get_selected_values
+          c = clist.values_at(*clist.selected_indices)
+          c = clist.selected_values
           unless c.empty?
             cols = c.join(",")
           end
@@ -405,7 +406,8 @@ App.new do
         # mismatch between current and selected table
         if $current_table
           cols = "*"
-          c = clist.get_selected_values
+          #c = clist.get_selected_values
+          c = clist.values_at(*clist.selected_indices)
           unless c.empty?
             cols = c.join(",")
           end
