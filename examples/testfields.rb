@@ -152,12 +152,14 @@ if $0 == __FILE__
           @form.handle_key(ch)
 
         rescue FieldValidationException => fve 
-          alert fve.to_s
+          #alert fve.to_s
+          textdialog fve
           
           f = @form.get_current_field
           # lets restore the value
           if f.respond_to? :restore_original_value
             f.restore_original_value
+            #@form.select_field @form.active_index
             @form.repaint
           end
           $error_message.value = ""
@@ -184,7 +186,7 @@ if $0 == __FILE__
     end # catch
   rescue => ex
   ensure
-    $log.debug " -==== EXCEPTION =====-"
+    $log.debug " -==== EXCEPTION =====-" if ex
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
     @window.destroy if !@window.nil?
