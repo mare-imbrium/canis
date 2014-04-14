@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 00:14
+#  Last update: 2014-04-14 13:18
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -512,6 +512,7 @@ module Canis
       #$log.debug " next_column #{c} , #{cp} "
       @curpos = cp if cp
       down() if c < @column_pointer.last_index
+      fire_column_event :ENTER_COLUMN
     end
     # jump cursor to previous column
     # TODO : if cursor goes out of view, then pad should scroll right or left and down
@@ -523,6 +524,15 @@ module Canis
       #$log.debug " prev #{c} , #{cp} "
       @curpos = cp if cp
       up() if c > @column_pointer.last_index
+      fire_column_event :ENTER_COLUMN
+    end
+    # a column traversal has happened. 
+    # FIXME needs to be looked into. is this consistent naming wise and are we using the correct object
+    # In old system it was TABLE_TRAVERSAL_EVENT
+    def fire_column_event eve
+      require 'canis/core/include/ractionevent'
+      aev = TextActionEvent.new self, eve, get_column(@column_pointer.current_index), @column_pointer.current_index, @column_pointer.last_index
+      fire_handler eve, aev
     end
     def expand_column
       x = _convert_curpos_to_column
@@ -742,12 +752,26 @@ module Canis
     # Currently, tabs are used as delimiter, but this could be based on input
     # separator, or prompted.
     def save_as outfile
+      _t = "(all rows)"
+      if @selected_indices.size > 0
+        _t = "(selected rows)"
+      end
       unless outfile
-        outfile = get_string "Enter file name to save as "
+        outfile = get_string "Enter file name to save #{_t} as "
         return unless outfile
       end
+
+      # if there is a selection, then write only selected rows
+      l = nil
+      if @selected_indices.size > 0
+        l = []
+        @list.each_with_index { |v,i| l << v if @selected_indices.include? i }
+      else
+        l = @list
+      end
+
       File.open(outfile, 'w') {|f| 
-        @list.each {|r|
+        l.each {|r|
           line = r.join "\t"
           f.puts line
         }
@@ -845,10 +869,12 @@ module Canis
       #tmce = TableColumnModelEvent.new(ix, newix, self, :MOVE)
       #fire_handler :TABLE_COLUMN_MODEL_EVENT, tmce
     end
+    # TODO
     def add_column tc
       raise "to figure out add_column"
       _invalidate_width_cache
     end
+    # TODO
     def remove_column tc
       raise "to figure out add_column"
       _invalidate_width_cache
@@ -899,7 +925,8 @@ module Canis
       renderer(r)
     end
     def header_row?
-      @prow == 0
+      #@prow == 0
+      @prow == @current_index
     end
 
     def fire_action_event
