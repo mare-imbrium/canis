@@ -8,5 +8,9 @@ require 'canis/core/widgets/textpad'
 require 'canis/core/util/rdialogs'
 
 module Canis
+  # key used to select a row in multiline widgets (earlier was SPACE but conflicted with paging)
+  $row_selector = 'v'.ord
+  # key used to range-select rows in multiline widgets (earlier was CTRL_SPACE )
+  $range_selector = 'V'.ord
   # Your code goes here...
 end
