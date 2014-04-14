@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # header {
-# vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
+# vim: set foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: textpad.rb
 #  Description: A class that displays text using a pad.
@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 19:00
+#  Last update: 2014-04-15 01:29
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -439,7 +439,7 @@ module Canis
     #
     # delegate some operations to Array
     # ---- operations that reference Array, no modifications
-    def_delegators :@list, :include?, :each, :values, :size, :length, :[]
+    def_delegators :@list, :include?, :each, :values_at, :size, :length, :[]
 
     # ---- operations that modify data
     # delegate some modify operations to Array: insert, clear, delete_at, []= <<
@@ -948,7 +948,11 @@ module Canis
       # Some methods that expect data are crashing like tablewidgets model_row
       _convert_formatted
 
+      # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
+      @graphic = @form.window unless @graphic
       @window ||= @graphic
+      raise "Window not set in textpad" unless @window
+
       populate_pad if @_populate_needed
       #HERE we need to populate once so user can pass a renderer
 
