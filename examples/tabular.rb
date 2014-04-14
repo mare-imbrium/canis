@@ -12,10 +12,13 @@ App.new do
         #item :y, :yank
         #item :p, :paste
         item :/, :search
+        item :w, :write
       end
       menu.display_new :title => "Menu"
   end
   # to execute when app_menu is invoked
+  # very tricky , this depends on the keys that have been mapped
+  # Here we are pushing the mapped key to trigger a method.
   def execute_this *cmd
     cmd = cmd[0][0] # extract first letter of command
     cmdi = cmd.getbyte(0)
@@ -29,6 +32,11 @@ App.new do
       @window.ungetch cmd.upcase.getbyte(0)
     when 's'
       @window.ungetch ?\/.getbyte(0)
+    when 'w'
+      # this depends too much on mappings which can change
+      #@window.ungetch ?\C-s.getbyte(0)
+      tw = @form.by_name["tab"]
+      tw.save_as(nil)
     end
   end
 def help_text
@@ -164,6 +172,7 @@ lf.command_right(){ |comp|
     tw.bind_key(?U, 'undo delete') { tw.undo_delete }
     tw.bind_key(?e, 'edit row') {  edit_row tw }
     tw.bind_key(?o, 'insert row') {  insert_row tw }
+    tw.create_default_sorter
   
   end # stack
   status_line :row => FFI::NCurses.LINES-1
