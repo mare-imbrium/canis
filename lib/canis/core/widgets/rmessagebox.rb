@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 03.11.11 - 23:47
+#  Last update: 2014-04-14 23:51
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -208,8 +208,9 @@ module Canis
       brow = @button_row || @suggested_h-4
       available_ht = brow - r + 1
       message_height = [message_height, available_ht].min
-      require 'canis/core/widgets/rtextview'
-      message_label = Canis::TextView.new @form, {:name=>"message_label", :text => message,
+      #require 'canis/core/widgets/rtextview'
+      # replaced 2014-04-14 - 23:51 
+      message_label = Canis::TextPad.new @form, {:name=>"message_label", :text => message,
         :row => r, :col => message_col, :width => display_length, :suppress_borders => true,
         :height => message_height, :bgcolor => bgclr , :color => clr}
       #message_label.set_content message
