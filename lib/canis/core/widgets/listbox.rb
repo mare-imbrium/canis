@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-12 00:18
+#  Last update: 2014-04-14 15:22
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -144,7 +144,7 @@ module Canis
         cp = get_color($datacolor, fg, bg)
       elsif lineno == @obj.current_index
         # print focussed row in bold
-        att = BOLD
+        att = BOLD if @obj.should_show_focus
         # take current index into account as BOLD
         # and oldindex as normal
       end
