@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-09 00:02
+  * Last update: 2014-04-15 01:10
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2175,6 +2175,7 @@ module Canis
     def putch char
       return -1 if !@editable 
       return -1 if !@overwrite_mode && (@buffer.length >= @maxlen)
+      blen = @buffer.length
       if @chars_allowed != nil
         return if char.match(@chars_allowed).nil?
       end
@@ -2187,7 +2188,7 @@ module Canis
         @buffer.insert(@curpos, char)
       end
       oldcurpos = @curpos
-      $log.warn "XXX:  FIELD CURPOS #{@curpos} "
+      $log.warn "XXX:  FIELD CURPOS #{@curpos} blen #{@buffer.length} " #if @curpos > blen
       @curpos += 1 if @curpos < @maxlen
       @modified = true
       #$log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
@@ -2231,7 +2232,12 @@ module Canis
     # @since 1.4.0 2011-10-2 
     def restore_original_value
       @buffer = @original_value.dup
-      #@curpos = 0 # this would require restting setformcol
+      # earlier commented but trying again, since i am getting IndexError in insert 2188
+      # Added next 3 lines to fix issue, now it comes back to beginning.
+      @curpos = 0 # this would require restting setformcol
+      @pcol = 0
+      @form.setrowcol @row, @col
+
       @repaint_required = true
     end
     ## 
