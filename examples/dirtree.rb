@@ -64,6 +64,7 @@ App.new do
         if File.exists? path
           files = Dir.new(path).entries
           files.delete(".")
+          @l.clear_selection
           @l.list files 
           #TODO show all details in filelist
           @current_path = path
@@ -75,15 +76,15 @@ App.new do
     @l = listbox :width_pc => 70, :border_attrib => borderattrib
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
-      message ev.source.text #selected_value
-      _f = File.join(@current_path, ev.source.text)
+      message ev.source.current_value #selected_value
+      _f = File.join(@current_path, ev.source.current_value)
       file_page   _f if ev.type == :INSERT
       #TODO when selects drill down
       #TODO when selecting, sync tree with this
     end
     # on pressing enter, we edit the file using vi or EDITOR
     @l.bind :PRESS  do |ev|
-      _f = File.join(@current_path, ev.source.text)
+      _f = File.join(@current_path, ev.source.current_value)
       file_edit _f if File.exists? _f
     end
   end
