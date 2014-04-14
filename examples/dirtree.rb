@@ -73,7 +73,7 @@ App.new do
     end # select
     @t.expand_node last # 
     @t.mark_parents_expanded last # make parents visible
-    @l = listbox :width_pc => 70, :border_attrib => borderattrib
+    @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       message ev.source.current_value #selected_value
