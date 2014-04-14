@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-13 19:36
+#  Last update: 2014-04-14 19:00
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1003,7 +1003,8 @@ module Canis
       bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down } 
       bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
       bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward } 
-      bind_keys([?\C-b,339]){ scroll_backward } 
+      # adding CTRL_SPACE as back scroll 2014-04-14 
+      bind_keys([0,?\C-b,339]){ scroll_backward } 
       # the next one invalidates the single-quote binding for bookmarks
       #bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
@@ -1117,11 +1118,53 @@ module Canis
 # renderer {
   # a test renderer to see how things go
   class DefaultFileRenderer
+    attr_accessor :default_colors
+
+    def initialize
+      @default_colors = [:white, :black, NORMAL]
+      @pair = get_color($datacolor, @default_colors.first, @default_colors[1])
+    end
+
+    def color_mappings hash
+      @hash = hash
+    end
+    def insert_mapping regex, dim
+      @hash ||= {}
+      @hash[regex] = dim
+    end
+    def match_line line
+      @hash.each_pair {| k , p|
+        if line =~ k
+          return p
+        end
+      }
+      return @default_colors
+    end
+    def render pad, lineno, text
+      if @hash
+        dim = match_line text
+        fg = dim.first
+        bg = dim[1] || @default_colors[1]
+        if dim.size == 3
+          att = dim.last
+        else
+          att = @default_colors.last
+        end
+        cp = get_color($datacolor, fg, bg)
+      else
+        cp = @pair
+        att = @default_colors[2]
+      end
+
+      FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
+      FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
+    end
     #
     # @param pad for calling print methods on
     # @param lineno the line number on the pad to print on
     # @param text data to print
-    def render pad, lineno, text
+    def OLDrender pad, lineno, text
       bg = :black
       fg = :white
       att = NORMAL
