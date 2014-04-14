@@ -39,7 +39,7 @@ class SetupMessagebox
                 alert "NO VC! We need to talk"
               end
             end
-            check :text => "Upgraded to Lion", :value => false, :onvalue => "yes", :offvalue => "no" do |eve|
+            check :text => "Upgraded to Mavericks", :value => false, :onvalue => "yes", :offvalue => "no" do |eve|
               unless eve.item.value
                 alert "You goin back to Snow Leopard?"
               end
