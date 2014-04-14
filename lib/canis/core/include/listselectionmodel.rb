@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-14 01:00
+#  Last update: 2014-04-14 13:30
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -104,11 +104,11 @@ module Canis
       when :multiple
         if @selected_indices.include? crow
           @selected_indices.delete crow
-          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          lse = ListSelectionEvent.new(crow, crow, @obj, :DELETE)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_indices << crow
-          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          lse = ListSelectionEvent.new(crow, crow, @obj, :INSERT)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
@@ -118,13 +118,13 @@ module Canis
           @old_selected_index = @selected_index # 2011-10-15 so we can unhighlight
           @selected_index = nil
           @selected_indices.clear
-          lse = ListSelectionEvent.new(crow, crow, self, :DELETE)
+          lse = ListSelectionEvent.new(crow, crow, @obj, :DELETE)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         else
           @selected_indices[0] = crow
           @obj.fire_row_changed(@old_selected_index) if @old_selected_index
           @old_selected_index = crow # 2011-10-15 so we can unhighlight
-          lse = ListSelectionEvent.new(crow, crow, self, :INSERT)
+          lse = ListSelectionEvent.new(crow, crow, @obj, :INSERT)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         end
       end
@@ -155,14 +155,14 @@ module Canis
           min.upto(max){ |i| @selected_indices.delete i 
                          @obj.fire_row_changed i
           }
-          lse = ListSelectionEvent.new(min, max, self, :DELETE)
+          lse = ListSelectionEvent.new(min, max, @obj, :DELETE)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         else
           # add to selection from last_clicked until this one in any direction
           min.upto(max){ |i| @selected_indices << i unless @selected_indices.include?(i) 
                          @obj.fire_row_changed i
           }
-          lse = ListSelectionEvent.new(min, max, self, :INSERT)
+          lse = ListSelectionEvent.new(min, max, @obj, :INSERT)
           @obj.fire_handler :LIST_SELECTION_EVENT, lse
         end
       else
@@ -180,7 +180,7 @@ module Canis
       @selected_index = nil
       @old_selected_index = nil
       #  User should ignore first two params
-      lse = ListSelectionEvent.new(0, arr.size, self, :CLEAR)
+      lse = ListSelectionEvent.new(0, arr.size, @obj, :CLEAR)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
       arr = nil
     end
@@ -225,7 +225,7 @@ module Canis
                      @selected_indices  << i unless @selected_indices.include? i
                      @obj.fire_row_changed i
       }
-      lse = ListSelectionEvent.new(ix0, ix1, self, :INSERT)
+      lse = ListSelectionEvent.new(ix0, ix1, @obj, :INSERT)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
       #$log.debug " DLSM firing LIST_SELECTION EVENT #{lse}"
     end
@@ -237,7 +237,7 @@ module Canis
       arr = @selected_indices.dup # to un highlight
       @selected_indices.delete_if {|x| x >= ix0 and x <= ix1 }
       arr.each {|i| @obj.fire_row_changed(i) }
-      lse = ListSelectionEvent.new(ix0, ix1, self, :DELETE)
+      lse = ListSelectionEvent.new(ix0, ix1, @obj, :DELETE)
       @obj.fire_handler :LIST_SELECTION_EVENT, lse
     end
     # convenience method to select next len rows
