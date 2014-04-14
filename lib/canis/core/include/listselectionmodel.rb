@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-14 13:30
+#  Last update: 2014-04-14 18:58
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -338,11 +338,13 @@ module Canis
     # bindings related to selection
     #
     def list_bindings
-      @obj.bind_key($row_selector || 32, 'toggle selection') { toggle_row_selection }
+      # freeing space for paging, now trying out 'v' as selector. 2014-04-14 - 18:57 
+      @obj.bind_key($row_selector || 'v'.ord, 'toggle selection') { toggle_row_selection }
       
       # the mode may be set to single after the constructor, so this would have taken effect.
       if @obj.selection_mode == :multiple
-        @obj.bind_key(0, 'range select') { range_select }
+      # freeing ctrl_space for back paging, now trying out 'V' as selector. 2014-04-14 - 18:57 
+        @obj.bind_key($range_selector || 'V'.ord, 'range select') { range_select }
         @obj.bind_key(?+, 'ask_select') { ask_select } 
         @obj.bind_key(?-, 'ask_unselect') { ask_unselect } 
         @obj.bind_key(?a, 'select_all') {select_all}
