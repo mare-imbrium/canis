@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # header {
-# vim: set foldmarker={,} foldlevel=0 foldmethod=marker :
+# vim: set foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: table.rb
 #  Description: A tabular widget based on textpad
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 13:18
+#  Last update: 2014-04-14 20:32
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -16,6 +16,7 @@
 #  - changed name from tablewidget to table
 #
 # == TODO
+#   [ ] if no columns, then init_model is called so chash is not cleared.
 #   _ compare to tabular_widget and see what's missing
 #   _ filtering rows without losing data
 #   . selection stuff
@@ -231,6 +232,7 @@ module Canis
       def content_attrib att
         @attrib = att
       end
+      # set column model (Table Renderer)
       def column_model c
         @chash = c
       end
@@ -403,7 +405,7 @@ module Canis
 
     def initialize form = nil, config={}, &block
 
-      # hash of column info objects, for some reason a hash and not an array
+      # array of column info objects
       @chash = []
       # chash should be an array which is basically the order of rows to be printed
       #  it contains index, which is the offset of the row in the data @list
@@ -417,7 +419,6 @@ module Canis
       super
       create_default_renderer unless @renderer # 2014-04-10 - 11:01 
       # NOTE listselection takes + and - for ask_select
-      $log.debug "XXX: jtable constructor after super"
       bind_key(?w, "next column") { self.next_column }
       bind_key(?b, "prev column") { self.prev_column }
       bind_key(?\M-\-, "contract column") { self.contract_column }
@@ -428,6 +429,8 @@ module Canis
       #@list_selection_model ||= DefaultListSelectionModel.new self
       set_default_selection_model unless @list_selection_model
     end
+
+    # set the default selection model as the operational one
     def set_default_selection_model
       @list_selection_model = nil
       @list_selection_model = Canis::DefaultListSelectionModel.new self
@@ -586,6 +589,9 @@ module Canis
   # 2014-04-10 - 13:49 
   # @param [Array] columns to set as Array of Strings
   # @return if no args, returns array of column names as Strings
+    #  NOTE
+    #  Appends columns to array, so it must be set before data, and thus it should
+    #  clear the list
   #
   def columns(*val)
     if val.empty?
@@ -595,10 +601,15 @@ module Canis
       array = val[0]
       @_header_adjustment = 1
       @list ||= []
+      @list.clear
       @list << array
-      # This needs to go elsewhere since this method will not be called if file contains
-      # column titles as first row.
       _init_model array
+
+      # update the names in column model 
+      array.each_with_index { |n,i| 
+        c = get_column(i)
+        c.name = name
+      }
       self
     end
   end
@@ -610,18 +621,7 @@ module Canis
     # is appended into the content array.
     # @deprecated complicated, just use `columns()`
     def columns=(array)
-      @_header_adjustment = 1
-      # I am eschewing using a separate field for columns. This is simpler for textpad.
-      # We always assume first row is columns.
-      #@columns = array
-      # should we just clear column, otherwise there's no way to set the whole thing with new data
-      # but then if we need to change columns what do it do, on moving or hiding a column ?
-      # Maybe we need a separate clear method or remove_all TODO
-      @list ||= []
-      @list << array
-      # This needs to go elsewhere since this method will not be called if file contains
-      # column titles as first row.
-      _init_model array
+      columns(array)
       self
     end
     alias :headings= :columns=
@@ -630,7 +630,9 @@ module Canis
     # size each column based on widths of this row of data.
     # Only changed width if no width for that column
     def _init_model array
-      array.each_with_index { |c,i| 
+      # clear the column data -- this line should be called otherwise previous tables stuff will remain.
+      @chash.clear
+      array.each_with_index { |e,i| 
         # if columns added later we could be overwriting the width
         c = get_column(i)
         c.width ||= 10
@@ -698,15 +700,9 @@ module Canis
     # set column array and data array in one shot
     # Erases any existing content
     def resultset columns, data
-      # FIXME should clear so we don't lose link to renderer, do we ?
       @list = []
-      _init_model columns
-      @list << columns
-      @_header_adjustment = 1
-      
-      @list.concat( data)
-      fire_dimension_changed
-      self
+      columns(columns)
+      text(data)
     end
     # Takes the name of a file containing delimited data
     #  and load it into the table.
@@ -741,6 +737,7 @@ module Canis
         text(lines[1..-1])
       else
         # cc is false - no columns
+        # XXX since columns() is not called, so chash is not cleared.
         _init_model lines[0]
         text(lines)
       end
