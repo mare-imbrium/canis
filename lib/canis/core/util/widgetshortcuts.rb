@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-14 20:43
+#  Last update: 2014-04-16 00:45
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -127,7 +127,7 @@ module Canis
     end
     # editable text area
     def textarea config={}, &block
-      require 'canis/core/widgets/rtextarea'
+      require 'canis/core/widgets/deprecated/rtextarea'
       # TODO confirm events many more
       events = [ :CHANGE,  :LEAVE, :ENTER ]
       block_event = events[0]
