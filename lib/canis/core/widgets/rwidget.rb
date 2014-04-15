@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-15 01:10
+  * Last update: 2014-04-15 19:44
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2233,7 +2233,7 @@ module Canis
     def restore_original_value
       @buffer = @original_value.dup
       # earlier commented but trying again, since i am getting IndexError in insert 2188
-      # Added next 3 lines to fix issue, now it comes back to beginning.
+      # Added next 3 lines to fix issue, now it comes back to beginning. FIX IN RBC
       @curpos = 0 # this would require restting setformcol
       @pcol = 0
       @form.setrowcol @row, @col
