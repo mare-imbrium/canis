@@ -21,6 +21,7 @@ TODO:
 require 'canis/core/widgets/rwidget'
 #require 'canis/deprecated/widgets/rmessagebox'
 require 'canis/core/widgets/rmessagebox'
+require 'canis/core/widgets/listbox'
 
 # -- moving to the new Messagebox 2011-11-19 v 1.5.0
 # Alert user with a one line message
@@ -54,6 +55,9 @@ def textdialog mess, config={}
     button_type :ok
     text mess
   end
+  tv = tp.form.by_name["message_label"]
+  # 2014-04-15 so that ENTER can hit okay without tabbing to button. FIX IN RBC
+  tv.unbind_key(KEY_ENTER)
   tp.run
 end
 # 
@@ -374,10 +378,10 @@ end
 #  Returns index of selected row on pressing ENTER or space
 #  In case of multiple selection, returns array of selected indices only on ENTER
 #  Returns nil if C-q pressed
-#  @since 1.4.1  2011-11-1 
+# 2014-04-15 - 17:05 replaced rlist with listbox
 def popuplist list, config={}, &block
   raise ArgumentError, "Nil list received by popuplist" unless list
-  require 'canis/core/widgets/rlist'
+  #require 'canis/core/widgets/rlist'
 
   max_visible_items = config[:max_visible_items]
   row = config[:row] || 5
@@ -409,8 +413,8 @@ def popuplist list, config={}, &block
   listconfig.delete(:row); 
   listconfig.delete(:col); 
   # trying to pass populists block to listbox
-  lb = Canis::List.new form, listconfig, &block
-  #
+  lb = Canis::Listbox.new form, listconfig, &block
+  
   # added next line so caller can configure listbox with 
   # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
   # 2011-11-11 
@@ -438,7 +442,7 @@ def popuplist list, config={}, &block
           x = lb.current_index unless x
           return [x]
           # if multiple selection, then return list of selected_indices and don't catch 32
-        elsif ch == 32      # if single selection
+        elsif ch == $row_selector      # if single selection, earlier 32
           return lb.current_index if lb.selection_mode != :multiple
         end
         #yield ch if block_given?
