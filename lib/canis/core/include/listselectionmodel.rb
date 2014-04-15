@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-14 21:25
+#  Last update: 2014-04-15 14:51
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -50,7 +50,7 @@ module Canis
       attr_accessor :list_selection_model
       #
       # all operations of selection are delegated to the ListSelectionModel
-      def_delegators :@list_selection_model, :is_row_selected?, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all, :selected_values
+      def_delegators :@list_selection_model, :is_row_selected?, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all, :selected_values, :selected_value
 
 
       obj.instance_exec {
@@ -376,6 +376,12 @@ module Canis
     # return the values selected
     def selected_values
       @obj.values_at(*@selected_indices)
+    end
+    # returns first selection, meant for convenience of single select listboxes
+    # earlier called selected_item
+    def selected_value
+      @obj[@selected_indices.first]
+      #selected_values.first
     end
   end # class
 end # mod Canis
