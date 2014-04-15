@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 15:22
+#  Last update: 2014-04-16 00:25
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -63,6 +63,7 @@ module Canis
       super
       # textpad takes care of enter_row and press
       @_events.push(*[:LEAVE_ROW, :LIST_SELECTION_EVENT])
+      bind_key(?f, 'next row starting with char'){ set_selection_for_char(nil) }
 
       # if user has not specified a selection model, install default
       unless @selection_mode == :none
@@ -101,6 +102,53 @@ module Canis
         fire_row_changed @oldindex
         fire_row_changed arow
       end
+    end
+    # get a char ensure it is a char or number
+    # In this state, it could accept control and other chars.
+    def _ask_a_char
+      ch = @graphic.getch
+      #message "achar is #{ch}"
+      if ch < 26 || ch > 255
+        @graphic.ungetch ch
+        return :UNHANDLED
+      end
+      return ch.chr
+    end
+    # sets the selection to the next row starting with char
+    # Trying to return unhandled is having no effect right now. if only we could pop it into a
+    # stack or unget it.
+    def set_selection_for_char char=nil
+      char = _ask_a_char unless char
+      return :UNHANDLED if char == :UNHANDLED
+      #alert "got #{char}"
+      @oldrow = @current_index
+      @last_regex = "^#{char}"
+      ix = next_regex @last_regex
+      return unless ix
+      @current_index = ix[0] 
+      #alert "curr ind #{@current_index} "
+      @search_found_ix = @current_index
+      @curpos = ix[1]
+      ensure_visible
+      return @current_index
+    end
+    # Find the next row that contains given string
+    # @return row and col offset of match, or nil
+    # @param String to find
+    def  next_regex str
+      first = nil
+      ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
+      ## =~ does not give an error, but it does not work.
+      @list.each_with_index do |line, ix|
+        col = line =~ /#{str}/
+        if col
+          first ||= [ ix, col ]
+          if ix > @current_index
+            return [ix, col]
+          end
+        end
+      end
+      return first
     end
 
   end # class listbox
