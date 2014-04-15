@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-15 01:29
+#  Last update: 2014-04-15 22:14
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1041,7 +1041,7 @@ module Canis
     def ask_search str=nil
       # the following is a change that enables callers to prompt for the string
       # using some other style, basically the classical style and send the string in
-      str = get_string("Enter pattern: ") unless str
+      str = get_string("Enter pattern: ", :title => "Find pattern") unless str
       return if str.nil? 
       str = @last_regex if str == ""
       return if str == ""
