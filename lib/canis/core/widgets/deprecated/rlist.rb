@@ -37,8 +37,8 @@ module Canis
   #
   class List < Widget
 
-    require 'canis/core/include/listscrollable'
-    require 'canis/core/include/listselectable'             # added 2011-10-8 
+    require 'canis/core/include/deprecated/listscrollable'
+    require 'canis/core/include/deprecated/listselectable'             # added 2011-10-8 
     include ListScrollable
     include NewListSelectable                           # added 2011-10-8 
     extend Forwardable
@@ -135,7 +135,7 @@ module Canis
     end
     def map_keys
       return if @keys_mapped
-      require 'canis/core/include/listbindings'
+      require 'canis/core/include/deprecated/listbindings'
       bindings()
       bind_key(?f, 'next row starting with char'){ ask_selection_for_char() }
       bind_key(?\M-v, 'toggle one_key_selection'){ @one_key_selection = !@one_key_selection }

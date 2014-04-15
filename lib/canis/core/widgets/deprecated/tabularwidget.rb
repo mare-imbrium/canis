@@ -30,9 +30,9 @@ TODO
 
 =end
 require 'canis'
-require 'canis/core/include/listscrollable'
+require 'canis/core/include/deprecated/listscrollable'
 require 'canis/core/widgets/tabular'
-require 'canis/core/include/listselectable'
+require 'canis/core/include/deprecated/listselectable'
 require 'canis/core/include/bordertitle'
 
 #include Canis
@@ -145,7 +145,7 @@ module Canis
 
     end
     def map_keys
-      require 'canis/core/include/listbindings'
+      require 'canis/core/include/deprecated/listbindings'
       bindings()
       bind_key(?w, :next_column)
       bind_key(?b, :previous_column)

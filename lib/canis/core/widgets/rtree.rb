@@ -28,7 +28,7 @@ module Canis
   # @events Events: SELECT, DESELECT, TREE_WILL_EXPAND_EVENT, TREE_COLLAPSED_EVENT
   #
   class Tree < Widget
-    require 'canis/core/include/listscrollable'
+    require 'canis/core/include/deprecated/listscrollable'
     # currently just use single selection
     include ListScrollable
     #extend Forwardable
@@ -130,7 +130,7 @@ module Canis
       # TODO
       bind_key(?x, 'collapse parent'){ collapse_parent() }
       bind_key(?p, 'goto parent'){ goto_parent() }
-      require 'canis/core/include/listbindings'
+      require 'canis/core/include/deprecated/listbindings'
       #ListBindings.bindings
       bindings
     end

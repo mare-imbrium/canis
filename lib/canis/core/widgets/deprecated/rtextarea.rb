@@ -17,7 +17,7 @@ Todo:
 =end
 require 'logger'
 require 'canis'
-require 'canis/core/include/listscrollable'
+require 'canis/core/include/deprecated/listscrollable'
 require 'canis/core/include/rinputdataevent'
 require 'canis/core/include/listeditable'
 require 'canis/core/include/bordertitle'
@@ -279,7 +279,7 @@ module Canis
     def map_keys
       return if @keys_mapped
       @key_map = :both # get both vim and emacs keys
-      require 'canis/core/include/listbindings'
+      require 'canis/core/include/deprecated/listbindings'
       bindings
       #
       # There's one issue, if using vim keys, most of them won't

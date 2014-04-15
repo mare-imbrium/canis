@@ -13,7 +13,7 @@ TODO
 =end
 require 'logger'
 require 'canis'
-require 'canis/core/include/listscrollable'
+require 'canis/core/include/deprecated/listscrollable'
 require 'canis/core/include/bordertitle'
 require 'forwardable'
 
@@ -85,7 +85,7 @@ module Canis
       @search_found_ix = nil # so old searches don't get highlighted
     end
     def map_keys
-      require 'canis/core/include/listbindings'
+      require 'canis/core/include/deprecated/listbindings'
       bindings()
       #bind_key([?\C-x, ?\C-s], :saveas)
       #bind_key([?\C-x, ?e], :edit_external)
