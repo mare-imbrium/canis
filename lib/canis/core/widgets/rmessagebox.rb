@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 23:51
+#  Last update: 2014-04-15 14:30
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -195,7 +195,8 @@ module Canis
       else
         message = wrap_text(message, display_length).split("\n")
       end
-      message_height = message.size + 8
+      # now that we have moved to textpad that +8 was causing black lines to remain after the text
+      message_height = message.size #+ 8
       # reduce if possible if its not required.
       #
       r1 = (FFI::NCurses.LINES-@suggested_h)/2
