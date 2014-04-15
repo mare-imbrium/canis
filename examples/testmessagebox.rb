@@ -26,9 +26,9 @@ if $0 == __FILE__
       # need to pass a form, not window.
       case choice
       when 1
-        require 'canis/core/widgets/rlist'
+        require 'canis/core/widgets/listbox'
         nn = "mylist"
-        l = List.new  nil, :row => 2, :col => 5, :list => %w[john tim lee wong kepler edward why chad andy], 
+        l = Listbox.new  nil, :row => 2, :col => 5, :list => %w[john tim lee wong kepler edward why chad andy], 
           :selection_mode => :multiple, :height => 10, :width => 20 , :selected_color => :green, :selected_bgcolor => :white, :selected_indices => [2,6], :name => nn
        #default_values %w[ lee why ]
       @mb = MessageBox.new :width => 30, :height => 18 do
@@ -67,7 +67,7 @@ if $0 == __FILE__
         title "Enter your name"
         #message "Enter your first name. You are not permitted to enter x z or q and must enter a capital first"
         message "Enter your first name. Initcaps "
-        add Field.new :chars_allowed => /[^0-9xyz]/, :valid_regex => /^[A-Z][a-z]*/, :default => "Matz", :bgcolor => :cyan
+        add Field.new :chars_allowed => /[^0-9]/, :valid_regex => /^[A-Z][a-z]*/, :default => "Matz", :bgcolor => :cyan
         button_type :ok_cancel
       end
       @mb.run
@@ -86,20 +86,22 @@ if $0 == __FILE__
       end
       field = mb.widget("user")
       field.bind(:ENTER) do |f|   
-        listconfig = {'bgcolor' => 'blue', 'color' => 'white'}
+        listconfig = {:bgcolor => :blue, :color => :white,
+                      :relative_to => field, :col => field.col + 6, :width => field.display_length}
         users= %w[john tim lee wong kepler edward _why chad andy]
-        index = popuplist(users, :relative_to => field, :col => field.col + 6, :width => field.display_length)
+        #index = popuplist(users, :relative_to => field, :col => field.col + 6, :width => field.display_length)
+        index = popuplist(users, listconfig)
         field.set_buffer users[index] if index
       end
       mb.run
 
       when 5
-        require 'canis/core/widgets/rlist'
+        require 'canis/core/widgets/listbox'
         label = Label.new 'text' => 'File', 'mnemonic'=>'F', :row => 3, :col => 5
         field = Field.new :name => "file", :row => 3 , :col => 10, :width => 40, :set_label => label
         #flist = Dir.glob(File.join( File.expand_path("~/"), "*"))
         flist = Dir.glob("*")
-        listb = List.new :name => "mylist", :row => 4, :col => 3, :width => 50, :height => 10,
+        listb = Listbox.new :name => "mylist", :row => 4, :col => 3, :width => 50, :height => 10,
           :list => flist, :title => "File List", :selected_bgcolor => :white, :selected_color => :blue,
           :selection_mode => :single, :border_attrib => REVERSE
         #listb.bind(:ENTER_ROW) { field.set_buffer listb.selected_item }
@@ -124,7 +126,7 @@ if $0 == __FILE__
 
         end
         mb.run
-        $log.debug "MBOX :selected #{listb.selected_item}"
+        $log.debug "MBOX :selected #{listb.selected_value}"
       end 
       
     end
