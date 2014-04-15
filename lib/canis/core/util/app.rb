@@ -759,7 +759,7 @@ module Canis
     # I don't want to rename this to list, as that could lead to
     # confusion, maybe rlist
     def OLDlistbox *args, &block # earlier basic_list
-      require 'canis/core/widgets/rlist'
+      #require 'canis/core/widgets/rlist'
       config = {}
       #TODO check these
       events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
