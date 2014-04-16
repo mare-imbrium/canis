@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-16 00:25
+#  Last update: 2014-04-16 13:03
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -68,13 +68,28 @@ module Canis
       # if user has not specified a selection model, install default
       unless @selection_mode == :none
         unless @list_selection_model
-          @list_selection_model = Canis::DefaultListSelectionModel.new self
+          create_default_selection_model
         end
       end
       # if user has not specified a renderer, install default
       unless @renderer
-        @renderer = ListRenderer.new self
+        create_default_renderer
       end
+    end
+    # create a default renderer since user has not specified
+    # Widgets inheriting this with a differernt rendering such as tree
+    # can overrider this.
+    def create_default_renderer
+      r = ListRenderer.new self
+      renderer(r)
+    end
+    def renderer r
+      @renderer = r
+    end
+    # create a default selection model
+    # Widgets inheriting this may override this
+    def create_default_selection_model
+      list_selection_model(Canis::DefaultListSelectionModel.new self)
     end
 
 
