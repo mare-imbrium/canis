@@ -14,13 +14,29 @@ def _directories wd
 end
 App.new do 
   def help_text
-    ["Press <Enter> to expand/collapse directories. Press <space> to list a directory",
+    ["Press <Enter> to expand/collapse directories. Press <v> to list a directory",
       "Press <space> on filename to page it, or <ENTER> to view it in vi",
       "At present the PWD may not be updated, so you'll just have to be in the correct",
       "dir to actually view the file"]
   end
+  # print the dir list on the right listbox upon pressing ENTER or row_selector (v)
+  # separated here so it can be called from two places.
+  def lister node
+    ll = @form.by_name["ll"]
+    return unless ll
+    path = File.join(*node.user_object_path)
+    if File.exists? path
+      files = Dir.new(path).entries
+      files.delete(".")
+      ll.clear_selection
+      ll.list files 
+      #TODO show all details in filelist
+      @current_path = path
+      return path
+    end
+  end
   header = app_header "canis #{Canis::VERSION}", :text_center => "Yet Another Dir Lister", :text_right =>"Directory Lister" , :color => :white, :bgcolor => :black #, :attr =>  Ncurses::A_BLINK
-  message "Press Enter to expand/collapse, <space> to view in lister. <F1> Help"
+  message "Press Enter to expand/collapse, v to view in lister. <F1> Help"
   @form.help_manager.help_text = help_text()
 
   pwd = Dir.getwd
@@ -56,24 +72,21 @@ App.new do
       end
       #message " #{node} will expand: #{path}, #{dirs} "
       node.add dirs
+      lister node
+    end
+    @t.bind :TREE_WILL_COLLAPSE_EVENT do |node|
+      # FIXME do if ony not already showing on other side
+      lister node
     end
     @t.bind :TREE_SELECTION_EVENT do |ev|
       if ev.state == :SELECTED
         node = ev.node
-        path = File.join(*node.user_object_path)
-        if File.exists? path
-          files = Dir.new(path).entries
-          files.delete(".")
-          @l.clear_selection
-          @l.list files 
-          #TODO show all details in filelist
-          @current_path = path
-        end
+        lister node
       end
     end # select
     @t.expand_node last # 
     @t.mark_parents_expanded last # make parents visible
-    @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single
+    @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll'
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       message ev.source.current_value #selected_value
