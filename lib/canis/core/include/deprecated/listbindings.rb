@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2013-03-25 01:53
+#  Last update: 2014-04-16 23:45
 # ----------------------------------------------------------------------------- #
 #
 module Canis
@@ -40,8 +40,8 @@ module Canis
       end
       if kmap == :vim || kmap == :both
         # some of these will not have effect in textarea such as j k, gg and G, search
-        bind_key(?j, 'next row'){ next_row() }
-        bind_key(?k, 'previous row'){ previous_row() }
+        bind_key(?j, 'next row'){ down() }
+        bind_key(?k, 'previous row'){ up() }
         ## added 2013-03-04 - 17:52 
         bind_key(?w, 'forward_word'){ forward_word }
         bind_key(?b, 'backward_word'){ backward_word }
