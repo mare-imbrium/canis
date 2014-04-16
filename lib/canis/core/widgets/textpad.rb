@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-16 12:31
+#  Last update: 2014-04-17 00:08
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -947,8 +947,8 @@ module Canis
       @window ||= @graphic
       raise "Window not set in textpad" unless @window
 
+      # creates pad and calls render_all
       populate_pad if @_populate_needed
-      #HERE we need to populate once so user can pass a renderer
 
       _do_borders
       print_foot if @repaint_footer_required  # if still not done
@@ -991,6 +991,7 @@ module Canis
     #
     # key mappings
     #
+    # TODO take from listbindings so that emacs and vim can be selected. also user can change in one place.
     def map_keys
       @mapped_keys = true
       bind_key([?g,?g], 'goto_start'){ goto_start } # mapping double keys like vim
