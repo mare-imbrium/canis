@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-16 00:45
+#  Last update: 2014-04-17 00:17
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -234,7 +234,8 @@ module Canis
       return w
     end
     def tree config={}, &block
-      require 'canis/core/widgets/rtree'
+      #require 'canis/core/widgets/rtree'
+      require 'canis/core/widgets/tree'
       events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
       block_event = nil
       #config[:height] ||= 10
