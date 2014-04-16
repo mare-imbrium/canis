@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# header {
+# header {{{
 # vim: set foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: textpad.rb
@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-15 22:14
+#  Last update: 2014-04-16 12:31
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -23,7 +23,7 @@
 #     3. only rewrite a row - row data changed, no recreate pad or anything else
 #
 # ----------------------------------------------------------------------------- #
-# header }
+# header }}}
 #
 require 'canis'
 require 'canis/core/include/bordertitle'
@@ -32,11 +32,11 @@ require 'forwardable'
 include Canis
 module Canis
   extend self
-  class TextPad < Widget # -- {
+  class TextPad < Widget # 
     include BorderTitle
     extend Forwardable
 
-# ---- Section initialization start ----- {
+# ---- Section initialization start ----- {{{
     dsl_accessor :suppress_borders
     dsl_accessor :print_footer
     dsl_accessor :list_footer
@@ -120,8 +120,8 @@ module Canis
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
     end
-# ---- Section initialization end ----- }
-# ---- Section pad related start ----------- {
+# ---- Section initialization end ----- }}}
+# ---- Section pad related start ----------- {{{
 
     private
     ## XXX in list text returns the selected row, list returns the full thing, keep consistent
@@ -212,8 +212,8 @@ module Canis
       render @pad, ix, @list[ix]
     
     end
-# ---- end pad related ----- }
-# ---- Section render related  ----- {
+# ---- end pad related ----- }}}
+# ---- Section render related  ----- {{{
     #
     # iterate through content rendering each row
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
@@ -324,9 +324,32 @@ module Canis
       end
     end
 
+    # print footer containing line and position
+    def print_foot #:nodoc:
+      return unless @print_footer
+      footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+=begin
+      if @list_footer
+        if false
+          # if we want to print ourselves
+          footer = @list_footer.text(self)
+          footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
+          #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
+          $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
+          @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
+        end
+        # use default print method which only prints on left
+        @list_footer.print self
+      end
+=end
+      @repaint_footer_required = false # 2010-01-23 22:55 
+    end
 
-    # ---- Section render related  end ----- }
-# ---- Section data related start {
+
+
+    # ---- Section render related  end ----- }}}
+# ---- Section data related start {{{
     
     # supply a filename as source for textpad
     # Reads up file into @list
@@ -470,41 +493,12 @@ module Canis
       fire_row_changed index
       self
     end
-    # ---- Section data related end }
-
-    # print footer containing line and position
-    def print_foot #:nodoc:
-      return unless @print_footer
-      footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
-=begin
-      if @list_footer
-        if false
-          # if we want to print ourselves
-          footer = @list_footer.text(self)
-          footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
-          #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-          $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-          @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
-        end
-        # use default print method which only prints on left
-        @list_footer.print self
-      end
-=end
-      @repaint_footer_required = false # 2010-01-23 22:55 
-    end
+    # ---- Section data related end }}}
 
 
 
-    # convenience method to return byte
-    private
-    def key x
-      x.window.getbyte(0)
-    end
 
-
-
-   #---- Section: movement -----# {
+   #---- Section: movement -----# {{{
     # goto first line of file
     public
     def goto_start
@@ -762,8 +756,8 @@ module Canis
       j = index - @prow #@toprow
       j >= 0 && j <= @scrollatrows
     end
-#---- Section: movement end -----# }
-#---- Section: internal stuff start -----# {
+#---- Section: movement end -----# }}}
+#---- Section: internal stuff start -----# {{{
     public
     #
     def handle_key ch
@@ -1027,9 +1021,15 @@ module Canis
       bind_key(?$, :cursor_eol)
       bind_key(KEY_ENTER, :fire_action_event)
     end
-# ----------- end internal stuff --------------- }
+    # convenience method to return byte -- is it used ???
+    private
+    def key x
+      x.window.getbyte(0)
+    end
+
+# ----------- end internal stuff --------------- }}}
     public
-# ---- Section search related start ----- {
+# ---- Section search related start ----- {{{
     ## 
     # Ask user for string to search for
     # This uses the dialog, but what if user wants the old style.
@@ -1098,7 +1098,8 @@ module Canis
       end
     end
 
-    # ---- Section search related end ----- }
+    # ---- Section search related end ----- }}}
+##---- dead unused {{{
     ## some general methods for highlighting a row or changing attribute. However, these
     # will change the moment panning is done, or a repaint happens.
     # If these should be maintained then they should be called from the repaint method
@@ -1116,10 +1117,10 @@ module Canis
       #@graphic.mvchgat(y=r, x=c, @width-2, att , acolor , nil)
       FFI::NCurses.mvwchgat(@pad, y=r, x=c, @width-2, att, acolor, nil)
     end
+##---- dead unused }}}
 
-    #
-  end  # class textpad }
-# renderer {
+  end  # class textpad 
+# renderer {{{
   # a test renderer to see how things go
   class DefaultFileRenderer
     attr_accessor :default_colors
@@ -1208,5 +1209,5 @@ module Canis
 
     end
   end
-# renderer }
+# renderer }}}
 end # mod
