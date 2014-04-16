@@ -118,7 +118,7 @@ module Canis
     # checks @key_map can be :emacs or :vim.
     def map_keys
       @keys_mapped = true
-      bind_key(32, 'toggle row selection'){ toggle_row_selection() }
+      bind_key($row_selector, 'toggle row selection'){ toggle_row_selection() }
       bind_key(KEY_ENTER, 'toggle expanded state') { toggle_expanded_state() }
       bind_key(?o, 'toggle expanded state') { toggle_expanded_state() }
       bind_key(?f, 'first row starting with char'){ ask_selection_for_char() }
