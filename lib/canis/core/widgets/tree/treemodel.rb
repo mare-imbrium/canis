@@ -385,6 +385,10 @@ module Canis
     def to_s
       @user_object.to_s
     end
+    # need by textpad to calculate pad 
+    def length
+      to_s.length
+    end
     def init_vars
        @repaint_required = true
     end
