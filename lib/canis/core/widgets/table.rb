@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# header {
+# header {{{
 # vim: set foldlevel=0 foldmethod=marker :
 # ----------------------------------------------------------------------------- #
 #         File: table.rb
@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-14 20:32
+#  Last update: 2014-04-16 12:20
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -23,7 +23,7 @@
 #   x test with resultset from sqlite to see if we can use Array or need to make model
 #     should we use a datamodel so resultsets can be sent in, what about tabular
 #   _ header to handle events ?
-#  header }
+#  header }}}
 
 require 'logger'
 require 'canis'
@@ -37,7 +37,7 @@ require 'canis/core/widgets/textpad'
 #
 #
 module Canis
-# structures {
+# structures {{{
   # column data, one instance for each column
   # index is the index in the data of this column. This index will not change.
   # Order of printing columns is determined by the ordering of the objects.
@@ -76,8 +76,8 @@ module Canis
       @current_index == @max_index
     end
   end
-# structures }
-# sorter {
+# structures }}}
+# sorter {{{
     # This is our default table row sorter.
     # It does a multiple sort and allows for reverse sort also.
     # It's a pretty simple sorter and uses sort, not sort_by.
@@ -189,8 +189,8 @@ module Canis
       end
     end #class
 
-    # sorter }
-    # renderer {
+    # sorter }}}
+    # renderer {{{
   #
   # TODO see how jtable does the renderers and columns stuff.
   #
@@ -369,7 +369,7 @@ module Canis
         }
       end
     end
-# renderer }
+# renderer }}}
 
     #--
   # If we make a pad of the whole thing then the columns will also go out when scrolling
@@ -892,7 +892,7 @@ module Canis
     end
     ##
     # refresh pad onto window
-    # overrides super
+    # overrides super due to header_adjustment and the header too
     def padrefresh
       top = @window.top
       left = @window.left
@@ -921,11 +921,14 @@ module Canis
       r = DefaultTableRenderer.new self
       renderer(r)
     end
+    # returns true if focus is on header_row
     def header_row?
       #@prow == 0
       @prow == @current_index
     end
 
+    # called when ENTER is pressed.
+    # Takes into account if user is on header_row
     def fire_action_event
       if header_row?
         if @table_row_sorter
@@ -1023,6 +1026,7 @@ module Canis
         yield c,i if block_given?
       }
     end
+    # calls the renderer for all rows of data giving them pad, lineno, and line data
     def render_all
       if @indices && @indices.count > 0
         @indices.each_with_index do |ix, jx|
