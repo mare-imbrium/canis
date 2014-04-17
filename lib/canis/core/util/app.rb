@@ -41,6 +41,7 @@ module Canis
   #    http://lethain.com/entry/2007/oct/15/getting-started-shoes-os-x/
   #  
   
+  # 2014-04-17 - 13:15 XXX are these used. required ???
   class Widget
     def changed *args, &block
       bind :CHANGED, *args, &block
@@ -118,7 +119,6 @@ module Canis
     end
     def logger; return $log; end
     def close
-      raw_message_destroy
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       @window.destroy if !@window.nil?
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
@@ -212,63 +212,6 @@ module Canis
       #@message.value = text # 2011-10-17 14:07:01
     end
 
-    # during a process, when you wish to update status, since ordinarily the thread is busy
-    # and form does not get control back, so the window won't refresh.
-    # This will only update on keystroke since it uses statusline
-    # @deprecated please use {#status_line} instead of a message label
-    def message_immediate text
-      $log.warn "DEPRECATED, use message(),  or rb_puts or use status_window"
-      $status_message.value = text # trying out 2011-10-9 user needs to use in statusline command
-      # 2011-10-17 knocking off label, should be printed on status_line
-    end
-    # Usage: application is inside a long processing loop and wishes to print ongoing status
-    # NOTE: if you use this, you must use raw_message_destroy at some stage, after processing
-    # or on_leave of object.
-    # @deprecated Use say_with_pause or use rdialogs status_window, see test2.rb
-    def raw_message text, config={}, &blk
-      $raw_window ||= one_line_window last_line(), config, &blk
-      width = $raw_window.width == 0 ? FFI::NCurses.COLS : $raw_window.width
-      text = "%-*s" % [width, text]
-      
-      $raw_window.attron(Ncurses.COLOR_PAIR($normalcolor) )
-      $raw_window.printstring 0,0,text, $normalcolor #, 'normal' if @title
-      $raw_window.wrefresh
-     
-    end
-    def raw_message_destroy
-      if $raw_window
-        $raw_window.destroy
-        $raw_window = nil
-      end
-    end
-    # shows a simple progress bar on last row, using stdscr
-    # @param [Float, Array<Fixnum,Fixnum>] percentage, or part/total
-    # If Array of two numbers is given then also print part/total on left of bar
-    # @deprecated - don't use stdscr at all, use rdialogs status_window (see test2.rb)
-    def raw_progress arg
-      $log.warning "WARNING: don't use this method as it uses stdscr"
-      row = @message_label ? @message_label.row : Ncurses.LINES-1
-      s = nil
-      case arg
-      when Array
-        #calculate percentage
-        pc = (arg[0]*1.0)/arg[1]
-        # print items/total also
-        s = "%-10s" % "(#{arg[0]}/#{arg[1]})"
-      when
-        Float
-        pc = arg
-      end
-      scr = Ncurses.stdscr
-      endcol = Ncurses.COLS-1
-      startcol = endcol - 12
-      stext = ("=" * (pc*10).to_i) 
-      text = "[" + "%-10s" % stext + "]"
-      Ncurses.mvprintw( row ,startcol-10, s) if s
-      Ncurses.mvprintw row ,startcol, text
-      #scr.refresh() # XXX FFI NW
-
-    end
     # used only by LiveConsole, if enables in an app, usually only during testing.
     def get_binding
       return binding()
@@ -316,7 +259,6 @@ module Canis
     end
     # bind a key to a method at global (form) level
     # Note that individual component may be overriding this.
-    # FIXME: why are we using rawmessage and then getchar when ask would suffice
     def bind_global
       opts = get_all_commands
       cmd = rb_gets("Select a command (<tab> for choices) : ", opts)
@@ -326,13 +268,6 @@ module Canis
       end
       key = []
       str = ""
-      #raw_message "Enter one or 2 keys. Finish with ENTER. Enter first key:"
-      #ch = @window.getchar()
-      #raw_message_destroy
-      #if [KEY_ENTER, 10, 13, ?\C-g.getbyte(0)].include? ch
-        #say_with_pause "Aborted."
-        #return
-      #end
       # the next is fine but does not allow user to enter a control or alt or function character
       # since it uses Field. It is fine if you want to force alphanum input
       ch = rb_getchar("Enter one or two keys. Finish with <ENTER>. Enter first key:")
@@ -436,280 +371,24 @@ module Canis
     # process arguments based on datatype, perhaps making configuration
     # of some components easier for caller avoiding too much boiler plate code
     # 
-    # create a field
-    def OLDfield *args, &block
-      config = {}
-      events = [ :CHANGED,  :LEAVE, :ENTER, :CHANGE ]
-      block_event = :CHANGED # LEAVE, ENTER, CHANGE
-
-      _process_args args, config, block_event, events
-      config.delete(:title)
-      _position config
-      # hope next line doesn't bonk anything
-      config[:display_length] ||= @stack.last.width if @stack.last # added here not sure 2010-11-17 18:43 
-      field = Field.new @form, config
-      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
-      if block
-        field.bind(block_event, &block)
-      end
-      return field
-    end
       #instance_eval &block if block_given?
       # or
       #@blk = block # for later execution using @blk.call()
       #colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
       #var = Canis::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
-
-    def OLDlabel *args
-      events = block_event = nil
-      config = {}
-      _process_args args, config, block_event, events
-      config[:text] ||= config[:name]
-      config[:height] ||= 1
-      config.delete(:title)
-      _position(config)
-      label = Label.new @form, config
-      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
-      return label
-    end
     alias :text :label
-    def OLDbutton *args, &block
-      config = {}
-      events = [ :PRESS,  :LEAVE, :ENTER ]
-      block_event = :PRESS
-
-      _process_args args, config, block_event, events
-      config[:text] ||= config[:name]
-      config.delete(:title)
-      # flow gets precedence over stack
-      _position(config)
-      button = Button.new @form, config
-      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
-      if block
-        button.bind(block_event, &block)
-      end
-      return button
-    end
-    #
-    # create a list
-    # Since we are mouseless, one can traverse without selection. So we have a different
-    # way of selecting row/s and traversal. XXX this aspect of LB's has always troubled me hugely.
-    def OLDedit_list *args, &block  # earlier list_box
-      config = {}
-      # TODO confirm events
-      # listdataevent has interval added and interval removed, due to multiple
-      # selection, we have to make that simple for user here.
-      events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
-      # TODO how to do this so he gets selected row easily
-      block_event = :ENTER_ROW
-
-      _process_args args, config, block_event, events
-      # naive defaults, since list could be large or have very long items
-      # usually user will provide
-      if !config.has_key? :height
-        ll = 0
-        ll = config[:list].length + 2 if config.has_key? :list
-        config[:height] ||= ll
-        config[:height] = 15 if config[:height] > 20
-      end
-      if @current_object.empty?
-        $log.debug "1 APP LB w: #{config[:width]} ,#{config[:name]} "
-        config[:width] ||= @stack.last.width if @stack.last
-        $log.debug "2 APP LB w: #{config[:width]} "
-        config[:width] ||= longest_in_list(config[:list])+2
-        $log.debug "3 APP LB w: #{config[:width]} "
-      end
-      # if no width given, expand to flows width XXX SHOULD BE NOT EXPAND ?
-      #config[:width] ||= @stack.last.width if @stack.last
-      #if config.has_key? :choose
-      config[:default_values] = config.delete :choose
-      # we make the default single unless specified
-      config[:selection_mode] = :single unless config.has_key? :selection_mode
-      if @current_object.empty?
-      if @instack
-        # most likely you won't have row and col. should we check or just go ahead
-        col = @stack.last.margin
-        config[:row] = @app_row
-        config[:col] = col
-        @app_row += config[:height] # this needs to take into account height of prev object
-      end
-      end
-      useform = nil
-      useform = @form if @current_object.empty?
-      field = EditList.new useform, config # earlier ListBox
-      # shooz uses CHANGED, which is equivalent to our CHANGE. Our CHANGED means modified and exited
-      if block
-        # this way you can't pass params to the block
-        field.bind(block_event, &block)
-      end
-      return field
-    end
     
-    # toggle button
-    def OLDtoggle *args, &block
-      config = {}
-      # TODO confirm events
-      events = [ :PRESS,  :LEAVE, :ENTER ]
-      block_event = :PRESS
-      _process_args args, config, block_event, events
-      config[:text] ||= longest_in_list2( [config[:onvalue], config[:offvalue]])
-        #config[:onvalue] # needed for flow, we need a better way FIXME
-      _position(config)
-      toggle = ToggleButton.new @form, config
-      if block
-        toggle.bind(block_event, &block)
-      end
-      return toggle
-    end
-    # check button
-    def OLDcheck *args, &block
-      config = {}
-      # TODO confirm events
-      events = [ :PRESS,  :LEAVE, :ENTER ]
-      block_event = :PRESS
-      _process_args args, config, block_event, events
-      _position(config)
-      toggle = CheckBox.new @form, config
-      if block
-        toggle.bind(block_event, &block)
-      end
-      return toggle
-    end
-    # radio button
-    def OLDradio *args, &block
-      config = {}
-      # TODO confirm events
-      events = [ :PRESS,  :LEAVE, :ENTER ]
-      block_event = :PRESS
-      _process_args args, config, block_event, events
-      a = config[:group]
-      # FIXME we should check if user has set a varialbe in :variable.
-      # we should create a variable, so he can use it if he wants.
-      if @variables.has_key? a
-        v = @variables[a]
-      else
-        v = Variable.new
-        @variables[a] = v
-      end
-      config[:variable] = v
-      config.delete(:group)
-      _position(config)
-      radio = RadioButton.new @form, config
-      if block
-        radio.bind(block_event, &block)
-      end
-      return radio
-    end
-    # editable text area
-    def OLDtextarea *args, &block
-      require 'canis/core/widgets/rtextarea'
-      config = {}
-      # TODO confirm events many more
-      events = [ :CHANGE,  :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      config[:width] = config[:display_length] unless config.has_key? :width
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      useform = nil
-      useform = @form if @current_object.empty?
-      w = TextArea.new useform, config
-      if block
-        w.bind(block_event, &block)
-      end
-      return w
-    end
-    # similar definitions for textview and resultsettextview
-    # NOTE This is not allowing me to send blocks,
-    # so do not use for containers
-    {
-      'canis/core/widgets/rtextview' => 'TextView',
-      'canis/experimental/resultsettextview' => 'ResultsetTextView',
-      'canis/core/widgets/rcontainer' => 'Container',
-      'canis/extras/rcontainer2' => 'Container2',
-    }.each_pair {|k,p|
-      eval(
-           "def OLD#{p.downcase} *args, &block
-              require \"#{k}\"
-      config = {}
-      # TODO confirm events many more
-      events = [ :PRESS, :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      config[:width] = config[:display_length] unless config.has_key? :width
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      raise \"height needed for #{p.downcase}\" if !config.has_key? :height
-      useform = nil
-      useform = @form if @current_object.empty?
-      w = #{p}.new useform, config
-      if block
-        w.bind(block_event, &block)
-      end
-      return w
-           end"
-           )
-    }
-    
-    # table widget
-    # @example
-    #  data = [["Roger",16,"SWI"], ["Phillip",1, "DEU"]]
-    #  colnames = ["Name", "Wins", "Place"]
-    #  t = table :width => 40, :height => 10, :columns => colnames, :data => data, :estimate_widths => true
-    #    other options are :column_widths => [12,4,12]
-    #    :size_to_fit => true
-    def edit_table *args, &block # earlier table
-      require 'canis/extras/widgets/rtable'
-      config = {}
-      # TODO confirm events many more
-      events = [ :ENTER_ROW,  :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      # if user is leaving out width, then we don't want it in config
-      # else Widget will put a value of 10 as default, overriding what we've calculated
-      if config.has_key? :display_length
-        config[:width] = config[:display_length] unless config.has_key? :width
-      end
-      ext = config.delete :extended_keys
-
-      model = nil
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      w = Table.new @form, config
-      if ext
-        require 'canis/extras/include/tableextended' 
-          # so we can increase and decrease column width using keys
-        w.extend TableExtended
-        w.bind_key(?w){ w.next_column }
-        w.bind_key(?b){ w.previous_column }
-        w.bind_key(?+) { w.increase_column }
-        w.bind_key(?-) { w.decrease_column }
-        w.bind_key([?d, ?d]) { w.table_model.delete_at w.current_index }
-        w.bind_key(?u) { w.table_model.undo w.current_index}
-      end
-      if block
-        w.bind(block_event, &block)
-      end
-      return w
-    end
-    # print a title on first row
+    # print a title on first row -- this is so bad, not even a label
     def title string, config={}
       ## TODO center it
       @window.printstring 1, 30, string, $normalcolor, 'reverse'
     end
-    # print a sutitle on second row
+    # print a sutitle on second row, center and use a label, if this is even used.
     def subtitle string, config={}
       @window.printstring 2, 30, string, $datacolor, 'normal'
     end
     # menu bar
 
-    # creates a blank row
-    def OLDblank rows=1, config={}
-      @app_row += rows
-    end
     # displays a horizontal line
     # takes col (column to start from) from current stack
     # take row from app_row
@@ -730,134 +409,6 @@ module Canis
       @app_row += 1
     end
     
-    def TODOmultisplit *args, &block
-      require 'canis/extras/widgets/rmultisplit'
-      config = {}
-      events = [ :PROPERTY_CHANGE,  :LEAVE, :ENTER ]
-      block_event = events[0]
-      _process_args args, config, block_event, events
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = MultiSplit.new useform, config
-      #if block
-        #w.bind(block_event, w, &block)
-      #end
-      if block_given?
-        @current_object << w
-        #instance_eval &block if block_given?
-        yield w
-        @current_object.pop
-      end
-      return w
-    end
-    # create a readonly list
-    # I don't want to rename this to list, as that could lead to
-    # confusion, maybe rlist
-    def OLDlistbox *args, &block # earlier basic_list
-      #require 'canis/core/widgets/rlist'
-      config = {}
-      #TODO check these
-      events = [ :LEAVE, :ENTER, :ENTER_ROW, :LEAVE_ROW, :LIST_DATA_EVENT ]
-      # TODO how to do this so he gets selected row easily
-      block_event = :ENTER_ROW
-      _process_args args, config, block_event, events
-      # some guesses at a sensible height for listbox
-      if !config.has_key? :height
-        ll = 0
-        ll = config[:list].length + 2 if config.has_key? :list
-        config[:height] ||= ll
-        config[:height] = 15 if config[:height] > 20
-      end
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      config[:width] ||= longest_in_list(config[:list])+2
-      #config.delete :title
-      #config[:default_values] = config.delete :choose
-      config[:selection_mode] = :single unless config.has_key? :selection_mode
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = List.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        field.bind(block_event, &block)
-      end
-      return w
-    end
-    alias :basiclist :listbox # this alias will be removed
-    def TODOmaster_detail *args, &block
-      require 'canis/experimental/widgets/masterdetail'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
-      _process_args args, config, block_event, events
-      #config[:height] ||= 10
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = MasterDetail.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        yield_or_eval &block
-        @current_object.pop
-      end
-      return w
-    end
-    # scrollbar attached to the right of a parent object
-    def OLDscrollbar *args, &block
-      require 'canis/core/widgets/scrollbar'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER  ] # # none really at present
-      block_event = nil
-      _process_args args, config, block_event, events
-      raise "parent needed for scrollbar" if !config.has_key? :parent
-      useform = nil
-      useform = @form if @current_object.empty?
-      sb = Scrollbar.new useform, config
-    end
-    # divider used to resize neighbouring components TOTEST XXX
-    def OLDdivider *args, &block
-      require 'canis/core/widgets/divider'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :DRAG_EVENT  ] # # none really at present
-      block_event = nil
-      _process_args args, config, block_event, events
-      useform = nil
-      useform = @form if @current_object.empty?
-      sb = Divider.new useform, config
-    end
-    # creates a simple readonly table, that allows users to click on rows
-    # and also on the header. Header clicking is for column-sorting.
-    def OLDcombo *args, &block
-      require 'canis/core/widgets/rcombo'
-      config = {}
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER, :CHANGE, :ENTER_ROW, :PRESS ] # XXX
-      block_event = nil
-      _process_args args, config, block_event, events
-      _position(config)
-      # if no width given, expand to flows width
-      config[:width] ||= @stack.last.width if @stack.last
-      #config.delete :title
-      useform = nil
-      useform = @form if @current_object.empty?
-
-      w = ComboBox.new useform, config # NO BLOCK GIVEN
-      if block_given?
-        @current_object << w
-        yield_or_eval &block
-        @current_object.pop
-      end
-      return w
-    end
 
     # ADD new widget above this
 
@@ -865,47 +416,6 @@ module Canis
     
     # @group positioning of components
     
-    # line up vertically whatever comes in, ignoring r and c 
-    # margin_top to add to margin of existing stack (if embedded) such as extra spacing
-    # margin to add to margin of existing stack, or window (0)
-    # NOTE: since these coordins are calculated at start
-    # therefore if window resized i can't recalculate.
-    #Stack = Struct.new(:margin_top, :margin, :width)
-    def OLDstack config={}, &block
-      @instack = true
-      mt =  config[:margin_top] || 1
-      mr =  config[:margin] || 0
-      # must take into account margin
-      defw = Ncurses.COLS - mr
-      config[:width] = defw if config[:width] == :EXPAND
-      w =   config[:width] || [50, defw].min
-      s = Stack.new(mt, mr, w)
-      @app_row += mt
-      mr += @stack.last.margin if @stack.last
-      @stack << s
-      yield_or_eval &block if block_given?
-      @stack.pop
-      @instack = false if @stack.empty?
-      @app_row = 0 if @stack.empty?
-    end
-    # keep adding to right of previous and when no more space
-    # move down and continue fitting in.
-    # Useful for button positioning. Currently, we can use a second flow
-    # to get another row.
-    # TODO: move down when row filled
-    # TODO: align right, center
-    def OLDflow config={}, &block
-      @inflow = true
-      mt =  config[:margin_top] || 0
-      @app_row += mt
-      col = @flowstack.last || @stack.last.margin || @app_col
-      col += config[:margin] || 0
-      @flowstack << col
-      @flowcol = col
-      yield_or_eval &block if block_given? 
-      @flowstack.pop
-      @inflow = false if @flowstack.empty?
-    end
 
     private
     def quit
@@ -940,12 +450,6 @@ module Canis
     def _resolve_command opts, cmd
       return cmd if opts.include? cmd
       matches = opts.grep Regexp.new("^#{cmd}")
-    end
-    # Now i am not creating this unless user wants it. Pls avoid it.
-    # Use either say_with_pause, or put $status_message in command of statusline
-    # @deprecated please use {#status_line} instead of a message label
-    def create_message_label row=Ncurses.LINES-1
-      @message_label = Canis::Label.new @form, {:text_variable => @message, :name=>"message_label",:row => row, :col => 0, :display_length => Ncurses.COLS,  :height => 1, :color => :white}
     end
 
     def run &block
@@ -998,7 +502,6 @@ module Canis
               end
               if respond_to?(cmd, true)
                 @_previous_command = cmd
-                #raw_message "calling #{cmd} "
                 begin
                   send cmd, *cmdline
                 rescue => exc
@@ -1049,7 +552,6 @@ module Canis
         end # :close
       end
     end
-    # TODO
     # process args, all widgets should call this
     def _process_args args, config, block_event, events  #:nodoc:
       args.each do |arg| 
@@ -1077,33 +579,6 @@ module Canis
         end
       end
     end # _process
-    # position object based on whether in a flow or stack.
-    # @app_row is prepared for next object based on this objects ht
-    def OLD_position config  #:nodoc:
-      unless @current_object.empty?
-        $log.debug " WWWW returning from position #{@current_object.last} "
-        return
-      end
-      if @inflow
-        #col = @flowstack.last
-        config[:row] = @app_row
-        config[:col] = @flowcol
-        $log.debug " YYYY config #{config} "
-        if config[:text]
-          @flowcol += config[:text].length + 5 # 5 came from buttons
-        else
-          @flowcol += (config[:length] || 10) + 5 # trying out for combo
-        end
-      elsif @instack
-        # most likely you won't have row and col. should we check or just go ahead
-        # what if he has put it 2011-10-19 as in a container
-        col = @stack.last.margin
-        config[:row] ||= @app_row 
-        config[:col] ||= col
-        @app_row += config[:height] || 1 #unless config[:no_advance]
-        # TODO need to allow stack to have its spacing, but we don't have an object as yet.
-      end
-    end
   end # class
 end # module 
 if $0 == __FILE__
@@ -1194,7 +669,7 @@ if $0 == __FILE__
         #f1.set_buffer list.text
         #f1.text list.text
         f1.text = list.text
-        l.text = list.text.upcase
+        l.text = list.current_value.upcase
       end
       t = textarea :height => 10 do |e|
         #@bluelabel.text = e.to_s.tr("\n",' ')
