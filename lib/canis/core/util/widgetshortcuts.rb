@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-17 13:01
+#  Last update: 2014-04-17 21:27
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -236,8 +236,8 @@ module Canis
     def tree config={}, &block
       #require 'canis/core/widgets/rtree'
       require 'canis/core/widgets/tree'
-      events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
+      events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER , :ENTER_ROW, :TREE_COLLAPSED_EVENT, :TREE_WILL_EXPAND_EVENT]
+      block_event = :TREE_WILL_EXPAND_EVENT
       #config[:height] ||= 10
       # if no width given, expand to flows width
       useform = nil
@@ -246,6 +246,8 @@ module Canis
       w.width ||= :expand 
       w.height ||= :expand # TODO This has to come before other in stack next one will overwrite.
       _position w
+      # calling the block here was causing a problem since a tree may define root etc in the block
+      # containers like to define elements in a block and not have an event called by default
       return w
     end
     # creates a simple readonly table, that allows users to click on rows
