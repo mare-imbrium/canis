@@ -5,13 +5,11 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-16 13:03
+#  Last update: 2014-04-17 16:26
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
-require 'logger'
 require 'canis'
-require 'canis/core/widgets/textpad'
 require 'forwardable'
 require 'canis/core/include/listselectionmodel'
 ## 
@@ -22,10 +20,9 @@ require 'canis/core/include/listselectionmodel'
 # Essentially, the listbox only adds selection to the textpad.
 # TODO
 # ----
-#   [ ] selected_color - IMP we have no way of knowing what is selected right now
-#   [ ] focussed color - this could be part of textpad too. row under cursor
+#   [ ] focussed_color - this could be part of textpad too. row under cursor
 #   [ ] rlist has menu actions that can use prompt menu or popup ?
-#   [ ] move listselectionhandler into independent class so others can use, such as table
+#   [ ] nothing has been done about show_selector -- consider whether to knock off
 #
 #
 # CHANGES
@@ -37,6 +34,37 @@ module Canis
 
   ##
   # A scrollable, selectable array of strings.
+  # Delegates display to ListRenderer
+  # Delegates selection to Defaultlistselection (/include/listselectionmodel.rb)
+  # Due to extending Defaultlistselection, methods are not visible here.
+  # Selection methods are (the first three are what programmers will use the most):
+  #
+  #    -  `selected_values` : returns values selecteda (multiple selection)
+  #    -  `selected_value`  : returns value of row selected (single selection)
+  #    -  `selected_rows`   : same as selected_indices, indices of selected items
+  #
+  #    -  `toggle_row_selection` : toggles current row, called by key $row_selector
+  #    -  `select`               : select given or current row
+  #    -  `unselect`             : unselects given or current row
+  #    -  `is_row_selected?`     : determine if given row is selected
+  #    -  `is_selection_empty?`  : has anything been selected
+  #    -  `clear_selection`      : clear selection
+  #    -  `select_all`           : select all rows
+  #
+  # Listbox also fires a ListSelectionEvent whose type can be:
+  #
+  #    - :INSERT , a row or rows added to selection
+  #    - :DELETE , a row or rows removed from selection
+  #    - :CLEAR , all selection cleared
+  #
+  # == Examples
+  #
+  #    mylist = %w[john tim matz shougo _why sean aaron]
+  #    l = Listbox.new @form, :row => 5, :col => 4, :height => 10, :width => 20, :list => mylist
+  # 
+  # Inside a Flow:
+  #
+  #   lb = listbox :list => mylist, :title => 'Contacts', :width_pc => 50, :selection_mode => :single
   #
   class Listbox < TextPad
 
@@ -45,13 +73,13 @@ module Canis
     # boolean, should a selector character be shown on the left of data for selected rows.
     dsl_property :show_selector
     # should textpads content_cols also add left_margin ? XXX
+    # how much space to leave on left, currently 0, was used with selector character once
     dsl_property :left_margin
 
+    # justify text to :left :right or :center (renderer to take care of this).
+    dsl_accessor :justify
 
-    # justify text to :left :right or :center TODO
-    dsl_accessor :justify # will be picked up by renderer
-
-    # should focussed line be shown in a different way, usually BOLD
+    # should focussed line be shown in a different way, currently BOLD, default true
     dsl_accessor :should_show_focus
 
     def initialize form = nil, config={}, &block
@@ -95,7 +123,7 @@ module Canis
 
     # http://www.opensource.apple.com/source/gcc/gcc-5483/libjava/javax/swing/table/DefaultTableColumnModel.java
     #
-    # clear the list completely
+    # clear the list completely of data, including selections
     def clear
       @selected_indices.clear
       super
@@ -120,6 +148,7 @@ module Canis
     end
     # get a char ensure it is a char or number
     # In this state, it could accept control and other chars.
+    private
     def _ask_a_char
       ch = @graphic.getch
       #message "achar is #{ch}"
@@ -129,6 +158,7 @@ module Canis
       end
       return ch.chr
     end
+    public
     # sets the selection to the next row starting with char
     # Trying to return unhandled is having no effect right now. if only we could pop it into a
     # stack or unget it.
