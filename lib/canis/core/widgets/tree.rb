@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 00:33
+#  Last update: 2014-04-17 12:57
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -201,8 +201,7 @@ module Canis
       bind_key(?x, 'collapse parent'){ collapse_parent() }
       bind_key(?p, 'goto parent'){ goto_parent() }
       # this can be brought back into include and used from other textpad too.
-      require 'canis/core/include/deprecated/listbindings'
-      #ListBindings.bindings
+      require 'canis/core/include/listbindings'
       bindings
     end
     # Returns root if no argument given.
