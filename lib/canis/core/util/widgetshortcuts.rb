@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-17 00:17
+#  Last update: 2014-04-17 13:01
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -29,7 +29,6 @@
 #require 'canis/core/widgets/rlist'
 ## trying out new list based on textpad 2014-04-07 - 00:02 CANIS
 require 'canis/core/widgets/listbox'
-#require 'canis/core/widgets/rtextview'
 module Canis
   module WidgetShortcuts
     class Ws
@@ -126,8 +125,9 @@ module Canis
       header = ApplicationHeader.new @form, title, config, &block
     end
     # editable text area
+    # use only for simple cases, since this is not fully tested
     def textarea config={}, &block
-      require 'canis/core/widgets/deprecated/rtextarea'
+      require 'canis/core/widgets/extras/rtextarea'
       # TODO confirm events many more
       events = [ :CHANGE,  :LEAVE, :ENTER ]
       block_event = events[0]
