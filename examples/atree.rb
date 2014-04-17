@@ -50,7 +50,8 @@ App.new do
               end
             end
             bind :ENTER_ROW do |t|
-              var.value = t.text.user_object
+              # now ENTER_ROW comes from TEXTpad and gives an event
+              var.value = t.text
             end
           end
 
@@ -84,7 +85,7 @@ App.new do
         stack :margin_top => 0, :width_pc => "40", :height => :expand do
           # using height_pc as 100 was causing prefresh to fail if file lines went beyond 31
           # tput lines gives 32 so only when file length exceeded was it actually writing beyond screen
-          t = textview  :suppress_borders => true, :height_pc => 90
+          t = textview  :suppress_borders => true, :height_pc => 80
             var.command do |filename| 
               filename = filename.value
               if File.directory? filename
