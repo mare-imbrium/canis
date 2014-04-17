@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 00:08
+#  Last update: 2014-04-17 21:13
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -65,11 +65,14 @@ module Canis
       @startcol = 0
       # @list is unused, think it can be removed
       #@list = []
+      register_events( [:ENTER_ROW, :PRESS])
       super
 
       ## __calc_dimensions used to be here, but moved since flows do not set height immediately.
-      @_events << :PRESS
-      @_events << :ENTER_ROW
+      # Putting events after +super+ means if a person uses +bind+ in block then these 
+      # events are not found.
+      #@_events << :PRESS
+      #@_events << :ENTER_ROW
       init_vars
     end
     def init_vars
@@ -433,7 +436,8 @@ module Canis
     end
     alias :get_content :content
     #
-    # returns current value (what cursor is on)
+    # returns focussed value (what cursor is on)
+    # This may not be a string. A tree may return a node, a table an array or row
     def current_value
       @list[@current_index]
     end
@@ -816,7 +820,10 @@ module Canis
     end # while loop
 
     #
-    # event when user hits enter on a row, user would bind :PRESS
+    # event when user hits ENTER on a row, user would bind :PRESS
+    # callers may use +text()+ to get the value of the row, +source+ to get parent object.
+    #
+    #     obj.bind :PRESS { |eve| eve.text } 
     #
     def fire_action_event
       return if @list.nil? || @list.size == 0
