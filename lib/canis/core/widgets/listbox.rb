@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 16:26
+#  Last update: 2014-04-17 21:21
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -87,10 +87,11 @@ module Canis
       @left_margin = 0
       @should_show_focus = true
 
+      register_events([:LEAVE_ROW, :LIST_SELECTION_EVENT])
       self.extend DefaultListSelection
       super
       # textpad takes care of enter_row and press
-      @_events.push(*[:LEAVE_ROW, :LIST_SELECTION_EVENT])
+      #@_events.push(*[:LEAVE_ROW, :LIST_SELECTION_EVENT])
       bind_key(?f, 'next row starting with char'){ set_selection_for_char(nil) }
 
       # if user has not specified a selection model, install default
