@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-15 19:44
+  * Last update: 2014-04-17 21:21
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -603,12 +603,26 @@ module Canis
     end # module
 
     module EventHandler
+      # widgets may register their events prior to calling super
+      # 2014-04-17 - 20:54 Earlier they were writing directly to a data structure after +super+.
+      #
+      def register_events eves
+        @_events ||= []
+        case eves
+        when Array
+          @_events.push(*eves)
+        when Symbol
+          @_events << eves
+        else
+          raise ArgumentError "register_event: Don't know how to handle #{eves.class}"
+        end
+      end
       ##
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
        #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
           if @_events
-            $log.warn "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+            $log.warn "bind: #{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
             #raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
           else
             # it can come here if bind in initial block, since widgets add to @_event after calling super
@@ -640,7 +654,7 @@ module Canis
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}"
         if !@handler.nil?
           if @_events
-            raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+            raise ArgumentError, "fire_handler: #{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
           else
             $log.debug "bIND #{self.class}  XXXXX TEMPO no events defined in @_events "
           end
@@ -858,8 +872,9 @@ module Canis
       # These are standard events for most widgets which will be fired by 
       # Form. In the case of CHANGED, form fires if it's editable property is set, so
       # it does not apply to all widgets.
-      @_events ||= []
-      @_events.push( *[:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
+      #@_events ||= []
+      #@_events.push( *[:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
+      register_events( [:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
 
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
       #instance_eval &block if block_given?
