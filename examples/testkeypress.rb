@@ -54,7 +54,7 @@ if $0 == __FILE__
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
-      while((ch = @window.getchar()) != 0 )
+      while((ch = @window.getchar()) != 999 )
         str = keycode_tos ch
         $log.debug  "#{ch} got (#{str})"
         texta << "#{ch} got (#{str})"
