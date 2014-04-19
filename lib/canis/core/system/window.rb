@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-04 22:08
+#  Last update: 2014-04-20 00:31
 #
 #  == CHANGED
 #     removed Pad and Subwin to lib/ver/rpad.rb - hopefully I've seen the last of both
@@ -73,6 +73,10 @@ module Canis
       $key_map ||= :vim
       $esc_esc = true; # gove me double esc as 2727 so i can map it.
       init_vars
+
+      unless @key_reader
+        create_default_key_reader
+      end
 
 
     end
@@ -384,13 +388,15 @@ module Canis
       -1 # is C-c
     end
 
-    #  2011-09-23 @since 1.3.1
-    # Added more combinations here. These 2 are just indicative
-    SPECIAL_KEYS = {
-      [27, 79, 50, 81]              => 20014, #  'F14',
-      [27, 79, 50, 82]              => 20015 # 'F15',
-    }
+    def getchar
+      @key_reader.getchar
+    end
 
+    # This was getchar() earlier, now i am trying to put it in a class
+    # so user can install his own and experiment.
+    #
+    # This is directly called by the users program in a loop.
+    #
     # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
     # ALT combinations also send a 27 before the actual key
     # Please test with above combinations before using on your terminal
@@ -400,7 +406,7 @@ module Canis
     #  Checking for quick press of Alt-[ followed by Alt or printable char
     #  I attempted keeping a hash of combination arrays but it fails in the above
     #  2 cases, so abandoned.
-    def getchar 
+    def _getchar 
       while 1 
         ch = self.getch
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
@@ -909,5 +915,196 @@ module Canis
       @close_args = nil
       return true
     end
-end
+    def create_default_key_reader
+      @key_reader = DefaultKeyReader.new self
+    end
+  end # window
+
+  # created on 2014-04-20 - 00:19 so that user can install own handler
+  #
+  #
+  # A class that reads keys and handles function, shifted function, control, alt, and other
+  # extended keys.
+  # THis essentially consists of a method getchar which will be called by the application
+  # to get keys in a loop. Application may also call getchar to get one key in some situations.
+  #
+  # Originally, rbcurse returned an int, but we are movign to a string, so that user can use the exact
+  # control codes he gets on the terminal using C-v and map them here.
+  #
+  #
+  class DefaultKeyReader
+    def initialize win
+      @window = win
+      @stack = []
+    end
+    #  2011-09-23 @since 1.3.1
+    # Added more combinations here. These 2 are just indicative
+    SPECIAL_KEYS = {
+      [27, 79, 50, 81]              => 20014, #  'F14',
+      [27, 79, 50, 82]              => 20015 # 'F15',
+    }
+
+    # return an int for the key read. this is just a single int, and is not interpreted
+    # for control or function keys. it also will return -1 when no action.
+    # You may re-implenent it or call the original one.
+    #
+    def getch
+      @window.getch
+    end
+
+    # This is directly called by the users program in a loop.
+    #
+    # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
+    # ALT combinations also send a 27 before the actual key
+    # Please test with above combinations before using on your terminal
+    # added by jkepler 2008-12-12 23:07 
+    #  2011-09-23 Redone Control-left, right, and Shift-F5..F10.
+    #  Checking for quick press of Alt-Sh-O followed by Alt or printable char
+    #  Checking for quick press of Alt-[ followed by Alt or printable char
+    #  I attempted keeping a hash of combination arrays but it fails in the above
+    #  2 cases, so abandoned.
+    def getchar 
+      while 1 
+        ch = self.getch
+        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
+        sf = @stack.first
+        if ch == -1
+          # the returns escape 27 if no key followed it, so its SLOW if you want only esc
+          if @stack.first == 27
+            #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
+            case @stack.size
+            when 1
+              @stack.clear
+              return 27
+            when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
+              ch = 128 + @stack.last
+              $log.warn "XXX: WARN  #{ch} CLEARING stack #{@stack} "
+              @stack.clear
+              return ch
+            else
+              # check up a hash of special keys
+              ret = SPECIAL_KEYS(@stack)
+              return ret if ret
+              $log.warn "INVALID UNKNOWN KEY: SHOULD NOT COME HERE getchar():#{@stack}" 
+            end
+          end
+          # possibly a 49 left over from M3-1
+          unless @stack.empty?
+            if @stack.size == 1
+              @stack.clear
+              return sf
+            end
+            $log.warn "something on stack getchar(): #{@stack} "
+          end
+          # comemnt after testing keys since this will be called a lot, even stack.clear is called a lot
+          $log.warn "ERROR CLEARING STACK WITH STUFF ON IT getchar():#{@stack}"  if ($log.debug? && !@stack.empty?)
+          @stack.clear
+          next
+        end #  -1
+        # this is the ALT combination
+        if @stack.first == 27
+          # experimental. 2 escapes in quick succession to make exit faster
+          if @stack.size == 1 && ch == 27
+            @stack.clear
+            return 2727 if $esc_esc # this is double-esc if you wanna trap it, trying out
+            return 27
+          end
+          # possible F1..F3 on xterm-color
+          if ch == 79 || ch == 91
+            #$log.debug " got 27, #{ch}, waiting for one more"
+            @stack << ch
+            next
+          end
+          #$log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
+          if @stack == [27,79]
+            # xterm-color
+            case ch
+            when 80
+              ch = FFI::NCurses::KEY_F1
+            when 81
+              ch = FFI::NCurses::KEY_F2
+            when 82
+              ch = FFI::NCurses::KEY_F3
+            when 83
+              ch = FFI::NCurses::KEY_F4
+              #when 27 # another alt-char following Alt-Sh-O
+            else
+              ## iterm2 uses these for HOME END num keyboard keys
+              @stack.clear
+              #@stack << ch # earlier we pushed this but it could be of use
+              #return 128 + 79
+              return 128 + 79 + ch
+
+            end
+            @stack.clear
+            return ch
+          elsif @stack == [27, 91]
+            # XXX 27, 91 also is Alt-[
+            if ch == 90
+              @stack.clear
+              return KEY_BTAB # backtab
+            elsif ch == 53 || ch == 50 || ch == 51
+              # control left, right and shift function
+              @stack << ch
+              next
+            elsif ch == 27 # another alt-char immediately after Alt-[
+              $log.debug "getchar in 27, will return 128+91 " if $log.debug? 
+              @stack.clear
+              @stack << ch
+              return 128 + 91
+            else
+              $log.debug "getchar in other, will return 128+91: #{ch} " if $log.debug? 
+              # other cases Alt-[ followed by some char or key - merge with previous
+              @stack.clear
+              @stack << ch
+              return 128 + 91
+            end
+          elsif @stack == [27, 91, 53]
+            if ch == 68
+              @stack.clear
+              return C_LEFT  # control-left
+            elsif ch == 67
+              @stack.clear
+              return C_RIGHT  # -control-rt
+            end
+          elsif @stack == [27, 91, 51]
+            if ch == 49 && getch()== 126
+              @stack.clear
+              return 20009  # sh_f9
+            end
+          elsif @stack == [27, 91, 50]
+            if ch == 50 && getch()== 126
+              @stack.clear
+              return 20010  # sh-F10
+            end
+            if ch == 57 && getch()== 126
+              @stack.clear
+              return 20008  # sh-F8
+            elsif ch == 56 && getch()== 126
+              @stack.clear
+              return 20007  # sh-F7
+            elsif ch == 54 && getch()== 126
+              @stack.clear
+              return 20006  # sh-F6
+            elsif ch == 53 && getch()== 126
+              @stack.clear
+              return 20005  # sh-F5
+            end
+          end
+          # the usual Meta combos. (alt) - this is screwing it up, just return it in some way
+          ch = 128 + ch
+          @stack.clear
+          return ch
+        end # stack.first == 27
+        # append a 27 to stack, actually one can use a flag too
+        if ch == 27
+          @stack << 27
+          next
+        end
+        return ch
+      end # while
+    end # def
+
+  end # class DefaultKeyReader
+
 end
