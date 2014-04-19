@@ -9,12 +9,23 @@
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
   * file separated on 2009-01-13 22:39 
 
+== Issues
+   Depends on bottomline for some operations such as ask, agree etc. 
+   Pls remove this dependence
+
+   Creates a ListObject which duplicates textview and listboxes work
+   This should be replaced with textpad
+
 =end
 require 'canis'
 
 module Canis
   ##
-  # 
+  #  Creates a window at the bottom of the screen for some operations.
+  #  Used for some operations such as:
+  #    - display a menu
+  #    - display some interactive text
+  #    - display some text 
   #
   class CommandWindow
     include Canis::Utils
@@ -25,7 +36,7 @@ module Canis
     attr_reader :window     # required for keyboard or printing
     dsl_accessor :height, :width, :top, :left  #  2009-01-06 00:05 after removing meth missing
 
-    def initialize form=nil, aconfig={}, &block
+    def initialize form=nil, aconfig={}, &block  # --- {{{
       @config = aconfig
       @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
       instance_eval &block if block_given?
@@ -37,14 +48,6 @@ module Canis
       @window = Canis::Window.new(@layout)
       @start = 0 # row for display of text with paging
       @list = []
-      # 2013-03-21 - 00:34 removed due to 187
-      #require 'forwardable'
-      require 'canis/core/util/bottomline'
-      @bottomline = Bottomline.new @window, 0
-      @bottomline.name = "rcommandwindow's bl"
-      # 187compat next line throws up on 187 module_eval undefined method for commandwindow
-      #extend Forwardable
-      #def_delegators :@bottomline, :ask, :say, :agree, :choose #, :display_text_interactive
       if @box == :border
         @window.box 0,0
       elsif @box
@@ -64,32 +67,45 @@ module Canis
       if @box
         @row_offset = 1
       end
+    end  # --- }}}
+
+    #--- bottomline related {{{
+    def make_bottomline
+      unless @bottomline
+        require 'canis/core/util/extras/bottomline'
+        @bottomline = Bottomline.new @window, 0
+        @bottomline.name = "rcommandwindow's bl"
+      end
+      return @bottomline
     end
-    # 2013-03-21 - 187compat
-    #def_delegators :@bottomline, :ask, :say, :agree, :choose #, :display_text_interactive
     def ask *args
+      make_bottomline
       @bottomline.send(:ask, *args)
     end
     def say *args
+      make_bottomline
       @bottomline.send(:say, *args)
     end
     def agree *args
+      make_bottomline
       @bottomline.send(:agree, *args)
     end
+    # NOTE the ridiculous thing is that choose makes a rcommandwindow and then
+    # calls display_menu on rc ! it does not really seem to use bottomline at all.
     def choose *args
+      make_bottomline
       @bottomline.send(:choose, *args)
     end
-    # modify the window title, or get it if no params passed.
-    def title t=nil
-      return @title unless t
-      @title = t
-      @window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
-    end
+    #--- bottomline related }}}
+
+
+    # ---- windowing functions {{{
     ##
     ## message box
     def stopping?
       @stop
     end
+
     # todo handle mappings, so user can map keys TODO
     def handle_keys
       begin
@@ -108,6 +124,7 @@ module Canis
       end
       return #@selected_index
     end
+
     # handles a key, commandline
     def press ch 
       ch = ch.getbyte(0) if ch.class==String ## 1.9
@@ -177,6 +194,29 @@ module Canis
         end
       end
     end
+    # refresh whatevers painted onto the window
+    def refresh
+      Ncurses::Panel.update_panels();
+      Ncurses.doupdate();
+      @window.wrefresh
+    end
+    # clears the window, leaving the title line as is, from row 1 onwards
+    def clear
+      @window.wmove 1,1
+      @window.wclrtobot
+      @window.box 0,0 if @box == :border
+      # lower line of border will get erased currently since we are writing to 
+      # last line FIXME
+    end
+    # ---- windowing functions }}}
+
+    # modify the window title, or get it if no params passed.
+    def title t=nil  # --- {{{
+      return @title unless t
+      @title = t
+      @window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
+    end  # --- }}}
+
     #
     # Displays list in a window at bottom of screen, if large then 2 or 3 columns.
     # @param [Array] list of string to be displayed
@@ -184,7 +224,7 @@ module Canis
     # indexing - can be letter or number. Anything else will be ignored, however
     #  it will result in first letter being highlighted in indexcolor
     # indexcolor - color of mnemonic, default green
-    def display_menu list, options={}
+    def display_menu list, options={}  # --- {{{
       indexing = options[:indexing]
       indexcolor = options[:indexcolor] || get_color($normalcolor, :yellow, :black)
       indexatt = Ncurses::A_BOLD
@@ -271,22 +311,10 @@ module Canis
       Ncurses::Panel.update_panels();
       Ncurses.doupdate();
       @window.wrefresh
-    end
-    # refresh whatevers painted onto the window
-    def refresh
-      Ncurses::Panel.update_panels();
-      Ncurses.doupdate();
-      @window.wrefresh
-    end
-    # clears the window, leaving the title line as is, from row 1 onwards
-    def clear
-      @window.wmove 1,1
-      @window.wclrtobot
-      @window.box 0,0 if @box == :border
-      # lower line of border will get erased currently since we are writing to 
-      # last line FIXME
-    end
-    def display_interactive text, config={}
+    end # --- }}}
+
+    # displays given text and handles keys
+    def display_interactive text, config={}  # --- {{{
       if @to
         @to.content text
       else
@@ -296,20 +324,22 @@ module Canis
       yield @to if block_given?
       @to.display_interactive # this returns the item selected
       @to   # this will return the ListObject to the user with list and current_index
-    end
-    # non interactive list display - EACH CALL IS CREATING A LIST OBJECT
-    def udisplay_list text, config={}
+    end  # --- }}}
+
+    # non interactive list display 
+    def udisplay_list text, config={}  # --- {{{
       if @to
         @to.content text
       else
         config[:box] = @box
         @to = ListObject.new self, text, config
       end
-      #@to ||= ListObject.new self, text, config
       yield @to if block_given?
       @to.display_content
       @to
-    end
+    end  # --- }}}
+
+    # --- ListObject {{{
     # displays a list
     # Why did we create another list ? 2011-12-5 
     class ListObject
@@ -600,5 +630,7 @@ module Canis
         return @current_index
       end
     end # class ListObject
+    # --- ListObject }}}
+
   end # class CommandWindow
 end # module
