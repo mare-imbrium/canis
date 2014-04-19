@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-16 23:45
+#  Last update: 2014-04-18 00:58
 # ----------------------------------------------------------------------------- #
 #
 module Canis
@@ -31,10 +31,10 @@ module Canis
         # clashes with M-v for toggle one key selection, i guess you can set it as you like
         bind_key(?\M-v, 'scroll backward'){ scroll_backward }
         bind_key(?\C-s, 'ask search'){ ask_search() }
-        bind_key(?\C-n, 'next row'){ next_row() }
-        bind_key(?\C-p, 'previous row'){ previous_row() }
-        bind_key(?\M->, 'goto bottom'){ goto_bottom() }
-        bind_key(?\M-<, 'goto top'){ goto_top() }
+        bind_key(?\C-n, 'next row'){ down() }
+        bind_key(?\C-p, 'previous row'){ down() }
+        bind_key(?\M->, 'goto bottom'){ goto_end() }
+        bind_key(?\M-<, 'goto top'){ goto_start() }
         bind_key([?\C-x, ?>], :scroll_right)
         bind_key([?\C-x, ?<], :scroll_left)
       end
@@ -46,10 +46,19 @@ module Canis
         bind_key(?w, 'forward_word'){ forward_word }
         bind_key(?b, 'backward_word'){ backward_word }
         bind_key(?\C-d, 'scroll forward'){ scroll_forward() }
+        bind_key(32, 'scroll forward'){ scroll_forward() } unless $row_selector == 32
+        bind_key(0, 'scroll backward'){ scroll_backward() } unless $range_selector == 0
         bind_key(?\C-b, 'scroll backward'){ scroll_backward() }
+        bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down } 
+        bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
         bind_key([?g,?g], 'goto start'){ goto_start } # mapping double keys like vim
-        bind_key(?G, 'goto end'){ goto_bottom() }
+        bind_key(?G, 'goto end'){ goto_end() }
+
+        # textpad has removed this since it messes with bookmarks which are on single-quote
         bind_key([?',?'], 'goto last position'){ goto_last_position } # vim , goto last row position (not column)
+        bind_key(?L, :bottom_of_window)
+        bind_key(?M, :middle_of_window)
+        bind_key(?H, :top_of_window)
 
         bind_key(?/, :ask_search)
         bind_key(?n, :find_more)
