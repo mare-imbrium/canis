@@ -1,5 +1,5 @@
 require 'canis/core/util/app'
-require 'canis/core/util/bottomline'
+require 'canis/core/util/extras/bottomline'
 require 'fileutils'
 
 # this will go into top namespace so will conflict with other apps!
