@@ -23,9 +23,12 @@ require 'pathname'
 =end
 module Canis
 
+  # --- History class {{{
   # just so the program does not bomb due to a tiny feature
   # I do not raise error on nil array, i create a dummy array
   # which you likely will not be able to use, in any case it will have only one value
+  #
+  # Enable field history on UP and DOWN during rbgetstr
   class History < Struct.new(:array, :current_index)
     attr_reader :last_index
     attr_reader :current_index
@@ -80,6 +83,8 @@ module Canis
       @current_index = max_index
     end
   end # class
+  # --- History class }}}
+ 
   # some variables are polluting space of including app,
   # we should make this a class.
   class Bottomline 
@@ -88,9 +93,6 @@ module Canis
     attr_accessor :name # for debugging
     def initialize win=nil, row=nil
       @window = win
-      #@window.wrefresh
-      #Ncurses::Panel.update_panels
-      #@message_row = row
       @message_row = 0 # 2011-10-8 
     end
     #
@@ -103,6 +105,7 @@ module Canis
       return ewin
     end
 
+    # ---- highline part {{{
     class QuestionError < StandardError
       # do nothing, just creating a unique error type
     end
@@ -970,6 +973,7 @@ module Canis
                                      )
       end
     end
+    # --- highline classes }}}
     def ask(question, answer_type=String, &details)
      $log.debug "XXXX inside ask win #{@window} "
       @window ||= _create_footer_window
