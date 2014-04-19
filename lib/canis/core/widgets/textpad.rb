@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 21:13
+#  Last update: 2014-04-18 14:44
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -554,6 +554,7 @@ module Canis
         $multiplier = 0
       end
     end
+
     def middle_of_window
       @current_index = @prow + (@scrollatrows/2)
       $multiplier = 0
