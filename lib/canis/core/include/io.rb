@@ -5,7 +5,15 @@
 #  2010-03-06 12:10 
 #  Some are outdated.
 #  Current are:
-#    * rbgetstr (and those it calls)
+#    * rbgets - get a string at bottom of screen
+#    * get_file 
+#    * rb_getchar - get a char
+#
+#    * Promptmenu creation
+#
+#    * 
+#    * rbgetstr (and those it calls) (old abd for backward compat)
+#      - rbgetstr is used by vieditable for edit_line and insert_line
 #    * display_cmenu and create_mitem
 # Changes:
 # 2011-12-6 : removed many old, outdated methods.
@@ -28,7 +36,7 @@ module Canis
     # @param [Hash] config - :default, :display_length of Field, :help_text, :tab_completion
     # help_text is displayed on F1
     # tab_completion is a proc which helps to complete user input
-    # This method is now only for backward compatibility
+    # NOTE : This method is now only for **backward compatibility**
     # rbgetstr had various return codes based on whether user asked for help
     # possibly mimicking alpine, or because i could do nothing about it.
     # Now, rbgets handles that and only returns if the user cancels or enters
