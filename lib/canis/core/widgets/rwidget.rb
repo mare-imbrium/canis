@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-17 21:21
+  * Last update: 2014-04-19 19:04
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -585,7 +585,7 @@ module Canis
             return send(blk, *@key_args[keycode])
           else
             ## 2013-03-05 - 19:50 why the hell is there an alert here, nowhere else
-            alert "This ( #{self.class} ) does not respond to #{blk.to_s} "
+            alert "This ( #{self.class} ) does not respond to #{blk.to_s} [PROCESS-KEY]"
             # added 2013-03-05 - 19:50 so called can know
             return :UNHANDLED 
           end
