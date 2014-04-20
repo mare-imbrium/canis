@@ -55,14 +55,15 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != 999 )
-        str = keycode_tos ch
+        str = keycode_tos ch if ch.is_a? Fixnum
         $log.debug  "#{ch} got (#{str})"
         texta << "#{ch} got (#{str})"
         texta.goto_end
         texta.repaint
         @form.repaint
         @window.wrefresh
-        break if ch == ?\q.getbyte(0)
+        #break if ch == ?\q.getbyte(0)
+        break if ch == "q"
       end
     end
   rescue => ex
