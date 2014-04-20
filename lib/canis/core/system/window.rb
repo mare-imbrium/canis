@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-20 00:31
+#  Last update: 2014-04-20 10:27
 #
 #  == CHANGED
 #     removed Pad and Subwin to lib/ver/rpad.rb - hopefully I've seen the last of both
@@ -772,21 +772,6 @@ module Canis
       else
         att = get_attrib att
       end
-        #att = att.downcase.to_sym if att.is_a? String
-      #case att
-      #when :normal
-        #att = Ncurses::A_NORMAL
-      #when :underline
-        #att = Ncurses::A_UNDERLINE
-      #when :bold
-        #att = Ncurses::A_BOLD
-      #when :reverse
-        #att = Ncurses::A_REVERSE    
-      #when :dim
-        #att = Ncurses::A_DIM    
-      #when :blink
-        #att = Ncurses::A_BLINK    # unlikely to work
-      #end
 
       wattron(Ncurses.COLOR_PAIR(color) | att)
       mvwprintw(r, c, "%s", :string, string);
