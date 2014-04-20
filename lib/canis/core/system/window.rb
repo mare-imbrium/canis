@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-20 10:27
+#  Last update: 2014-04-20 18:51
 #
 #  == CHANGED
 #     removed Pad and Subwin to lib/ver/rpad.rb - hopefully I've seen the last of both
@@ -89,7 +89,7 @@ module Canis
       #Ncurses::nodelay(@window, bf = true)
       # wtimeout was causing RESIZE sigwinch to only happen after pressing a key
       #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
-      @stack = []
+      #@stack = [] # since we have moved to handler 2014-04-20 - 11:15 
       @name ||="#{self}"
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
@@ -364,6 +364,14 @@ module Canis
       Ncurses.ungetch(ch)
     end
 
+    # reads a character from keyboard and returns
+    # NOTE:
+    #   if a function key is pressed, multiple such ints will be returned one after the other
+    #   so the caller must decipher the same. See +getchar()+
+    #
+    # @return int 
+    # @return -1 if no char read
+    #
     def getch
       #c = @window.getch
       c = FFI::NCurses.wgetch(@window)
@@ -388,6 +396,14 @@ module Canis
       -1 # is C-c
     end
 
+    # Earlier this was handled by window itself. Now we delegate to a reader
+    # @return int keycode, can be function key or meta or arrow key.
+    #
+    # NOTE:
+    #  This is called by user programs in a loop. 
+    #  We are now moving from returning an int to returning a string similar to what
+    #  user would get on commandline using C-v
+    #
     def getchar
       @key_reader.getchar
     end
@@ -917,7 +933,7 @@ module Canis
   # control codes he gets on the terminal using C-v and map them here.
   #
   #
-  class DefaultKeyReader
+  class DefaultKeyReader # --- {{{
     def initialize win
       @window = win
       @stack = []
@@ -948,7 +964,7 @@ module Canis
     #  Checking for quick press of Alt-[ followed by Alt or printable char
     #  I attempted keeping a hash of combination arrays but it fails in the above
     #  2 cases, so abandoned.
-    def getchar 
+    def _getchar 
       while 1 
         ch = self.getch
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
@@ -1090,6 +1106,160 @@ module Canis
       end # while
     end # def
 
-  end # class DefaultKeyReader
+    # these should be read up from a file so program can update them for a user
+    # These codes were required when we were using stdin outside of ncurses, but ncurses
+    # gives us integer codes for these, and also deciphers function keys and arrow keys
+    $kh=Hash.new
+=begin
+    $kh["OP"]="F1"
+    $kh["[A"]="UP"
+    $kh["[5~"]="PGUP"
+    $kh['']="ESCAPE"
+    KEY_PGDN="[6~"
+    KEY_PGUP="[5~"
+    ## I needed to replace the O with a [ for this to work
+    #  in Vim Home comes as ^[OH whereas on the command line it is correct as ^[[H
+    KEY_HOME='[H'
+    KEY_END="[F"
+    KEY_F1="OP"
+    KEY_UP="[A"
+    KEY_DOWN="[B"
+
+    $kh[KEY_PGDN]="PgDn"
+    $kh[KEY_PGUP]="PgUp"
+    $kh[KEY_HOME]="Home"
+    $kh[KEY_END]="End"
+    $kh[KEY_F1]="F1"
+    $kh[KEY_UP]="UP"
+    $kh[KEY_DOWN]="DOWN"
+    KEY_LEFT='[D' 
+    KEY_RIGHT='[C' 
+    $kh["OQ"]="F2"
+    $kh["OR"]="F3"
+    $kh["OS"]="F4"
+    $kh[KEY_LEFT] = "LEFT"
+    $kh[KEY_RIGHT]= "RIGHT"
+    KEY_F5='[15~'
+    KEY_F6='[17~'
+    KEY_F7='[18~'
+    KEY_F8='[19~'
+    KEY_F9='[20~'
+    KEY_F10='[21~'
+    $kh[KEY_F5]="F5"
+    $kh[KEY_F6]="F6"
+    $kh[KEY_F7]="F7"
+    $kh[KEY_F8]="F8"
+    $kh[KEY_F9]="F9"
+    $kh[KEY_F10]="F10"
+=end
+    # testing out shift+Function. these are the codes my kb generates
+    KEY_S_F1='[1;2P'
+    $kh[KEY_S_F1]="S-F1"
+    $kh['[1;2Q']="S-F2"
+
+    ## get a character from user and return as a string
+    # Adapted from:
+    #http://stackoverflow.com/questions/174933/how-to-get-a-single-character-without-pressing-enter/8274275#8274275
+    # Need to take complex keys and matc against a hash.
+    # We cannot use the cetus example as is since here $stdin.ready? does not work and more importantly
+    # we have keyboard set to true so function keys and arrow keys are not returned as multiple values but as 
+    # one int in the 255 and above range. so that must be interpreted separately.
+    #
+    # If we wait for -1 then quick M-a can get concatenated. we need to take care
+    # a ESC means the previous one should be evaluated and not contactenated
+    def getchar
+        c = nil
+        while true
+          c = self.getch
+          break if c != -1
+        end
+    
+        cn = c
+        #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
+        return "ENTER" if cn == 10 || cn == 13
+        return "BACKSPACE" if cn == 127
+        return "C-SPACE" if cn == 0
+        return "SPACE" if cn == 32
+        # next does not seem to work, you need to bind C-i
+        return "TAB" if cn == 8
+        if cn >= 0 && cn < 27
+          x= cn + 96
+          return "C-#{x.chr}"
+          #return FFI::NCurses::keyname(c)  # this gives result as "^C" 
+        end
+        
+        # if escape then get into a loop and keep checking till -1 or another escape
+        #
+        if c == 27
+          buff=c.chr
+          # if there is another escape coming through then 2 keys were pressed so
+          # evaluate upon hitting an escape
+          # NOTE : i think only if ESc is followed by [ should be keep collectig
+          # otherwise the next char should evaluate. cases like F1 are already being sent in as high integer codes
+          while true
+          
+            k = self.getch
+
+            if k == 27
+              # seems like two Meta keys pressed in quick succession without chance for -1 to kick in
+              # but this still does not catch meta char followed by single char. M-za 
+              x = _evaluate_buff buff
+              # return ESC so it can be interpreted again.
+              @window.ungetch k
+              return x if x
+              $log.warn "getchar: window.rb 1200 Found no mapping for #{buff} "
+              return buff # otherwise caught in loop ???
+            elsif k > -1
+              buff += k.chr
+              # this is an alt/meta code. All other complex codes seem to have a [ after the escape
+              # so we will keep accumulating them.
+              # NOTE this still means that user can press Alt-[ and some letter in quick succession
+              # and it will accumulate rather than be interpreted as M-[.
+              #
+              if buff.length == 2 and k.chr != '['
+                x = _evaluate_buff buff
+                return x if x
+              end
+              #$log.debug "XXX:  getchar adding #{k}, #{k.chr} to buff #{buff} "
+            else
+              # it is -1 so evaluate
+              x = _evaluate_buff buff
+              return x if x
+              return buff
+            end
+          end
+        end
+        
+        # what if keyname does not return anything
+        if c > 127
+          #$log.info "xxxgetchar: window.rb sending #{c} "
+          ch =  FFI::NCurses::keyname(c) 
+          # remove those ugly brackets around function keys
+          if ch && ch[-1]==')'
+            ch = ch.gsub(/[()]/,'')
+          end
+          return ch if ch
+          $log.warn "getchar: window.rb 1234 Found no mapping for #{c} "
+          return c
+        end
+        return c.chr if c
+    end
+
+    # check buffer if some key mapped in global kh for this
+    # Otherwise if it is 2 keys then it is a Meta key
+    # Can return nil if no mapping
+    private
+    def _evaluate_buff buff
+      x=$kh[buff]
+      return x if x
+      #$log.debug "XXX:  getchar returning with  #{buff}"
+      if buff.size == 2
+        ## possibly a meta/alt char
+        k = buff[-1]
+        return "M-#{k.chr}"
+      end
+    end
+
+  end # class DefaultKeyReader -- }}}
 
 end
