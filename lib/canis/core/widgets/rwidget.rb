@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-19 19:04
+  * Last update: 2014-04-20 10:39
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -339,16 +339,6 @@ module Canis
         return att
       end
 
-      # returns last line of full screen, should it be current window ?
-      def last_line; FFI::NCurses.LINES-1; end
-      
-      # Create a one line window typically at the bottom
-      # should we really put this here, too much clutter ?
-      def one_line_window at=last_line(), config={}, &blk
-        at ||= last_line()
-        at = FFI::NCurses.LINES-at if at < 0
-        Canis::Window.new(1,0,at,0)
-      end
       ## repeats the given action based on how value of universal numerica argument
       ##+ set using the C-u key. Or in vim-mode using numeric keys
       def repeatm
