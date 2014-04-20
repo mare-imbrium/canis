@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-20 10:39
+  * Last update: 2014-04-20 18:39
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -196,6 +196,9 @@ module Canis
         txt.gsub(/(.{1,#{max}})( +|$\n?)|(.{1,#{max}})/,
                  "\\1\\3\n") 
       end
+
+      # remove tabs, newlines and non-print chars from a string since these
+      # can mess display
       def clean_string! content
         content.chomp! # don't display newline
         content.gsub!(/[\t\n]/, '  ') # don't display tab
