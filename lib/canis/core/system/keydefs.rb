@@ -4,13 +4,15 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 08.11.11 - 14:57
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 08.11.11 - 14:57
+#  Last update: 2014-04-20 17:28
 # ----------------------------------------------------------------------------- #
 #
 
 # some common definition that we use throughout app. Do not add more, only what is common.
 # I should not have added Sh-F9 and C-left since they are rare, but only to show they exist.
 #
+# THESE are now obsolete since we are moving to string based return values
+# else they should be updated.
 KEY_TAB    = 9
 KEY_F1  = FFI::NCurses::KEY_F1
 KEY_F10  = FFI::NCurses::KEY_F10
