@@ -143,7 +143,6 @@ App.new do
   @form.help_manager.help_text = my_help_text
 
   @form.define_prefix_command :csmap, :scope => self
-  #@form.define_key(:csmap, "r", 'refresh') { refresh }
   @form.define_key(:csmap, "r", 'refresh', :refresh )
   @form.define_key(:csmap, "s", 'specification') { specification }
   @form.bind_key ?\C-s, :csmap
