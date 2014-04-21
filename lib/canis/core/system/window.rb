@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-20 18:51
+#  Last update: 2014-04-21 14:19
 #
 #  == CHANGED
 #     removed Pad and Subwin to lib/ver/rpad.rb - hopefully I've seen the last of both
@@ -1156,7 +1156,16 @@ module Canis
     KEY_S_F1='[1;2P'
     $kh[KEY_S_F1]="S-F1"
     $kh['[1;2Q']="S-F2"
+    $kh['[1;2R']="S-F3"
+    $kh['[1;2S']="S-F4"
+    $kh['[15;2~']="S-F5"
 
+    def getchar
+      _getchar
+    end
+    # NOTE I cannot use this since we are not ready to take a string, that is a big decision that
+    # requries a lot of work, and some decisions. We may bind using "<CR>" or "<C-d>" so 
+    # maybe that's how we may need to send back
     ## get a character from user and return as a string
     # Adapted from:
     #http://stackoverflow.com/questions/174933/how-to-get-a-single-character-without-pressing-enter/8274275#8274275
@@ -1167,7 +1176,7 @@ module Canis
     #
     # If we wait for -1 then quick M-a can get concatenated. we need to take care
     # a ESC means the previous one should be evaluated and not contactenated
-    def getchar
+    def getchar_as_string
         c = nil
         while true
           c = self.getch
