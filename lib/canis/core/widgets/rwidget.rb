@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-20 18:39
+  * Last update: 2014-04-21 21:07
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -406,6 +406,22 @@ module Canis
 
       end
 
+      # define a key with sub-keys to which commands are attached.
+      # e.g. to attach commands to C-x a , C-x b, C-x x etc.
+      #
+      # == Example
+      #
+      # We create a map named :csmap and attach various commands to it
+      # on different keys. At this point, there is no main key that triggers it.
+      # Any key can be made the prefix command later. In this case, C-s was bound
+      # to the map. This is more organized that creating separate maps for
+      # C-s r, C-s s etc which then cannot be changed or customized by user.
+      #
+      #    @form.define_prefix_command :csmap, :scope => self
+      #    @form.define_key(:csmap, "r", 'refresh', :refresh )
+      #    @form.define_key(:csmap, "s", 'specification') { specification }
+      #    @form.bind_key ?\C-s, :csmap
+      #
       def define_prefix_command _name, config={} #_mapvar=nil, _prompt=nil
         $rb_prefix_map ||= {}
         _name = _name.to_sym unless _name.is_a? Symbol
@@ -449,6 +465,19 @@ module Canis
         return _name
       end
 
+      # Define a key for a prefix command.
+      # @see +define_prefix_command+
+      #
+      # == Example: 
+      #
+      #    @form.define_key(:csmap, "s", 'specification') { specification }
+      #    @form.define_key(:csmap, "r", 'refresh', :refresh )
+      #
+      # @param _symbol prefix command symbol (already created using +define_prefix_command+
+      # @param keycode key within the prefix command for given block or action
+      # @param args arguments to be passed to block. The first is a description.
+      #             The second may be a symbol for a method to be executed (if block not given).
+      # @param block action to be executed on pressing keycode
     def define_key _symbol, _keycode, *args, &blk
       #_symbol = @symbol
       h = $rb_prefix_map[_symbol]
@@ -476,16 +505,6 @@ module Canis
       end
       h[_keycode] = blk
     end
-      # define a key within a prefix key map such as C-x
-      def OLDdefine_key _symbol, _keycode, _method=nil, &blk
-        h = $rb_prefix_map[_symbol]
-        raise ArgumentError, "No such keymap #{_symbol} defined. Use define_prefix_command." unless h
-        _keycode = _keycode[0].getbyte(0) if _keycode[0].class == String
-        if !block_given?
-          blk = _method
-        end
-        h[_keycode] = blk
-      end
       # Display key bindings for current widget and form in dialog
       def print_key_bindings *args
         f  = get_current_field
