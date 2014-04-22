@@ -384,6 +384,8 @@ def popuplist list, config={}, &block
   #require 'canis/core/widgets/rlist'
 
   max_visible_items = config[:max_visible_items]
+  # FIXME have to ensure that row and col don't exceed FFI::NCurses.LINES and cols that is the window
+  # should not FINISH outside or padrefresh will fail.
   row = config[:row] || 5
   col = config[:col] || 5
   relative_to = config[:relative_to]
