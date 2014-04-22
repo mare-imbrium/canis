@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-18 14:44
+#  Last update: 2014-04-22 18:12
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -37,9 +37,12 @@ module Canis
     extend Forwardable
 
 # ---- Section initialization start ----- {{{
+    # boolean, whether border to be suppressed or not, default false
     dsl_accessor :suppress_borders
+    # boolean, whether footer is to be printed or not, default true
     dsl_accessor :print_footer
-    dsl_accessor :list_footer
+    #dsl_accessor :list_footer # attempt at making a footer object
+    # index of focussed row, starting 0, index into the data supplied
     attr_reader :current_index
     # rows is the actual number of rows the pad has which is slightly less than height (taking
     #  into account borders. Same for cols and width.
@@ -127,7 +130,7 @@ module Canis
 # ---- Section pad related start ----------- {{{
 
     private
-    ## XXX in list text returns the selected row, list returns the full thing, keep consistent
+    ## creates the pad
     def create_pad
       destroy if @pad
       #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
@@ -178,8 +181,24 @@ module Canis
       left = @window.left
       sr = @startrow + top
       sc = @startcol + left
-      retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , @rows + sr , @cols+ sc );
-      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
+      ser = @rows + sr
+      sec = @cols + sc
+
+      # this is a fix, but the entire popup is not moved up. title and borders are still
+      # drawn in wrong positions, and left there after popup is off.
+=begin
+      maxr = FFI::NCurses.LINES - 2
+      if ser > maxr
+        $log.warn "XXX PADRE correcting ser #{sr} and #{ser} "
+        _t = ser - maxr
+        ser = maxr
+        sr -= _t
+        $log.warn "XXX PADRE after correcting ser #{sr} and #{ser} "
+      end
+=end
+
+      retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
+      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
       # padrefresh can fail if width is greater than NCurses.COLS
       # or if height exceeds tput lines. As long as content is less, it will work
       # the moment content_rows exceeds then this issue happens. 
@@ -1103,9 +1122,21 @@ module Canis
     #
     def ensure_visible row = @current_index
       unless is_visible? row
-          @prow = @current_index
+          @prow = row
       end
     end
+
+    # returns the row offset of the focussed row, based on what is visible
+    # this takes into account scrolling, and is useful if some caller needs to know
+    # where the current index is actually being displayed (example if it wishes to display
+    # a popup at that row)
+    # An argument is not being taken since the index should be visible.
+    def visual_index 
+      row = @current_index
+      row - @prow
+    end
+
+
 
     # ---- Section search related end ----- }}}
 ##---- dead unused {{{
