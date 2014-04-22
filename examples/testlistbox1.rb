@@ -19,7 +19,7 @@ require 'canis/core/widgets/listbox'
     Place cursor on any gem, and execute any of the ":" commands to see the 
     output. "edit" shells out to your EDITOR.
 
-    You can try multiple selection using <space> and <ctrl-space> for range 
+    You can try multiple selection using <v> and <V> for range 
     select. Check the general help screen for more _list_ commands. The selections
     are not mapped to any command.
 
@@ -170,10 +170,13 @@ App.new do
     end
   
  
-  label({:text => "F1 Help, F10 Quit. : for menu. Press F4 and F5 to test popup, space or enter to select", :row => Ncurses.LINES-1, :col => 0, :name => 'lab'})
+  label({:text => "F1 Help, F10 Quit. : for menu. Press F4 and F5 to test popup, v to select", :row => Ncurses.LINES-1, :col => 0, :name => 'lab'})
 
   @form.bind(:RESIZE) { resize() }
-  @form.bind_key(FFI::NCurses::KEY_F4) { row = lb.current_index+lb.row; col=lb.col+lb.current_value.length+1;  ret = popuplist(%w[ andy berlioz strauss tchaiko matz beethoven], :row => row, :col => col, :title => "Names", :bgcolor => :blue, :color => :white) ; alert "got #{ret} "}
+  @form.bind_key(FFI::NCurses::KEY_F4) { row = lb.visual_index+lb.row; col=lb.col+lb.current_value.length+1;  
+                                         
+                                         row = [row, FFI::NCurses.LINES - 8].min
+                                         ret = popuplist(%w[ chopin berlioz strauss tchaiko matz beethoven], :row => row, :col => col, :title => "Names", :bgcolor => :blue, :color => :white) ; alert "got #{ret} "}
 
   @form.bind_key(FFI::NCurses::KEY_F5) {  list = %x[ls].split("\n");ret = popuplist(list, :title => "Files"); alert "Got #{ret} #{list[ret]} " }
 
