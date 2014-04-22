@@ -4,14 +4,13 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-21 14:19
+#  Last update: 2014-04-22 13:37
 #
 #  == CHANGED
-#     removed Pad and Subwin to lib/ver/rpad.rb - hopefully I've seen the last of both
+#     removed dead or redudant code - 2014-04-22 - 12:53 
 #
 # == TODO
 #    strip and remove cruft. Now that I've stopped using pad, can we remove
-#    the prv_printstring nonsense.
 # ----------------------------------------------------------------------------- #
 #
 require 'canis/core/system/ncurses'
@@ -35,8 +34,9 @@ module Canis
     attr_reader   :panel   # reader requires so he can del it in end
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
-    attr_accessor :modified # has it been modified and may need a refresh
+    #attr_accessor :modified # has it been modified and may need a refresh 2014-04-22 - 10:23 CLEANUP
 
+    # creation and layout related {{{
     # @param [Array, Hash] window coordinates (ht, w, top, left)
     # or 
     # @param [int, int, int, int] window coordinates (ht, w, top, left)
@@ -56,7 +56,7 @@ module Canis
       end
 
       @visible = true
-      reset_layout(layout)
+      set_layout(layout)
 
       #$log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
 
@@ -118,14 +118,9 @@ module Canis
 
     def resize_with(layout)
       $log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
-      reset_layout(layout)
-      #@window.wresize(height, width)
+      set_layout(layout)
       wresize(height, width)
-      #FFI::NCurses.wresize(@window,height, width)
-      # this is dicey since we often change top and left in pads only for panning !! XXX
-      #@window.mvwin(top, left)
       mvwin(top, left)
-      #FFI::NCurses.mvwin(@window, top, left)
     end
 
     %w[width height top left].each do |side|
@@ -137,6 +132,30 @@ module Canis
        end"
       )
     end
+    
+    ## 
+    # Creating variables case of array, we still create the hash
+    # @param array or hash containing h w t and l
+    def set_layout(layout)
+      case layout
+      when Array
+        $log.error  "NIL in window constructor" if layout.include? nil
+        raise ArgumentError, "Nil in window constructor" if layout.include? nil
+        # NOTE this is just setting, and not replacing zero with max values
+        @height, @width, @top, @left = *layout
+        raise ArgumentError, "Nil in window constructor" if @top.nil? || @left.nil?
+
+        @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
+      when Hash
+        @layout = layout
+
+        [:height, :width, :top, :left].each do |name|
+          instance_variable_set("@#{name}", @layout[name])
+        end
+      end
+    end
+    # --- layout and creation related }}}
+
     # ADDED DUE TO FFI 
     def wrefresh
       Ncurses.wrefresh(@window)
@@ -160,14 +179,17 @@ module Canis
     # Ncurses
 
     def pos
+      raise "dead code ??"
       return y, x
     end
 
     def y
+      raise "dead code ??"
       Ncurses.getcury(@window)
     end
 
     def x
+      raise "dead code ??"
       Ncurses.getcurx(@window)
     end
 
@@ -189,27 +211,6 @@ module Canis
     end
     alias :move :wmove
 
-    # while moving from ncurses-ruby to FFI need to pass window pointer
-    # for w methods as well as mvw - NOT COMING HERE due to include FFI
-    def OLDmethod_missing(meth, *args)
-      $log.debug " WWWW method missing #{meth} "
-      if meth[0,1]=="w" || meth[0,3] == "mvw"
-        $log.debug " WWWW method missing #{meth} adding window in call "
-        #return @window.send(meth, @window, *args)
-        return FFI::NCurses.send(meth, @window, *args)
-      else
-      end
-      if @window
-        if @window.respond_to? meth
-          @window.send(meth, *args)
-        else
-          FFI::NCurses.send( meth, *args)
-        end
-      else
-        FFI::NCurses.send( meth, *args)
-      end
-    end
-
     def method_missing(name, *args)
       name = name.to_s
       if (name[0,2] == "mv")
@@ -225,6 +226,7 @@ module Canis
       end
       FFI::NCurses.send(name, @window, *args)
     end
+
     def respond_to?(name)
       name = name.to_s
       if (name[0,2] == "mv" && FFI::NCurses.respond_to?("mvw" + name[2..-1]))
@@ -233,133 +235,81 @@ module Canis
       FFI::NCurses.respond_to?("w" + name) || FFI::NCurses.respond_to?(name)
     end
 
-    # NOTE: many of these methods using width will not work since root windows width 
-    #  is 0
-    def print(string, width = width)
-      return unless visible?
-      w = width == 0? Ncurses.COLS : width
-      waddnstr(string.to_s, w) # changed 2011 dts  
-    end
+    #--
+    # removing some methods that not used or used once
+    # leaving here so we not what to do to print in these cases 
+    #def print(string, width = width)
+      #w = width == 0? Ncurses.COLS : width
+      #waddnstr(string.to_s, w) # changed 2011 dts  
+    #end
 
-    # NOTE: many of these methods using width will not work since root windows width 
-    #  is 0
-    def print_yx(string, y = 0, x = 0)
-      w = width == 0? Ncurses.COLS : width
-      mvwaddnstr(y, x, string, w) # changed 2011 dts  
-    end
+    #def print_yx(string, y = 0, x = 0)
+      #w = width == 0? Ncurses.COLS : width
+      #mvwaddnstr(y, x, string, w) # changed 2011 dts  
+    #end
+    #++
 
+    # dead code ??? --- {{{
     # NOTE: many of these methods using width will not work since root windows width 
     #  is 0
     def print_empty_line
+      raise "print empty is working"
       return unless visible?
       w = getmaxx == 0? Ncurses.COLS : getmaxx
       printw(' ' * w)
     end
 
-    # NOTE: many of these methods using width will not work since root windows width 
-    #  is 0
     def print_line(string)
+      raise "print line is working"
       w = getmaxx == 0? Ncurses.COLS : getmaxx
       print(string.ljust(w))
     end
 
-    # returns the actual width in case you've used a root window
-    # which returns a 0 for wid and ht
-    # NOTE: this does not work when resize , use getmaxx instead
-    #
-    def actual_width
-      width == 0? Ncurses.COLS : width
-    end
     
-    #
-    # returns the actual ht in case you've used a root window
-    # which returns a 0 for wid and ht
-    #
-    def actual_height
-      height == 0? Ncurses.LINES : height
-    end
-    
-    # NOTE: many of these methods using width will not work since root windows width 
-    #  is 0
-    #  Previously this printed a chunk as a full line, I've modified it to print on 
-    #  one line. This can be used for running text. 
-    #  NOTE 2013-03-08 - 17:02 added width so we don't overflow
-    def show_colored_chunks(chunks, defcolor = nil, defattr = nil, wid = 999, pcol = 0)
-      return unless visible?
-      ww = 0
-      chunks.each do |chunk| #|color, chunk, attrib|
-        case chunk
-        when Chunks::Chunk
-          color = chunk.color
-          attrib = chunk.attrib
-          text = chunk.text
-
-          ## 2013-03-08 - 19:11 take care of scrolling by means of pcol
-          if pcol > 0
-            if pcol > text.length 
-              # ignore entire chunk and reduce pcol
-              pcol -= text.length
-              next
-            else
-              # print portion of chunk and zero pcol
-              text = text[pcol..-1]
-              pcol = 0
-            end
-          end
-          oldw = ww
-          ww += text.length
-          if ww > wid
-            # if we are exceeding the width then by howmuch
-            rem = wid - oldw
-            if rem > 0
-              # take only as much as we are allowed
-              text = text[0,rem]
-            else
-              break
-            end
-          end
-        when Array
-          # for earlier demos that used an array
-          color = chunk[0]
-          attrib = chunk[2]
-          text = chunk[1]
-        end
-
-        color ||= defcolor
-        attrib ||= defattr
-
-        cc, bg = ColorMap.get_colors_for_pair color
-        #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
-        color_set(color,nil) if color
-        wattron(attrib) if attrib
-        print(text)
-        wattroff(attrib) if attrib
-      end
-    end
 
     def puts(*strings)
+      raise "puts is working, remove this"
       print(strings.join("\n") << "\n")
     end
 
     def _refresh
+      raise "dead code remove"
       return unless visible?
       @window.refresh
     end
 
     def wnoutrefresh
+      raise "dead code ???"
       return unless visible?
       @window.wnoutrefresh
     end
 
     def color=(color)
+      raise "dead code ???"
       @color = color
       @window.color_set(color, nil)
     end
 
     def highlight_line(color, y, x, max)
+      raise "dead code"
       @window.mvchgat(y, x, max, Ncurses::A_NORMAL, color, nil)
     end
+    # doesn't seem to work, clears first line, not both
+    def clear
+      # return unless visible?
+      raise "dead code ??"
+      move 0, 0
+      puts *Array.new(height){ ' ' * (width - 1) }
+    end
 
+    def on_top
+      raise "on_top used, remove this line dead code"
+      Ncurses::Panel.top_panel @panel.pointer
+      wnoutrefresh
+    end
+    # --- dead code ??? }}}
+
+    # return the character to the keyboard buffer to be read again.
     def ungetch(ch)
       Ncurses.ungetch(ch)
     end
@@ -408,6 +358,7 @@ module Canis
       @key_reader.getchar
     end
 
+    #-- old getchar {{{
     # This was getchar() earlier, now i am trying to put it in a class
     # so user can install his own and experiment.
     #
@@ -563,58 +514,12 @@ module Canis
         return ch
       end # while
     end # def
+    #++ }}}
 
-    # doesn't seem to work, clears first line, not both
-    def clear
-      # return unless visible?
-      move 0, 0
-      puts *Array.new(height){ ' ' * (width - 1) }
-    end
 
     # setup and reset
 
-    ## allow user to send an array
-    # I am tired of the hash layout (taken from Canis).
-    def reset_layout(layout)
-      case layout
-      when Array
-        $log.error  "NIL in window constructor" if layout.include? nil
-        raise ArgumentError, "Nil in window constructor" if layout.include? nil
-        @height, @width, @top, @left = *layout
-        raise ArgumentError, "Nil in window constructor" if @top.nil? || @left.nil?
 
-        @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
-      when Hash
-        @layout = layout
-
-        [:height, :width, :top, :left].each do |name|
-          instance_variable_set("@#{name}", layout_value(name))
-        end
-      end
-    end
-
-    # removed ref to default_for since giving error in FFI 2011-09-8 
-    def layout_value(name)
-      value = @layout[name]
-      default = default_for(name)
-
-      value = value.call(default) if value.respond_to?(:call)
-      return (value || default).to_i
-    end
-
-    # this gives error since stdscr is only a pointer at this time
-    def default_for(name)
-      case name
-      when :height, :top
-        #Ncurses.stdscr.getmaxy(stdscr)
-        FFI::NCurses.LINES
-      when :width, :left
-        #Ncurses.stdscr.getmaxx(stdscr)
-        FFI::NCurses.COLS
-      else
-        0
-      end
-    end
 
     # Ncurses panel
 
@@ -634,10 +539,6 @@ module Canis
       @visible = true
     end
 
-    def on_top
-      Ncurses::Panel.top_panel @panel.pointer
-      wnoutrefresh
-    end
 
     def visible?
       @visible
@@ -676,6 +577,7 @@ module Canis
       return pad
     end
 
+    # print and chunk related --- {{{
     #
     # Allows user to send data as normal string or chunks for printing
     # An array is assumed to be a chunk containing color and attrib info
@@ -774,13 +676,6 @@ module Canis
     # underline
     public
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
-      raise "Nil passed to peintstring row:#{r}, col:#{c}, #{color} " if r.nil? || c.nil? || color.nil?
-      #raise "Zero or less passed to printstring row:#{r}, col:#{c} " if $log.debug? && (r <=0 || c <=0)
-      prv_printstring(r,c,string, color, att )
-    end
-
-    ## name changed from printstring to prv_prinstring
-    def prv_printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
       #$log.debug " #{@name} inside window printstring r #{r} c #{c} #{string} "
       if att.nil? 
@@ -794,6 +689,8 @@ module Canis
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
     ##
+    # prints the border for message boxes
+    #
     # NOTE : FOR MESSAGEBOXES ONLY !!!! 
     def print_border_mb row, col, height, width, color, attr
       # the next is for xterm-256 
@@ -820,6 +717,7 @@ module Canis
       mvwaddch row+height-3, col+width-5, Ncurses::ACS_LRCORNER
       mvwvline( row+1, col+width-5, Ncurses::ACS_VLINE, height-4)
     end
+
     ##
     # prints a border around a widget, CLEARING the area.
     #  If calling with a pad, you would typically use 0,0, h-1, w-1.
@@ -835,12 +733,9 @@ module Canis
       # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
       ww=width-2
       (row+1).upto(row+height-1) do |r|
-        prv_printstring( r, col+1," "*ww , color, att)
+        printstring( r, col+1," "*ww , color, att)
       end
-      prv_print_border_only row, col, height, width, color, att
-    end
-    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
-      prv_print_border_only row, col, height, width, color, att
+      print_border_only row, col, height, width, color, att
     end
 
 
@@ -848,7 +743,7 @@ module Canis
     #+ Earlier, we would clean up. Now in some cases, i'd like
     #+ to print border over what's been done. 
     # XXX this reduces 1 from width but not height !!! FIXME 
-    def prv_print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
+    def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       if att.nil? 
         att = Ncurses::A_NORMAL
       else
@@ -866,23 +761,80 @@ module Canis
       mvwvline( row+1, col+width-1, Ncurses::ACS_VLINE, height-1)
       wattroff(Ncurses.COLOR_PAIR(color) | att)
     end
+
+    #  Previously this printed a chunk as a full line, I've modified it to print on 
+    #  one line. This can be used for running text. 
+    #  NOTE 2013-03-08 - 17:02 added width so we don't overflow
+    def show_colored_chunks(chunks, defcolor = nil, defattr = nil, wid = 999, pcol = 0)
+      return unless visible?
+      ww = 0
+      chunks.each do |chunk| #|color, chunk, attrib|
+        case chunk
+        when Chunks::Chunk
+          color = chunk.color
+          attrib = chunk.attrib
+          text = chunk.text
+
+          ## 2013-03-08 - 19:11 take care of scrolling by means of pcol
+          if pcol > 0
+            if pcol > text.length 
+              # ignore entire chunk and reduce pcol
+              pcol -= text.length
+              next
+            else
+              # print portion of chunk and zero pcol
+              text = text[pcol..-1]
+              pcol = 0
+            end
+          end
+          oldw = ww
+          ww += text.length
+          if ww > wid
+            # if we are exceeding the width then by howmuch
+            rem = wid - oldw
+            if rem > 0
+              # take only as much as we are allowed
+              text = text[0,rem]
+            else
+              break
+            end
+          end
+        when Array
+          # for earlier demos that used an array
+          color = chunk[0]
+          attrib = chunk[2]
+          text = chunk[1]
+        end
+
+        color ||= defcolor
+        attrib ||= defattr
+
+        cc, bg = ColorMap.get_colors_for_pair color
+        #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
+        color_set(color,nil) if color
+        wattron(attrib) if attrib
+        #print(text)
+        waddnstr(text.to_s, @width) # changed 2014-04-22 - 11:59  to reduce a function
+        wattroff(attrib) if attrib
+      end
+    end
+    # ----- }}}
+
     # This used to return an Ncurses window object, and you could call methods on it
     # Now it returns a FFI::NCurses.window pointer which you cannot call methods on.
     # You have to pass it to FFI::NCurses.<method>
     def get_window; @window; end
+
+    # returns name of window or self (mostly for debugging)
     def to_s; @name || self; end
-    # use in place of mvwhline if your widget could be using a pad or window
-    def rb_mvwhline row, col, char, width
-      mvwhline row, col, char, width
-    end
-    # use in place of mvwvline if your widget could be using a pad or window
-    def rb_mvwvline row, col, char, width
-      mvwvline row, col, char, width
-    end
-    # use in place of mvaddch if your widget could be using a pad or window
-    def rb_mvaddch row, col, char
-      mvaddch row, col, char
-    end
+
+    # actions to perform when window closed.
+    # == Example
+    #    @window.close_command do
+    #       if confirm("Save tasks?", :default_button => 0)
+    #           take some actions
+    #        end
+    #    end
     def close_command *args, &block
       @close_command ||= []
       @close_args ||= []
@@ -893,14 +845,20 @@ module Canis
 
     # set a single command to confirm whether window shoud close or not
     # Block should return true or false for closing or not
+    # == Examples
+    #
+    #    @window.confirm_close_command do
+    #       confirm "Sure you wanna quit?", :default_button => 1
+    #    end
+    #
     def confirm_close_command *args, &block
       @confirm_close_command = block
       @confirm_close_args    = args
     end
 
-    # need a way of lettign user decide whether he wishes to close 
-    # in which case we return false. However, there could be several commands
-    # mapped. how do we know which is the one that has this authority
+    # Called when window close is requested by user. 
+    # Executes confirm_close block and if it succeeds then executes close commands
+    # called by util/app.rb
     def fire_close_handler
       if @confirm_close_command
         comm = @confirm_close_command
@@ -916,9 +874,12 @@ module Canis
       @close_args = nil
       return true
     end
+
+    # creates a key reader unless overridden by application which should be rare.
     def create_default_key_reader
       @key_reader = DefaultKeyReader.new self
     end
+
   end # window
 
   # created on 2014-04-20 - 00:19 so that user can install own handler
