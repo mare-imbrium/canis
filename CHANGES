@@ -1,0 +1,9 @@
+2014-04-22 - 00:13 
+
+Made some changes in getchar to return STRINGS but not implemented. Evaluating benefits
+in moving to chars, and how to go about.
+
+2014-04-23 - 00:23 
+
+removed many dead methods from window and some from widget
+slight changes in button and label : when_form replaced by FORM_ATTACHED
