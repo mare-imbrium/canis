@@ -291,7 +291,8 @@ module Canis
             text = "%s. %s" % [mnem, text] 
           end
           # print only within range and window height
-          if i >= startindex && row < @window.actual_height
+          #if i >= startindex && row < @window.actual_height
+          if i >= startindex && row < @window.height
             $log.debug "XXX: MENU #{i} > #{startindex} row #{row} col #{col} "
             @window.printstring row+@row_offset, col, text, $normalcolor  
             if indexing
