@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-22 00:55
+  * Last update: 2014-04-23 00:05
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -626,7 +626,7 @@ module Canis
         when Symbol
           @_events << eves
         else
-          raise ArgumentError "register_event: Don't know how to handle #{eves.class}"
+          raise ArgumentError "register_events: Don't know how to handle #{eves.class}"
         end
       end
       ##
@@ -871,12 +871,10 @@ module Canis
       #@attr = nil    # 2011-11-5 i could be removing what's been entered since super is called
 
       @handler = nil # we can avoid firing if nil
-      @event_args = {}
+      #@event_args = {} # 2014-04-22 - 18:47 declared in bind_key
       # These are standard events for most widgets which will be fired by 
       # Form. In the case of CHANGED, form fires if it's editable property is set, so
       # it does not apply to all widgets.
-      #@_events ||= []
-      #@_events.push( *[:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
       register_events( [:ENTER, :LEAVE, :CHANGED, :PROPERTY_CHANGE])
 
       config_setup aconfig # @config.each_pair { |k,v| variable_set(k,v) }
@@ -994,7 +992,11 @@ module Canis
         #$log.debug " setting graphic to form window for #{self.class}, #{form} "
         @graphic = form.window unless form.nil? # use screen for writing, not buffer
       end
+      # execute those actions delayed due to absence of form -- used internally 
+      # mostly by buttons and labels to bind hotkey to form
+      fire_handler(:FORM_ATTACHED, self) if @_events.include? :FORM_ATTACHED
     end
+    
     # puts cursor on correct row.
     def set_form_row
     #  @form.row = @row + 1 + @winrow
@@ -1187,7 +1189,7 @@ module Canis
 
      # returns array of events defined for this object
      def event_list
-       return @@events if defined? @@events
+       return @_events if defined? @_events
        nil
      end
 
@@ -2101,11 +2103,10 @@ module Canis
       #@color = $def_fg_color
       @editable = true
       @focusable = true
-      @event_args = {}             # arguments passed at time of binding, to use when firing event
+      #@event_args = {}             # arguments passed at time of binding, to use when firing event
       map_keys 
       init_vars
-      @_events ||= []
-      @_events.push(:CHANGE)
+      register_events(:CHANGE)
       super
       @display_length ||= 20
       @maxlen ||= @display_length
@@ -2683,10 +2684,9 @@ module Canis
     # justify required a display length, esp if center.
     dsl_property :justify        #:right, :left, :center
     dsl_property :display_length #please give this to ensure the we only print this much
-    #dsl_property :height         #if you want a multiline label. already added to widget
     # for consistency with others 2011-11-5 
     alias :width :display_length
-    alias :width= :display_length=
+    #alias :width= :display_length=
 
     def initialize form, config={}, &block
   
@@ -2698,6 +2698,8 @@ module Canis
       @text = config.fetch(:text, "NOTFOUND")
       @editable = false
       @focusable = false
+      # we have some processing for when a form is attached, registering a hotkey
+      register_events :FORM_ATTACHED
       super
       @justify ||= :left
       @name ||= @text
@@ -2714,8 +2716,8 @@ module Canis
       if @form
         bind_hotkey 
       else
-        @when_form ||= []
-        @when_form << lambda { bind_hotkey }
+      # we have some processing for when a form is attached, registering a hotkey
+        bind(:FORM_ATTACHED){ bind_hotkey }
       end
     end
 
@@ -2799,6 +2801,7 @@ module Canis
   # > Name < look.
   class Button < Widget
     dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
+    # char to be underlined, and bound to Alt-char
     dsl_accessor :mnemonic
     # boolean for whether this is the default button. Careful, don't do this for more than 1
     def initialize form, config={}, &block
@@ -2807,11 +2810,10 @@ module Canis
       @editable = false
       # hotkey denotes we should bind the key itself not alt-key (for menulinks)
       @hotkey = config.delete(:hotkey) 
-      $log.debug "XXX:  HOTKEY #{@hotkey} "
-      @handler={} # event handler
-      @event_args ||= {}
-      @_events ||= []
-      @_events.push :PRESS
+      $log.debug "XXX:  HOTKEY: #{@hotkey} "
+      #@handler={} # event handler
+      #@event_args ||= {}
+      register_events([:PRESS, :FORM_ATTACHED])
       @default_chars = ['> ', ' <'] 
       super
 
@@ -2854,13 +2856,14 @@ module Canis
     # NOTE: Some buttons like checkbox directly call mnemonic, so if they have no form
     # then this processing does not happen
 
+    # set mnemonic for button, this is a hotkey that triggers +fire+ upon pressing Alt+char
     def mnemonic char=nil
       return @mnemonic unless char  # added 2011-11-24 so caller can get mne
 
-      $log.error "ERROR WARN #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
+      #$log.error "ERROR WARN #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
       unless @form
-        @when_form ||= []
-        @when_form << lambda { mnemonic char }
+        # we have some processing for when a form is attached, registering a hotkey
+        bind(:FORM_ATTACHED) { mnemonic char }
         return self # added 2014-03-23 - 22:59 so that we can chain methods
       end
       #return if @form.nil?
@@ -2880,8 +2883,7 @@ module Canis
     def bind_hotkey
       if @form.nil? 
         if @underline
-          @when_form ||= []
-          @when_form << lambda { bind_hotkey }
+          bind(:FORM_ATTACHED){ bind_hotkey }
         end
         return
       end
@@ -2917,14 +2919,8 @@ module Canis
       @text_offset = @surround_chars[0].length
       @surround_chars[0] + ret + @surround_chars[1]
     end
+
     def repaint  # button
-      if @form
-        if @when_form
-          $log.debug "XXX:WHEN  calling when_forms commands"
-          @when_form.each { |c| c.call()  }
-          @when_form = nil
-        end
-      end
 
       @bgcolor ||= $def_bg_color
       @color   ||= $def_fg_color
