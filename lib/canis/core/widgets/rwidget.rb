@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-21 21:07
+  * Last update: 2014-04-22 00:55
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -811,10 +811,9 @@ module Canis
     # common interface for text related to a field, label, textview, button etc
     dsl_property :text
 
-    # next 3 to be checked if used or not. Copied from TK.
-    dsl_property :select_foreground, :select_background  # color init_pair
-    dsl_property :highlight_foreground, :highlight_background  # color init_pair
-    dsl_property :disabled_foreground, :disabled_background  # color init_pair
+    # foreground and background colors when focussed. Currently used with buttons and field
+    # Form checks and repaints on entry if these are set.
+    dsl_property :highlight_foreground, :highlight_background  # FIXME use color_pair
 
     # FIXME is enabled used? is menu using it
     dsl_accessor :focusable, :enabled # boolean
@@ -834,11 +833,6 @@ module Canis
     #attr_accessor :modified          # boolean, value modified or not (moved from field 2009-01-18 00:14 )
     dsl_accessor :help_text          # added 2009-01-22 17:41 can be used for status/tooltips
 
-    dsl_property :preferred_width  # added 2009-10-28 13:40 for splitpanes and better resizing
-    dsl_property :preferred_height  # added 2009-10-28 13:40 for splitpanes and better resizing
-    dsl_property :min_width  # added 2009-10-28 13:40 for splitpanes and better resizing
-    dsl_property :min_height  # added 2009-10-28 13:40 for splitpanes and better resizing
-    # widget also has height and width as a method
 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
@@ -847,19 +841,16 @@ module Canis
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
-    # tired of getting the cursor wrong and guessing, i am now going to try to get absolute
-    # coordinates - 2010-02-07 20:17 this should be updated by parent.
-    #attr_accessor :ext_col_offset, :ext_row_offset # 2010-02-07 20:16  to get abs position for cursor rem 2011-09-29 
-    attr_accessor :rows_panned # moved from form, how many rows scrolled.panned 2010-02-11 15:26 
-    attr_accessor :cols_panned # moved from form, how many cols scrolled.panned 2010-02-11 15:26 
 
     # sometimes inside a container there's no way of knowing if an individual comp is in focus
-    # other than the explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
-    # NOTE state takes care of this and is set by form
+    # other than to explicitly set it and inquire . 2010-09-02 14:47 @since 1.1.5
+    # NOTE state takes care of this and is set by form. boolean
     attr_accessor :focussed  # is this widget in focus, so they may paint differently
 
+    # height percent and width percent used in stacks and flows.
     dsl_accessor :height_pc, :width_pc # tryin out in stacks and flows 2011-11-23 
 
+    # descriptions for each key set in key_handler
     attr_reader :key_label
 
     def initialize aform, aconfig={}, &block
@@ -906,8 +897,6 @@ module Canis
     def init_vars
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
-      @buffer_modified = false 
-      #@manages_cursor = false # form should manage it, I will pass row and col to it. 
     end
 
     # modified
@@ -982,7 +971,6 @@ module Canis
         @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
         # next line should be in same color but only have @att so we can change att is nec
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
-        #@buffer_modified = true # required for form to call buffer_to_screen CLEANUP
     end
 
     def destroy
@@ -1070,18 +1058,6 @@ module Canis
       ret = process_key ch, self
       return :UNHANDLED if ret == :UNHANDLED
       0
-    end
-    # @since 0.1.3
-    def get_preferred_size
-      return @preferred_height, @preferred_width
-    end
-
-
-    ##
-    # Inform the system that the buffer has been modified
-    # and should be blitted over the screen or copied to parent.
-    def set_buffer_modified(tf=true)
-      @buffer_modified = tf
     end
 
 
@@ -1209,25 +1185,12 @@ module Canis
         #setformrowcol r,c 
      end
 
-     # I was removing this altogether but vimsplit needs this, or masterdetail gives form and window
-     # to vimsplit. So i 've removed everything but the form and window setting. 2011-09-29 SETBUFF
-     # move from TextView
-     # parameters relating to buffering - new 2010-02-12 12:09 RFED16
-     # I am merging so i can call multiple times
-     # WARNING NOTE : this does not set Pad's top and left since Pad may not be created yet, or at all
-     def set_buffering params
-     
-       @target_window ||= params[:target_window]
-       @form = params[:form] unless @form
-       if @graphic.nil? 
-         @graphic = @target_window
-       end
-     end
- 
+     # returns array of events defined for this object
      def event_list
        return @@events if defined? @@events
        nil
      end
+
      # 2011-11-12 trying to make color setting a bit sane
      # You may set as a color_pair using get_color which gives a fixnum
      # or you may give 2 color symbols so i can update color, bgcolor and colorpair in one shot
@@ -1319,10 +1282,6 @@ module Canis
     # how many cols the component is panning embedded widget by
     attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
 
-    ## next 2 added since tabbedpanes offset needs to be accounted by form inside it.
-    # NOTE: if you set a form inside another set parent_form in addition to these 2.
-    attr_accessor :add_cols # 2010-01-26 20:23 additional columns due to being placed in some container
-    attr_accessor :add_rows # 2010-01-26 20:23 additional columns due to being placed in some container
 
     # name given to form for debugging
     attr_accessor :name # for debugging 2010-02-02 20:12 
@@ -1333,7 +1292,6 @@ module Canis
       @by_name = {}
       @active_index = -1
       @row = @col = -1
-      @add_cols = @add_rows = 0 # 2010-01-26 20:28  CLEANUP
       @handler = {}
       @modified = false
       @focusable = true
@@ -1730,9 +1688,6 @@ module Canis
     def setrowcol r, c
       @row = r unless r.nil?
       @col = c unless c.nil?
-      r +=  @add_rows unless r.nil? # 2010-01-26 20:31 
-      c +=  @add_cols unless c.nil? # 2010-01-26 20:31 
-      $log.debug " addcols #{@add_cols} addrow #{@add_rows} : #{self} r = #{r} , c = #{c}, parent: #{@parent_form}  "
       if !@parent_form.nil? and @parent_form != self
         $log.debug " (#{@name}) addrow calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
         #r += @parent_form.window.top unless  r.nil?
