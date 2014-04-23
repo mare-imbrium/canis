@@ -76,7 +76,7 @@ if $0 == __FILE__
         variable($results).
         onvalue("Selected bold   ").
         offvalue("UNselected bold").
-        display_length(18).
+        width(18).
         text("Bold attribute ").
         mnemonic('B').
         row(row).
@@ -90,7 +90,7 @@ if $0 == __FILE__
         onvalue "Selected reverse   "
         offvalue "UNselected reverse"
         text "Reverse attribute "
-        display_length 18
+        width 18
         row row
         col col
         mnemonic 'R'
@@ -143,7 +143,7 @@ if $0 == __FILE__
         text("red").
         value("red").
         color("red").
-        display_length(dlen).  # helps when right aligning
+        width(dlen).  # helps when right aligning
         row(row).
         col(col)
 
@@ -152,7 +152,7 @@ if $0 == __FILE__
         text "c&yan"
         value "cyan"
         color "cyan"
-        display_length dlen  # helps when right aligning
+        width dlen  # helps when right aligning
         row row
         col col+24
       end
@@ -163,7 +163,7 @@ if $0 == __FILE__
         text  "&green"
         value  "green"
         color "green"
-        display_length dlen  # helps when right aligning
+        width dlen  # helps when right aligning
         row row
         col col
       end
@@ -172,7 +172,7 @@ if $0 == __FILE__
         text "magenta"
         value "magenta"
         color "magenta"
-        display_length dlen  # helps when right aligning
+        width dlen  # helps when right aligning
         row row
         col col+24
       end
@@ -193,7 +193,8 @@ if $0 == __FILE__
         r.bind(:PROPERTY_CHANGE) do |e| veto.call(e, r.text) end
       }
 
-      @status_line = status_line :row => Ncurses.LINES-2
+      require 'canis/core/widgets/statusline'
+      @status_line = Canis::StatusLine.new @form, :row => Ncurses.LINES-2
       @status_line.command {
         "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [message_label.text]
       }
