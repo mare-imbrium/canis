@@ -9,7 +9,7 @@ def help_text
       This is some help text for Combos
 
       You may press SPACE to invoke the popup and then use arrow keys to traverse. (j and k may also work)
-      SPACE on the popup to select.
+      'v' on the popup to select (or whatever has been set as $row_selector (#{keycode_tos($row_selector)}) )
 
       You may press the first character of the desired item to see all those items starting with that char.
       e.g. pressing "v" will cycle through vt100 and vt102
@@ -49,13 +49,13 @@ if $0 == __FILE__
 
 
 
-        cb = ComboBox.new @form, :row => 7, :col => 2, :display_length => 20, 
+        cb = ComboBox.new @form, :row => 7, :col => 2, :width => 20, 
           :list => %w[xterm xterm-color xterm-256color screen vt100 vt102],
           :arrow_key_policy => :popup,
           :label => "Declare terminal as: "
 
       # arrow_key_policy can be popup or ignore
-        # display_length is used to place combo symbol and popup and should be calculated
+        # width is used to place combo symbol and popup and should be calculated
         # from label.text
 
       @form.help_manager.help_text = help_text
