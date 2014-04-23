@@ -63,11 +63,10 @@ if $0 == __FILE__
         row = 5
         col = 3
 
-      $message = Variable.new
-      $message.value = "Message Comes Here"
-      message_label = Canis::Label.new @form, {'text_variable' => $message, 
-        "name"=>"message_label","row" => Ncurses.LINES-1, "col" => 1, "display_length" => 60,  
-        "height" => 2, 'color' => 'cyan'}
+      _mess = "Message Comes Here"
+      message_label = Canis::Label.new @form, {text: _mess,
+        :name=>"message_label",:row => Ncurses.LINES-1, :col => 1, :width => 60,  
+        :height => 2, :color => :cyan}
 
       $results = Variable.new
       $results.value = "A variable"
@@ -107,13 +106,11 @@ if $0 == __FILE__
         #underline 0
       togglebutton.command do
         if togglebutton.value 
-          $message.value = "Modern look and feel for dialogs"
+          message_label.text "Modern look and feel for dialogs"
         else
-          $message.value = "Classic look and feel for dialogs"
+          message_label.text "Classic look and feel for dialogs"
         end
       end
-      # a special case required since another form (combo popup also modifies)
-      $message.update_command() { message_label.repaint }
 
       @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = 'red' if f.respond_to? :label}
       @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if f.respond_to? :label}
@@ -198,7 +195,7 @@ if $0 == __FILE__
 
       @status_line = status_line :row => Ncurses.LINES-2
       @status_line.command {
-        "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [$message.value]
+        "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [message_label.text]
       }
       row += 1 #2
       ## DSL style of construction
@@ -237,7 +234,7 @@ if $0 == __FILE__
         if ret == :YES || ret == true
           throw(:close); 
         else
-          $message.value = "Quit aborted"
+          message_label = "Quit aborted"
         end
       }
       #col += 22
