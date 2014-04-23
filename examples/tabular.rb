@@ -106,7 +106,7 @@ def _edit h, row, title
     h.each_with_index { |f, i| 
       add Field.new :label => "%*s:" % [_w, f], :text => row[i].chomp, :name => i.to_s, 
         :bgcolor => :cyan,
-        :display_length => 50,
+        :width => 50,
         :label_color_pair => bw
     }
     button_type :ok_cancel
