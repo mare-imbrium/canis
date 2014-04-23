@@ -560,11 +560,10 @@ module Canis
         when Array
           # please don't use this, keep it simple and use hash NOTE
           # we can use r,c, w, h
-          row, col, display_length, height = arg
+          row, col, width, height = arg
           config[:row] = row
           config[:col] = col
-          config[:display_length] = display_length if display_length
-          config[:width] = display_length if display_length
+          config[:width] = width if width
           # width for most XXX ?
           config[:height] = height if height
         when Hash
