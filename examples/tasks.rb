@@ -22,8 +22,8 @@ end
   #flow :margin_top => 1, :item_width => 50 , :height => FFI::NCurses.LINES-2 do
   #stack :margin_top => 1, :width => :expand, :height => FFI::NCurses.LINES-4 do
 
-    #task = field :label => "    Task:", :display_length => 50, :maxlen => 80, :bgcolor => :cyan, :color => :black
-    #pri = field :label => "Priority:", :display_length => 1, :maxlen => 1, :type => :integer, 
+    #task = field :label => "    Task:", :width => 50, :maxlen => 80, :bgcolor => :cyan, :color => :black
+    #pri = field :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
       #:valid_range => 1..9, :bgcolor => :cyan, :color => :black , :default => "5"
     #pri.overwrite_mode = true
     # u,se voerwrite mode for this TODO and catch exception
@@ -51,7 +51,7 @@ end
       end
     }
     lb.bind_key(?e, "Edit Row"){ 
-      if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value, :maxlen => 80, :display_length => 70)) != nil)
+      if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value, :maxlen => 80, :width => 70)) != nil)
 
         lb[lb.current_index]=value
         $data_modified = true
@@ -60,9 +60,9 @@ end
     lb.bind_key(?a, "Add Record"){ 
 
       # ADD
-    task = Field.new :label => "    Task:", :display_length => 60, :maxlen => 80, :bgcolor => :cyan, :color => :black,
+    task = Field.new :label => "    Task:", :width => 60, :maxlen => 80, :bgcolor => :cyan, :color => :black,
     :name => 'task'
-    pri = Field.new :label => "Priority:", :display_length => 1, :maxlen => 1, :type => :integer, 
+    pri = Field.new :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
       :valid_range => 1..9, :bgcolor => :cyan, :color => :black , :default => "5", :name => 'pri'
     pri.overwrite_mode = true
     config = {}
@@ -129,7 +129,7 @@ end
     # flag task with a single character
     lb.bind_key(?!, 'flag'){ 
       line = lb.current_value.chomp
-      value = get_string("Flag for #{line}. Enter one character.", :maxlen => 1, :display_length => 1)
+      value = get_string("Flag for #{line}. Enter one character.", :maxlen => 1, :width => 1)
       #if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value)) != nil)
         #lb[lb.current_index]=value
       #end
