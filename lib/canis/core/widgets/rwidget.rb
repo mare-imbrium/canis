@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-23 00:05
+  * Last update: 2014-04-23 12:50
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -912,6 +912,7 @@ module Canis
     ##
     # getter and setter for text_variable
     def text_variable(*val)
+      raise "deprecated. pls use text() with a String"
       if val.empty?
         @text_variable
       else
@@ -948,7 +949,8 @@ module Canis
     ## return the value of the widget.
     #  In cases where selection is possible, should return selected value/s
     def getvalue
-      @text_variable && @text_variable.value || @text
+      #@text_variable && @text_variable.value || @text
+      @text
     end
     ##
     # Am making a separate method since often value for print differs from actual value
@@ -2126,8 +2128,9 @@ module Canis
     #  @param [Variable] variable containing text value
     #
     def text_variable tv
+      raise "deprecated. pls use text() with a String"
       @text_variable = tv
-      set_buffer tv.value
+      _set_buffer tv.value
     end
     ##
     # define a datatype, currently only influences chars allowed
@@ -2224,13 +2227,13 @@ module Canis
       @repaint_required = true
     end
     ## 
-    # should this do a dup ?? YES
     # set value of Field
     # fires CHANGE handler
-    def set_buffer value
+    # Please don't use this directly, use +text+
+    # This name is from ncurses field, added underscore to emphasize not to use
+    def _set_buffer value   #:nodoc:
       @repaint_required = true
       @datatype = value.class
-      #$log.debug " FIELD DATA #{@datatype}"
       @delete_buffer = @buffer.dup
       @buffer = value.to_s.dup
       # don't allow setting of value greater than maxlen
@@ -2356,8 +2359,8 @@ module Canis
     bind_key(?\C-e, :cursor_end )
     bind_key(?\C-k, :delete_eol )
     bind_key(?\C-_, :undo_delete_eol )
-    #bind_key(27){ set_buffer @original_value }
-    bind_key(?\C-g, 'revert'){ set_buffer @original_value } # 2011-09-29 V1.3.1 ESC did not work
+    #bind_key(27){ text @original_value }
+    bind_key(?\C-g, 'revert'){ text @original_value } # 2011-09-29 V1.3.1 ESC did not work
     @keys_mapped = true
   end
 
@@ -2371,7 +2374,7 @@ module Canis
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
     when 27 # cannot bind it
-      set_buffer @original_value 
+      text @original_value 
     else
       ret = super
       return ret
@@ -2556,13 +2559,13 @@ module Canis
         # so maybe i can do without it here
         #s = val[0].dup
         s = val[0]
-        set_buffer(s)
+        _set_buffer(s)
       end
     end
     alias :default :text
     def text=(val)
       return unless val # added 2010-11-17 20:11, dup will fail on nil
-      set_buffer(val.dup)
+      _set_buffer(val.dup)
     end
   # ADD HERE FIELD
   end
@@ -2708,7 +2711,8 @@ module Canis
     #
     # get the value for the label
     def getvalue
-      @text_variable && @text_variable.value || @text
+      #@text_variable && @text_variable.value || @text
+      @text
     end
     def label_for field
       @label_for = field
@@ -3253,7 +3257,7 @@ module Canis
 
   def self.startup
     Canis::start_ncurses
-    path = File.join(ENV["LOGDIR"] || "./" ,"canis.log")
+    path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
     file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
