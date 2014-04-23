@@ -8,7 +8,7 @@
   * Date:  21.10.11 - 00:29
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  23.10.11 - 00:29
+  * Last update:  2014-04-24 01:04
   == CHANGES
       Focusables so we don't focus on label
   == TODO 
@@ -396,9 +396,9 @@ end # module
 if __FILE__ == $PROGRAM_NAME
   require 'canis/core/util/app'
   App.new do
-    f1 = field "name", :maxlen => 20, :display_length => 20, :bgcolor => :white, 
+    f1 = field "name", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => " Name: ", :label_color_pair => @datacolor
-    f2 = field "email", :display_length => 20, :bgcolor => :white, 
+    f2 = field "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => "Email: ", :label_color_pair => @datacolor
     f3 = radio :group => :grp, :text => "red", :value => "RED", :color => :red
     f4 = radio :group => :grp, :text => "blue", :value => "BLUE", :color => :blue
