@@ -9,17 +9,14 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-23 12:50
+  * Last update: 2014-04-24 00:17
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
   * 2011-10-2 Returning self from dsl_accessor and dsl_property for chaining
   * 2011-10-2 removing clutter of buffering, a lot of junk code removed too.
+  * 2014-04-23 major cleanup. removal of text_variable.
   == TODO 
-  - make some methods private/protected
-  - Add bottom bar also, perhaps allow it to be displayed on a key so it does not take 
-  - Can key bindings be abstracted so they can be inherited /reused.
-  - some kind of CSS style sheet.
 
 
 =end
@@ -36,7 +33,7 @@ REVERSE = FFI::NCurses::A_REVERSE
 UNDERLINE = FFI::NCurses::A_UNDERLINE
 NORMAL = FFI::NCurses::A_NORMAL
 
-class Object
+class Object # yeild eval {{{
 # thanks to terminal-table for this method
   def yield_or_eval &block
     return unless block
@@ -47,7 +44,27 @@ class Object
     end 
   end
 end
-class Module
+# 2009-10-04 14:13 added RK after suggestion on http://www.ruby-forum.com/topic/196618#856703
+# these are for 1.8 compatibility
+unless "a"[0] == "a"
+  class Fixnum
+    def ord
+      self
+    end
+    ## mostly for control and meta characters
+    def getbyte(n)
+      self
+    end
+  end unless "a"[0] == "a"
+  # 2013-03-21 - 187compat
+  class String
+    ## mostly for control and meta characters
+    def getbyte(n)
+      self[n]
+    end
+  end
+end # }}}
+class Module  # dsl_accessor {{{
 ## others may not want this, sets config, so there's a duplicate hash
   # also creates a attr_writer so you can use =.
   #  2011-10-2 V1.3.1 Now returning self, so i can chain calls
@@ -113,28 +130,8 @@ class Module
     }
   end
 
-end
+end # }}}
 
-# 2009-10-04 14:13 added RK after suggestion on http://www.ruby-forum.com/topic/196618#856703
-# these are for 1.8 compatibility
-unless "a"[0] == "a"
-  class Fixnum
-    def ord
-      self
-    end
-    ## mostly for control and meta characters
-    def getbyte(n)
-      self
-    end
-  end unless "a"[0] == "a"
-  # 2013-03-21 - 187compat
-  class String
-    ## mostly for control and meta characters
-    def getbyte(n)
-      self[n]
-    end
-  end
-end
 
 module Canis
   extend self
@@ -155,7 +152,7 @@ module Canis
       attr_reader :string, :event
     end
 
-    module Utils
+    module Utils   # --- {{{
       ## this is the numeric argument used to repeat and action by repeatm()
       $multiplier = 0
 
@@ -208,7 +205,7 @@ module Canis
       # needs to move to a keystroke class
       # please use these only for printing or debugging, not comparing
       # I could soon return symbols instead 2010-09-07 14:14 
-      def keycode_tos keycode
+      def keycode_tos keycode # {{{
         case keycode
         when 33..126
           return keycode.chr
@@ -267,7 +264,7 @@ module Canis
           # all else failed
           return keycode.to_s
         end
-      end
+      end # }}}
 
       # if passed a string in second or third param, will create a color 
       # and return, else it will return default color
@@ -612,9 +609,9 @@ module Canis
         require 'canis/core/util/viewer'
         Canis::Viewer.view what, config, &block
       end
-    end # module
+    end # module  }}}
 
-    module EventHandler
+    module EventHandler # {{{
       # widgets may register their events prior to calling super
       # 2014-04-17 - 20:54 Earlier they were writing directly to a data structure after +super+.
       #
@@ -734,9 +731,9 @@ module Canis
       repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
     end
 
-    end # module eventh
+    end # module eventh }}}
 
-    module ConfigSetup
+    module ConfigSetup # {{{
       # private
       def variable_set var, val
         #nvar = "@#{var}"
@@ -771,38 +768,15 @@ module Canis
           variable_set(e, @config[e])
         end
       end
-    end # module config
+    end # module config }}}
     
-    # Adding widget shortcuts here for non-App cases 2011-10-12 . MOVE these to widget shortcuts
-    #
-    # prints a status line at bottom where mode's statuses et can be reflected
-    def status_line config={}, &block
-      require 'canis/core/widgets/statusline'
-      sl = Canis::StatusLine.new @form, config, &block
-    end
-
-    # add a standard application header
-    # == Example
-    #    header = app_header "canis ", :text_center => "Browser Demo", :text_right =>"New Improved!", 
-    #         :color => :black, :bgcolor => :white, :attr => :bold 
-    def app_header title, config={}, &block
-      require 'canis/core/widgets/applicationheader'
-      header = ApplicationHeader.new @form, title, config, &block
-    end
-    
-    # prints pine-like key labels
-    def dock labels, config={}, &block
-      require 'canis/core/widgets/keylabelprinter'
-      klp = Canis::KeyLabelPrinter.new @form, labels, config, &block
-    end
-
     ##
     # Basic widget class superclass. Anything embedded in a form should
     # extend this, if it wants to be repainted or wants focus. Otherwise.
     # form will be unaware of it.
   
  
-  class Widget
+  class Widget   # {{{
     require 'canis/core/include/action'          # added 2012-01-3 for add_action
     include EventHandler
     include ConfigSetup
@@ -810,6 +784,7 @@ module Canis
     include Io # added 2010-03-06 13:05 
     # common interface for text related to a field, label, textview, button etc
     dsl_property :text
+    dsl_property :width, :height
 
     # foreground and background colors when focussed. Currently used with buttons and field
     # Form checks and repaints on entry if these are set.
@@ -836,8 +811,6 @@ module Canis
 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
-    #attr_accessor :frozen # true false
-    #attr_accessor :frozen_list # list of attribs that cannot be changed
     ## I think parent_form was not a good idea since i can't add parent widget offsets
     ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
@@ -852,6 +825,7 @@ module Canis
 
     # descriptions for each key set in key_handler
     attr_reader :key_label
+    attr_reader :handler                       # event handler
 
     def initialize aform, aconfig={}, &block
       # I am trying to avoid passing the nil when you don't want to give a form.
@@ -966,7 +940,7 @@ module Canis
         @color   ||= $def_fg_color
         $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
         value = getvalue_for_paint
-        len = @display_length || value.length
+        len = @width || value.length
         acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
         @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
         # next line should be in same color but only have @att so we can change att is nec
@@ -1066,7 +1040,7 @@ module Canis
 
 
 
-     ##
+     ## DELETE XXX moved to dsl_property
      # getter and setter for width - 2009-10-29 22:45 
      # Using dsl_property style
      #
@@ -1074,7 +1048,7 @@ module Canis
      # @return [val] earlier value if nil param
      # @since 0.1.3
      #
-     def width(*val)
+     def OLDwidth(*val)
        #$log.debug " inside  width() #{val}"
        if val.empty?
          return @width
@@ -1096,9 +1070,10 @@ module Canis
          #end
        end
      end
-     def width=val
+     def OLDwidth=val
        width(val)
      end
+     ## DELETE XXX moved to dsl_property
      ##
      # getter and setter for height - 2009-10-30 12:25 
      # Using dsl_property style
@@ -1107,7 +1082,7 @@ module Canis
      # @return [val] earlier height if nil param
      # @since 0.1.3
      #
-     def height(*val)
+     def OLDheight(*val)
        #$log.debug " inside  height() #{val[0]}"
        if val.empty?
          return @height
@@ -1124,7 +1099,7 @@ module Canis
          end
        end
      end
-     def height=val
+     def OLDheight=val
        height(val)
      end
     # to give simple access to other components, (eg, parent) to tell a comp to either
@@ -1240,14 +1215,14 @@ module Canis
      end
      #
     ## ADD HERE WIDGET
-  end
+  end #  }}}
 
   ##
   #
   # TODO: we don't have an event for when form is entered and exited.
   # Current ENTER and LEAVE are for when any widgt is entered, so a common event can be put for all widgets
   # in one place.
-  class Form
+  class Form # {{{
     include EventHandler
     include Canis::Utils
     attr_reader :value # ???
@@ -1437,7 +1412,7 @@ module Canis
           #$log.debug " select first field, calling on_leave of #{f} #{@active_index} "
           on_leave f
         rescue => err
-         $log.error " Caught EXCEPTION req_first_field on_leave #{err}"
+         $log.error " Caught EXCEPTION select_first_field on_leave #{err}"
          Ncurses.beep
          #$error_message = "#{err}"
          $error_message.value = "#{err}"
@@ -1446,8 +1421,7 @@ module Canis
       end
       select_field ix
     end
-    # please do not use req_ i will deprecate it soon.
-    alias :req_first_field :select_first_field
+
     # return the offset of first field that takes focus
     def index_of_first_focusable_field
       @widgets.each_with_index do |f, i| 
@@ -1464,8 +1438,6 @@ module Canis
       select_prev_field
     end
 
-    # please do not use req_ i will deprecate it soon.
-    alias :req_last_field :select_last_field
 
     ## do not override
     # form's trigger, fired when any widget loses focus
@@ -1591,7 +1563,7 @@ module Canis
           return 0
         end
       end
-      #req_first_field
+      #
       #$log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
       if @navigation_policy == :CYCLICAL
@@ -1658,8 +1630,6 @@ module Canis
       end
       return :NO_PREV_FIELD
     end
-    alias :req_next_field :select_next_field
-    alias :req_prev_field :select_prev_field
     ##
     # move cursor by num columns. Form
     def addcol num
@@ -1885,72 +1855,10 @@ module Canis
        $last_key = ch
        ret || 0  # 2011-10-17 
   end
-  ##
-  # test program to dump data onto log
-  # The problem I face is that since widget array contains everything that should be displayed
-  # I do not know what all the user wants - what are his data entry fields. 
-  # A user could have disabled entry on some field after modification, so i can't use focusable 
-  # or editable as filters. I just dump everything?
-  # What's more, currently getvalue has been used by paint to return what needs to be displayed - 
-  # at least by label and button.
-  def DEPRECATED_dump_data # CLEAN
-    $log.debug "DEPRECATED DUMPING DATA "
-    @widgets.each do |w|
-      # we need checkbox and radio button values
-      #next if w.is_a? Canis::Button or w.is_a? Canis::Label 
-      next if w.is_a? Canis::Label 
-      next if !w.is_a? Canis::Widget
-      if w.respond_to? :getvalue
-        $log.debug " #{w.name} #{w.getvalue}"
-      else
-        $log.debug " #{w.name} DOES NOT RESPOND TO getvalue"
-      end
-    end
-    $log.debug " END DUMPING DATA "
-  end
-  ##
-  # trying out for splitpane and others who have a sub-form. TabbedPane uses
-  def set_parent_buffer b
-    @parent_buffer = b
-  end
+
   # 2010-02-07 14:50 to aid in debugging and comparing log files.
   def to_s; @name || self; end
 
-  # NOTE: very experimental, use at risk, can change location or be deprec
-  # place given widget below given one, or last added one
-  # Does not check for availability or overlap
-  def place_below me, other=nil
-    $log.warn "WARN deprecated form place_below"
-    w = widgets
-    if other.nil?
-      other = w[-1]
-      # if user calls this after placing this field
-      other = w[-2] if other == me
-    end
-    if other.height.nil? || other.height == 0
-      h = 1
-    else
-      h = other.height
-    end
-    me.row = other.row + h
-    me.col = other.col
-    me
-  end
-  # NOTE: very experimental, use at risk, can change location or be deprec
-  # return location to place next widget (below)
-  # Does not check for availability or overlap
-  def next_position
-    $log.warn "WARN  deprecated form next_position"
-    w = widgets.last
-    if w.height.nil? || w.height == 0
-      h = 1
-    else
-      h = w.height
-    end
-    row = w.row + h
-    col = w.col
-    return row, col
-  end
   #
   # returns in instance of help_manager with which one may install help_text and call help.
   # user apps will only supply help_text, form would already have mapped F1 to help.
@@ -1959,10 +1867,10 @@ module Canis
   end
 
     ## ADD HERE FORM
-  end
+  end # }}}
 
 
-  class HelpManager
+  class HelpManager  # {{{
     def initialize form, config={}, &block
       @form = form
        #super
@@ -2023,12 +1931,12 @@ module Canis
         end
       end
     end
-  end # class
+  end # class }}}
   ## Created and sent to all listeners whenever a property is changed
   # @see fire_property_change
   # @see fire_handler 
   # @since 1.0.5 added 2010-02-25 23:06 
-  class PropertyChangeEvent
+  class PropertyChangeEvent # {{{
     attr_accessor :source, :property_name, :oldvalue, :newvalue
     def initialize source, property_name, oldvalue, newvalue
       set source, property_name, oldvalue, newvalue
@@ -2043,57 +1951,67 @@ module Canis
     def inspect
       to_s
     end
-  end
+  end # }}}
 
   ##
   # Text edit field
-  # NOTE: To get value use getvalue() 
-  # TODO - test text_variable
+  # NOTE: +width+ is the length of the display whereas +maxlen+ is the maximum size that the value 
+  # can take. Thus, +maxlen+ can exceed +width+. Currently, +maxlen+ defaults to +width+ which 
+  # defaults to 20.
+  # NOTE: Use +text(val)+ to set value, and +text()+ to retrieve value
+  # == Example
+  #     f = Field.new @form, text: "Some value", row: 10, col: 2
+  #
+  # Field introduces an event :CHANGE which is fired for each character deleted or inserted
   # TODO: some methods should return self, so chaining can be done. Not sure if the return value of the 
   #   fire_handler is being checked.
   #   NOTE: i have just added repain_required check in Field before repaint
   #   this may mean in some places field does not paint. repaint_require will have to be set
   #   to true in those cases. this was since field was overriding a popup window that was not modal.
   #  
-  class Field < Widget
+  class Field < Widget # {{{
     dsl_accessor :maxlen             # maximum length allowed into field
     attr_reader :buffer              # actual buffer being used for storage
     #
-    # this was unused earlier. Unlike set_label which creates a separate label
-    # object, this stores a label and prints it before the string. This is less
+    # Unlike `set_label` which creates a separate +Label+
+    # object, this stores a +String+ and prints it before the string. This is less
     # customizable, however, in some cases when a field is attached to some container
-    # the label gets left out. This labels is gauranteed to print to the left of the field
+    # the label gets left out. This label is gauranteed to print to the left of the field
+    # This label prints on +row+ and +col+ and the +Field+ after one space, so to align multiple
+    # fields and labels, pad the label appropriately to the longest label.
     # 
-    dsl_accessor :label              # label of field  Unused earlier, now will print 
+    dsl_accessor :label              # label of field  
     dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
     dsl_property :label_attr   # label of field  Unused earlier, now will print 
-    #dsl_accessor :default            # now alias of text 2011-11-5 
-    dsl_accessor :values             # validate against provided list
-    dsl_accessor :valid_regex        # validate against regular expression
-    dsl_accessor :valid_range        # validate against numeric range # 2011-09-29 V1.3.1 
+  
+    dsl_accessor :values             # validate against provided list, (+include?+)
+    dsl_accessor :valid_regex        # validate against regular expression (+match()+)
+    dsl_accessor :valid_range        # validate against numeric range, should respond to +include?+
 
-    dsl_accessor :chars_allowed           # regex, what characters to allow, will ignore all else
-    dsl_accessor :display_length          # how much to display
+    dsl_accessor :chars_allowed           # regex, what characters to allow entry, will ignore all else
     dsl_accessor :show                    # what charactr to show for each char entered (password field)
-    dsl_accessor :null_allowed            # allow nulls, don't validate if null # added 2008-12-22 12:38 
+    dsl_accessor :null_allowed            # allow nulls, don't validate if null # added , boolean
 
     # any new widget that has editable should have modified also
     dsl_accessor :editable          # allow editing
 
-    attr_reader :form
-    attr_reader :handler                       # event handler
+    # alreadt present in WIdget as accessor
+    #attr_reader :form
+    # +type+ is just a convenience over +chars_allowed+ and sets some basic filters 
     attr_reader :type                          # datatype of field, currently only sets chars_allowed
-    #attr_reader :curpos                       # cursor position in buffer current, in WIDGET 
+    # this is the class of the field set in +text()+, so it is returned in same class
     attr_accessor :datatype                    # crrently set during set_buffer
     attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
 
+    # column on which field printed, usually the same as +col+ unless +label+ used.
+    # Required by +History+ to popup field history.
     attr_reader :field_col                     # column on which field is printed
                                                # required due to labels. Is updated after printing
     #                                          # so can be nil if accessed early 2011-12-8 
     # For consistency, now width equates to display_length
-    alias :width :display_length
-    alias :width= :display_length=
+    #alias :width :display_length
+    #alias :width= :display_length=
 
     def initialize form=nil, config={}, &block
       @form = form
@@ -2110,8 +2028,8 @@ module Canis
       init_vars
       register_events(:CHANGE)
       super
-      @display_length ||= 20
-      @maxlen ||= @display_length
+      @width ||= 20
+      @maxlen ||= @width
     end
     def init_vars
       @pcol = 0                    # needed for horiz scrolling
@@ -2122,21 +2040,12 @@ module Canis
       @repaint_required = true
     end
 
-    #
-    # Set Variable as value. 
-    #  This allows using Field as a proxy
-    #  @param [Variable] variable containing text value
-    #
-    def text_variable tv
-      raise "deprecated. pls use text() with a String"
-      @text_variable = tv
-      _set_buffer tv.value
-    end
-    ##
-    # define a datatype, currently only influences chars allowed
+    # define a datatype, sets +chars_allowed+ with some predefined regex
     # integer and float. what about allowing a minus sign? 
+    # These are pretty restrictive, so if you need an open field, use +chars_allowed+
+    # @param symbol :integer, :float, :alpha, :alnum
     def type dtype
-      return if @chars_allowed # disallow changing
+      return self if @chars_allowed # disallow changing
       dtype = dtype.to_s.downcase.to_sym if dtype.is_a? String
       case dtype # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
       when :integer
@@ -2150,6 +2059,7 @@ module Canis
       else
         raise ArgumentError, "Field type: invalid datatype specified. Use :integer, :numeric, :float, :alpha, :alnum "
       end
+      self
     end
 
     #
@@ -2174,7 +2084,7 @@ module Canis
         @buffer.insert(@curpos, char)
       end
       oldcurpos = @curpos
-      $log.warn "XXX:  FIELD CURPOS #{@curpos} blen #{@buffer.length} " #if @curpos > blen
+      #$log.warn "XXX:  FIELD CURPOS #{@curpos} blen #{@buffer.length} " #if @curpos > blen
       @curpos += 1 if @curpos < @maxlen
       @modified = true
       #$log.debug " FIELD FIRING CHANGE: #{char} at new #{@curpos}: bl:#{@buffer.length} buff:[#{@buffer}]"
@@ -2195,8 +2105,8 @@ module Canis
         if ret == 0
           if addcol(1) == -1  # if can't go forward, try scrolling
             # scroll if exceeding display len but less than max len
-            if @curpos > @display_length && @curpos <= @maxlen
-              @pcol += 1 if @pcol < @display_length 
+            if @curpos > @width && @curpos <= @maxlen
+              @pcol += 1 if @pcol < @width 
             end
           end
           set_modified 
@@ -2262,9 +2172,14 @@ module Canis
   
     # create a label linked to this field
     # Typically one passes a Label, but now we can pass just a String, a label 
-    # is created
+    # is created. This differs from +label+ in positioning. The +Field+ is printed on 
+    # +row+ and +col+ and the label before it. Thus, all fields are aligned on column,
+    # however you must leave adequate columns for the label to be printed to the left of the field.
+    #
     # NOTE: 2011-10-20 when field attached to some container, label won't be attached
+    # In such cases, use just +label()+ not +set_label()+.
     # @param [Label, String] label object to be associated with this field
+    # @return label created which can be further customized.
     # FIXME this may not work since i have disabled -1, now i do not set row and col 2011-11-5 
     def set_label label
       # added case for user just using a string
@@ -2311,14 +2226,12 @@ module Canis
     @bgcolor ||= $def_bg_color
     @color   ||= $def_fg_color
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},pcol:#{@pcol},  #{focusable} st: #{@state} ")
-    #return if display_length <= 0 # added 2009-02-17 00:17 sometimes editor comp has 0 and that
-    # becomes negative below, no because editing still happens
-    @display_length = 1 if display_length == 0
+    @width = 1 if width == 0
     printval = getvalue_for_paint().to_s # added 2009-01-06 23:27 
     printval = show()*printval.length unless @show.nil?
     if !printval.nil? 
-      if printval.length > display_length # only show maxlen
-        printval = printval[@pcol..@pcol+display_length-1] 
+      if printval.length > width # only show maxlen
+        printval = printval[@pcol..@pcol+width-1] 
       else
         printval = printval[@pcol..-1]
       end
@@ -2331,7 +2244,7 @@ module Canis
       acolor = get_color(acolor, _color, _bgcolor)
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
-    #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@display_length} c:#{@color} bg:#{@bgcolor} a:#{@attr} :#{@name} "
+    #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@width} c:#{@color} bg:#{@bgcolor} a:#{@attr} :#{@name} "
     r = row
     c = col
     if label.is_a? String
@@ -2341,7 +2254,7 @@ module Canis
       c += label.length + 2
       @col_offset = c-@col            # required so cursor lands in right place
     end
-    @graphic.printstring r, c, sprintf("%-*s", display_length, printval), acolor, @attr
+    @graphic.printstring r, c, sprintf("%-*s", width, printval), acolor, @attr
     @field_col = c
     @repaint_required = false
   end
@@ -2399,17 +2312,17 @@ module Canis
   # goto end of field, "end" is a keyword so could not use it.
   def cursor_end
     blen = @buffer.rstrip.length
-    if blen < @display_length
+    if blen < @width
       set_form_col blen
     else
       # there is a problem here FIXME. 
-      @pcol = blen-@display_length
-      #set_form_col @display_length-1
+      @pcol = blen-@width
+      #set_form_col @width-1
       set_form_col blen
     end
     @curpos = blen # this is position in array where editing or motion is to happen regardless of what you see
                    # regardless of pcol (panning)
-    #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@display_length} fc:#{@form.col}"
+    #  $log.debug " crusor END cp:#{@curpos} pcol:#{@pcol} b.l:#{@buffer.length} d_l:#{@width} fc:#{@form.col}"
     #set_form_col @buffer.length
   end
   # sets the visual cursor on the window at correct place
@@ -2419,7 +2332,7 @@ module Canis
     @curpos = col1 || 0 # NOTE we set the index of cursor here
     c = @col + @col_offset + @curpos - @pcol
     min = @col + @col_offset
-    max = min + @display_length
+    max = min + @width
     c = min if c < min
     c = max if c > max
     $log.debug " #{@name} FIELD set_form_col #{c}, curpos #{@curpos}  , #{@col} + #{@col_offset} pcol:#{@pcol} "
@@ -2438,7 +2351,7 @@ module Canis
   def cursor_forward
     if @curpos < @buffer.length 
       if addcol(1)==-1  # go forward if you can, else scroll
-        @pcol += 1 if @pcol < @display_length 
+        @pcol += 1 if @pcol < @width 
       end
       @curpos += 1
     end
@@ -2491,7 +2404,7 @@ module Canis
           return -1
         end
       elsif num > 0
-        if @form.col >= @col + @col_offset + @display_length
+        if @form.col >= @col + @col_offset + @width
       #    $log.debug " error trying to cursor forward #{@form.col}"
           return -1
         end
@@ -2546,9 +2459,11 @@ module Canis
       getvalue() != @original_value
     end
     #
-    # Use this to set a default text to the field. This does not imply that if the field is left
-    # blank, this value will be used. It only provides this value for editing when field is shown.
-    # @since 1.2.0
+    # Set the value in the field.
+    # @param if none given, returns value existing
+    # @param value (can be int, float, String)
+    # 
+    # @return self
     def text(*val)
       if val.empty?
         return getvalue()
@@ -2568,7 +2483,7 @@ module Canis
       _set_buffer(val.dup)
     end
   # ADD HERE FIELD
-  end
+  end # }}}
         
   ##
   # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
@@ -2576,7 +2491,7 @@ module Canis
   # some other widget.
   # This is the new version of Variable. Deleting old version on 2009-01-17 12:04 
 
-  class Variable
+  class Variable # {{{
   
     def initialize value=""
       @update_command = []
@@ -2673,7 +2588,7 @@ module Canis
     def to_s
       inspect
     end
-  end
+  end # }}}
   ##
   # The preferred way of printing text on screen, esp if you want to modify it at run time.
   # Use display_length to ensure no spillage.
@@ -2681,23 +2596,18 @@ module Canis
   # 2011-11-12 making it simpler, and single line only. The original multiline label
   #    has moved to extras/multilinelabel.rb
   #
-  class Label < Widget
+  class Label < Widget # {{{
     dsl_accessor :mnemonic       # keyboard focus is passed to buddy based on this key (ALT mask)
 
     # justify required a display length, esp if center.
     dsl_property :justify        #:right, :left, :center
-    dsl_property :display_length #please give this to ensure the we only print this much
+    #dsl_property :display_length #please give this to ensure the we only print this much
     # for consistency with others 2011-11-5 
-    alias :width :display_length
+    #alias :width :display_length
     #alias :width= :display_length=
 
     def initialize form, config={}, &block
   
-      # this crap was used in position_label, find another way. where is it used ?
-      #@row = config.fetch("row",-1)  # why on earth this monstrosity ? 2011-11-5 
-      #@col = config.fetch("col",-1) 
-      #@bgcolor = config.fetch("bgcolor", $def_bg_color)
-      #@color = config.fetch("color", $def_fg_color)
       @text = config.fetch(:text, "NOTFOUND")
       @editable = false
       @focusable = false
@@ -2758,25 +2668,25 @@ module Canis
         value = value.join " "
       end
       # ensure we do not exceed
-      if @display_length
-        if value.length > @display_length
-          value = value[0..@display_length-1]
+      if @width
+        if value.length > @width
+          value = value[0..@width-1]
         end
       end
-      len = @display_length || value.length
+      len = @width || value.length
       #acolor = get_color $datacolor
       # the user could have set color_pair, use that, else determine color
       # This implies that if he sets cp, then changing col and bg won't have an effect !
       # A general routine that only changes color will not work here.
       acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
-      #$log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@display_length} "
+      #$log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@width} "
       str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
     
       @graphic ||= @form.window
       # clear the area
       @graphic.printstring r, c, " " * len , acolor, @attr
       if @justify.to_sym == :center
-        padding = (@display_length - value.length)/2
+        padding = (@width - value.length)/2
         value = " "*padding + value + " "*padding # so its cleared if we change it midway
       end
       @graphic.printstring r, c, str % [len, value], acolor, @attr
@@ -2794,7 +2704,7 @@ module Canis
       raise "Cannot leave Label"
     end
   # ADD HERE LABEL
-  end
+  end # }}}
   ##
   # action buttons
   # NOTE: When firing event, an ActionEvent will be passed as the first parameter, followed by anything
@@ -2803,7 +2713,7 @@ module Canis
   # 2011-11-26 : define button as default, so it can show differently and also fire on ENTER
   # trying out behavior change. space to fire current button, ENTER for default button which has
   # > Name < look.
-  class Button < Widget
+  class Button < Widget # {{{
     dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
     # char to be underlined, and bound to Alt-char
     dsl_accessor :mnemonic
@@ -2914,7 +2824,8 @@ module Canis
     end
 
     def getvalue
-      @text_variable.nil? ? @text : @text_variable.get_value(@name)
+      #@text_variable.nil? ? @text : @text_variable.get_value(@name)
+      @text
     end
 
     # ensure text has been passed or action
@@ -2949,7 +2860,7 @@ module Canis
         end
         value = getvalue_for_paint
         $log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{_color} bg #{_bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic} datacolor #{$datacolor} ")
-        len = @display_length || value.length
+        len = @width || value.length
         @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
         @graphic.printstring r, c, "%-*s" % [len, value], _color, @attr
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
@@ -3037,11 +2948,11 @@ module Canis
         col += len
       end
     end
-  end #BUTTON
+  end #BUTTON # }}}
   
   ##
   # an event fired when an item that can be selected is toggled/selected
-  class ItemEvent 
+  class ItemEvent  # {{{
     # http://java.sun.com/javase/6/docs/api/java/awt/event/ItemEvent.html
     attr_reader :state   # :SELECTED :DESELECTED
     attr_reader :item   # the item pressed such as toggle button
@@ -3066,24 +2977,24 @@ module Canis
         state, item_first, item_last, param_string 
       @param_string = "Item event fired: #{item}, #{state}" if param_string.nil?
     end
-  end
+  end # }}}
   ##
   # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
   # TODO: add editable here nd prevent toggling if not so.
-  class ToggleButton < Button
+  class ToggleButton < Button # {{{
     dsl_accessor :onvalue, :offvalue
     dsl_accessor :value
     dsl_accessor :surround_chars 
     dsl_accessor :variable    # value linked to this variable which is a boolean
-    dsl_accessor :display_length    #  2009-01-06 00:10 
+    #dsl_accessor :display_length    #  2009-01-06 00:10 
     # background to use when selected, if not set then default
     dsl_accessor :selected_background 
     dsl_accessor :selected_foreground 
 
     # For consistency, now width equates to display_length
-    alias :width :display_length
-    alias :width= :display_length=
+    #alias :width :display_length
+    #alias :width= :display_length=
 
     # item_event
     def initialize form, config={}, &block
@@ -3106,12 +3017,12 @@ module Canis
     alias :selected? :checked?
 
     def getvalue_for_paint
-      unless @display_length
+      unless @width
         if @onvalue && @offvalue
-          @display_length = [ @onvalue.length, @offvalue.length ].max
+          @width = [ @onvalue.length, @offvalue.length ].max
         end
       end
-      buttontext = getvalue().center(@display_length)
+      buttontext = getvalue().center(@width)
       @text_offset = @surround_chars[0].length
       @surround_chars[0] + buttontext + @surround_chars[1]
     end
@@ -3158,12 +3069,12 @@ module Canis
       end
       # call fire of button class 2008-12-09 17:49 
     end
-  end # class
+  end # class # }}}
 
   ##
   # A checkbox, may be selected or unselected
   #
-  class CheckBox < ToggleButton
+  class CheckBox < ToggleButton # {{{
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
@@ -3176,7 +3087,7 @@ module Canis
       
     def getvalue_for_paint
       buttontext = getvalue() ? "X" : " "
-      dtext = @display_length.nil? ? @text : "%-*s" % [@display_length, @text]
+      dtext = @width.nil? ? @text : "%-*s" % [@width, @text]
       dtext = "" if @text.nil?  # added 2009-01-13 00:41 since cbcellrenderer prints no text
       if @align_right
         @text_offset = 0
@@ -3190,14 +3101,14 @@ module Canis
         return pretext + " #{dtext}"
       end
     end
-  end # class
+  end # class # }}}
 
   ##
   # A selectable button that has a text value. It is based on a Variable that
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
   # 2008-11-27 18:45 just made this inherited from Checkbox
 
-  class RadioButton < ToggleButton
+  class RadioButton < ToggleButton # {{{
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
     # if a variable has been defined, off and on value will be set in it (default 0,1)
     def initialize form, config={}, &block
@@ -3218,7 +3129,7 @@ module Canis
 
     def getvalue_for_paint
       buttontext = getvalue() == @value ? "o" : " "
-      dtext = @display_length.nil? ? text : "%-*s" % [@display_length, text]
+      dtext = @width.nil? ? text : "%-*s" % [@width, text]
       if @align_right
         @text_offset = 0
         @col_offset = dtext.length + @surround_chars[0].length + 1
@@ -3253,7 +3164,7 @@ module Canis
         @variable.set_value "",""
       end
     end
-  end # class radio
+  end # class radio # }}}
 
   def self.startup
     Canis::start_ncurses
