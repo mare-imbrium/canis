@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-11-11 - 21:42
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-03-24 16:42
+#  Last update: 2014-04-23 12:52
 # ----------------------------------------------------------------------------- #
 #
 require 'canis'
@@ -48,8 +48,8 @@ module Canis
       super
       ## this was getting overridden this making the combo editable 2014-03-24 - 16:24 
       @editable         = false
-      # added if  check since it was overriding set_buffer in creation. 2009-01-18 00:03 
-      set_buffer @list[@current_index].dup if @buffer.nil? or @buffer.empty?
+      # added if  check since it was overriding text in creation. 2009-01-18 00:03 
+      text @list[@current_index].dup if @buffer.nil? or @buffer.empty?
       init_vars
       @_events.push(*[:CHANGE, :ENTER_ROW, :LEAVE_ROW])
     end
@@ -59,10 +59,6 @@ module Canis
       #@show_symbol = false if @label # 2011-11-13 
       @COMBO_SYMBOL ||= FFI::NCurses::ACS_DARROW #GEQUAL
 
-      # next 2 lines giving an error in newtabbedwindow.rb example since the methods
-      # have been deprecated.
-      #bind_key(KEY_UP) { previous_row }
-      #bind_key(KEY_DOWN) { next_row }
     end
     def selected_item
       @list[@current_index]
@@ -111,20 +107,6 @@ module Canis
         super
       end
     end
-    def DEPprevious_row
-      @current_index -= 1 if @current_index > 0
-      set_buffer @list[@current_index].dup
-      set_modified(true)  ## ??? not required
-      fire_handler :ENTER_ROW, self
-      @list.on_enter_row self
-    end
-    def DEPnext_row
-      @current_index += 1 if @current_index < @list.length()-1
-      set_buffer @list[@current_index].dup
-      set_modified(true)  ## ??? not required
-      fire_handler :ENTER_ROW, self
-      @list.on_enter_row self
-    end
     ##
     # calls a popup list
     # TODO: should not be positioned so that it goes off edge
@@ -146,36 +128,9 @@ module Canis
       # this does not allow us to bind to events in the list
       index = popuplist @list, @list_config
       if index
-        set_buffer @list[index].dup
+        text @list[index].dup
         set_modified(true) if @current_index != index
         @current_index = index
-      end
-    end
-    def OLDpopup
-      listconfig = (@list_config && @list_config.dup) || {}
-      dm = @list
-      # current item in edit box will be focussed when list pops up
-      #$log.debug "XXX POPUP: #{dm.selected_index} = #{@current_index}, value #{@buffer}"
-      # we are having some problms when using this in a list. it retains earlier value
-      _index = dm.index @buffer
-      dm.selected_index = _index #  @current_index
-      poprow = @row+0 # one row below the edit box
-      popcol = @col
-      dlength = @display_length
-      f = self
-      @popup = Canis::PopupList.new do
-        row  poprow
-        col  popcol
-        width dlength
-        list_data_model dm
-        list_selection_mode 'single'
-        relative_to f
-        list_config listconfig
-        bind(:PRESS) do |index|
-          f.set_buffer dm[index].dup
-          f.set_modified(true) if f.current_index != index
-          f.current_index = index
-        end
       end
     end
 
@@ -200,7 +155,7 @@ module Canis
         return 0
       else
         match = next_match(char)
-        set_buffer match unless match.nil?
+        text match unless match.nil?
         fire_handler :ENTER_ROW, self
       end
       @modified = true
