@@ -6,7 +6,7 @@
   * Author: jkepler (http://github.com/mare-imbrium/canis/)
   * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2014-03-28 20:39
+  * Last update:  2014-04-24 01:02
 
   == CHANGES
      As of 1.5.0, this replaces the earlier TabbedPane which
@@ -597,9 +597,9 @@ if __FILE__ == $PROGRAM_NAME
   App.new do
     #r = Container.new nil, :row => 1, :col => 2, :width => 40, :height => 10, :title => "A container"
     r = Container.new nil, :suppress_borders => true
-    f1 = field "name", :maxlen => 20, :display_length => 20, :bgcolor => :white, 
+    f1 = field "name", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => ' Name: '
-    f2 = field "email", :display_length => 20, :bgcolor => :white, 
+    f2 = field "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => 'Email: '
     f3 = radio :group => :grp, :text => "red", :value => "RED", :color => :red
     f4 = radio :group => :grp, :text => "blue", :value => "BLUE", :color => :blue
