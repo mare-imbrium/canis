@@ -62,8 +62,8 @@ if $0 == __FILE__
         texta.repaint
         @form.repaint
         @window.wrefresh
-        #break if ch == ?\q.getbyte(0)
-        break if ch == "q"
+        break if ch == ?\q.getbyte(0)
+        #break if ch == "q"
       end
     end
   rescue => ex

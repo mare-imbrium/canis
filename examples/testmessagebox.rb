@@ -74,7 +74,7 @@ if $0 == __FILE__
       $log.debug "XXX:  got #{@mb.widget(1).text} "
       when 4
       mb = MessageBox.new :title => "HTTP Configuration" , :width => 50 do
-        add Field.new :label => 'User', :name => "user", :display_length => 30, :bgcolor => :cyan
+        add Field.new :label => 'User', :name => "user", :width => 30, :bgcolor => :cyan
         add CheckBox.new :text => "No &frames", :onvalue => "Selected", :offvalue => "UNselected"
         add CheckBox.new :text => "Use &HTTP/1.0", :value => true
         add CheckBox.new :text => "Use &passive FTP"
@@ -87,9 +87,9 @@ if $0 == __FILE__
       field = mb.widget("user")
       field.bind(:ENTER) do |f|   
         listconfig = {:bgcolor => :blue, :color => :white,
-                      :relative_to => field, :col => field.col + 6, :width => field.display_length}
+                      :relative_to => field, :col => field.col + 6, :width => field.width}
         users= %w[john tim lee wong kepler edward _why chad andy]
-        #index = popuplist(users, :relative_to => field, :col => field.col + 6, :width => field.display_length)
+        #index = popuplist(users, :relative_to => field, :col => field.col + 6, :width => field.width)
         index = popuplist(users, listconfig)
         field.text users[index] if index
       end

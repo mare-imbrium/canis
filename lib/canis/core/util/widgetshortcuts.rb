@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-17 21:27
+#  Last update: 2014-04-23 19:35
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -120,6 +120,10 @@ module Canis
       require 'canis/core/widgets/rmenu'
       Canis::MenuBar.new &block
     end
+    # add a standard application header
+    # == Example
+    #    header = app_header "canis ", :text_center => "Browser Demo", :text_right =>"New Improved!", 
+    #         :color => :black, :bgcolor => :white, :attr => :bold 
     def app_header title, config={}, &block
       require 'canis/core/widgets/applicationheader'
       header = ApplicationHeader.new @form, title, config, &block
@@ -194,6 +198,13 @@ module Canis
     def dock labels, config={}, &block
       require 'canis/core/widgets/keylabelprinter'
       klp = Canis::KeyLabelPrinter.new @form, labels, config, &block
+    end
+
+    #
+    # prints a status line at bottom where mode's statuses et can be reflected
+    def status_line config={}, &block
+      require 'canis/core/widgets/statusline'
+      sl = Canis::StatusLine.new @form, config, &block
     end
 
     def link config={}, &block

@@ -279,7 +279,7 @@ module Canis
     def map_keys
       return if @keys_mapped
       @key_map = :both # get both vim and emacs keys
-      require 'canis/core/include/deprecated/listbindings'
+      require 'canis/core/include/listbindings'
       bindings
       #
       # There's one issue, if using vim keys, most of them won't

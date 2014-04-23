@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-11-11 - 21:42
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-23 12:52
+#  Last update: 2014-04-24 00:50
 # ----------------------------------------------------------------------------- #
 #
 require 'canis'
@@ -20,7 +20,7 @@ module Canis
   # the quick approach would be to use field, and just add a popup.
   # Or since we are not editing, we could use a Label and a popup
   # Or just display a label and a popup without using anything else.
-  # Thre is an undocumented variable +display_length+ which is the size of the label
+  # Thre is an undocumented variable +width+ which is the size of the label
   #  This is used to position the combo symbol and the popup. This can be calculated
   #  based on the label. 2014-03-24 - 16:42 
 
@@ -123,7 +123,7 @@ module Canis
       @list_config ||= {}
       @list_config[:row] ||= @row
       #@list_config[:col] ||= @col
-      @list_config[:col] ||= @col + @display_length
+      @list_config[:col] ||= @col + @width
       @list_config[:relative_to] ||= self
       # this does not allow us to bind to events in the list
       index = popuplist @list, @list_config
@@ -195,9 +195,9 @@ module Canis
 
     def repaint
       super
-      c = @col + @display_length
+      c = @col + @width
       if @show_symbol # 2009-01-11 18:47 
-        # i have changed c +1 to c, since we have no right to print beyond display_length
+        # i have changed c +1 to c, since we have no right to print beyond width
         @form.window.mvwaddch @row, c, @COMBO_SYMBOL # Ncurses::ACS_GEQUAL
         @form.window.mvchgat(y=@row, x=c, max=1, Ncurses::A_REVERSE|Ncurses::A_UNDERLINE, $datacolor, nil)
       end

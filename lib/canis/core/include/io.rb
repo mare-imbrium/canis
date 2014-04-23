@@ -33,7 +33,7 @@ module Canis
     # of our own. 
     # @param [String] prompt - label to show
     # @param [Fixnum] maxlen - max length of input
-    # @param [Hash] config - :default, :display_length of Field, :help_text, :tab_completion
+    # @param [Hash] config - :default, :width of Field, :help_text, :tab_completion
     # help_text is displayed on F1
     # tab_completion is a proc which helps to complete user input
     # NOTE : This method is now only for **backward compatibility**
@@ -54,7 +54,7 @@ module Canis
     # get a string at the bottom of the screen
     #
     # @param [String] prompt - label to show
-    # @param [Hash] config - :default, :display_length of Field, :help_text, :tab_completion
+    # @param [Hash] config - :default, :width of Field, :help_text, :tab_completion
     # help_text is displayed on F1
     # tab_completion is a proc which helps to complete user input
     # @yield [Field] for overriding or customization
@@ -75,10 +75,10 @@ module Canis
         default = config[:default] || ""
         prompt = "#{prompt} [#{default}]:" if default.size > 0
         _max = FFI::NCurses.COLS-1-prompt.size-4
-        displen = config[:display_length] || [config[:maxlen] || 999, _max].min
+        displen = config[:width] || [config[:maxlen] || 999, _max].min
         maxlen = config[:maxlen] || _max
         field = Field.new form, :row => r, :col => c, :maxlen => maxlen, :default => default, :label => prompt,
-          :display_length => displen
+          :width => displen
         bg = Ncurses.COLORS >= 236 ? 233 : :blue
         field.bgcolor = bg
         field.cursor_end if default.size > 0

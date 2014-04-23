@@ -71,7 +71,7 @@ if $0 == __FILE__
           name w 
           row  r 
           col  fc 
-          display_length  30
+          width  30
           #text "abcd " 
           set_label Label.new @form, {:text => w, :color=> :cyan, :mnemonic => mnemonics[i]}
         end
@@ -79,7 +79,7 @@ if $0 == __FILE__
       end
 
       f = @form.by_name["line"]
-      f.display_length(3).text(24).valid_range(1..200).
+      f.width(3).text(24).valid_range(1..200).
         maxlen(3).
         type(:integer)
 
@@ -88,7 +88,7 @@ if $0 == __FILE__
       
       @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
         text( "SYNOP").
-        display_length(10).
+        width(10).
         maxlen = 20
 
       @form.by_name["password"].text("").
@@ -100,24 +100,24 @@ if $0 == __FILE__
     r += 3
     l1 = Label.new @form, :name => "profile", :attr => 'bold', :text => "Profile", :row => r, :col => fc
     r += 1
-    f1 = Field.new @form,  :name => "name1", :maxlen => 20, :display_length => 20, :bgcolor => :white, 
+    f1 = Field.new @form,  :name => "name1", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => '    Name: ', :row => r, :col => fc
     r += 1
-    f2 = Field.new @form, :name => "email", :display_length => 20, :bgcolor => :white, 
+    f2 = Field.new @form, :name => "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => '   Email: ', :row => r, :col => fc
     r += 3
     f3 = Field.new @form
-    f3.name("mobile").display_length(20).bgcolor(:white).color(:black).
+    f3.name("mobile").width(20).bgcolor(:white).color(:black).
       text("").label('  Mobile: ').
       row(r).col(fc).
       type(:integer)
     r += 2
 
     Field.new(@form).
-    name("landline").display_length(20).bgcolor(:white).color(:black).
+    name("landline").width(20).bgcolor(:white).color(:black).
       text("").label('Landline: ').
       row(r).col(fc).
-      type(:integer)
+      chars_allowed(/[\d\-]/)
       # a form level event, whenever any widget is focussed, make the label red
       @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = :red if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}
       @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}

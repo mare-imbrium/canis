@@ -16,7 +16,7 @@ module Canis
       if @mnemonic
         form.bind_key(@mnemonic.downcase, self){ self.fire }
       end
-      @display_length = config[:width]
+      @width = config[:width]
     end
     def fire
       super

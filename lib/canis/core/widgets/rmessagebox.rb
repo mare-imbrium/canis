@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-15 14:30
+#  Last update: 2014-04-24 01:02
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -154,11 +154,11 @@ module Canis
       # can use arrow key or C-a and C-e
       if message.size > display_length
         message_label = Canis::Field.new @form, {:text => message, :name=>"message_label",
-          :row => r, :col => message_col, :display_length => display_length,  
+          :row => r, :col => message_col, :width => display_length,  
           :bgcolor => bgclr , :color => clr, :editable => false}
       else
         message_label = Canis::Label.new @form, {:text => message, :name=>"message_label",
-          :row => r, :col => message_col, :display_length => display_length,  
+          :row => r, :col => message_col, :width => display_length,  
           :height => message_height, :bgcolor => bgclr , :color => clr}
       end
       @maxrow = 3

@@ -78,13 +78,12 @@ def get_string label, config={} # yield Field
   field_config[:col] ||= 2
   field_config[:attr] = :reverse
   field_config[:maxlen] ||= config[:maxlen]
-  field_config[:display_length] ||= config[:display_length]
   field_config[:default] ||= config[:default]
   field_config[:default] = field_config[:default].chomp if field_config[:default]
   field_config[:name] = :name
-  #field_config[:display_length] ||= 50  # i want it to extend since i don't know the actual width
   #field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
-  field_config[:width] ||= (field_config[:display_length] || 50)
+  #field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
+  field_config[:width] ||= (field_config[:width] || 50)
 
   defwid = config[:default].nil? ? 30 : config[:default].size + 13
   w = [label.size + 8, defwid, field_config[:width]+13 ].max

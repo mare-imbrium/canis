@@ -52,7 +52,7 @@ def _edit h, row, title
       txt = row[i] || ""
       add Field.new :label => "%*s:" % [_w, f], :text => txt.chomp, :name => i.to_s, 
         :bgcolor => :cyan,
-        :display_length => 50,
+        :width => 50,
         :label_color_pair => bw
     }
     button_type :ok_cancel
