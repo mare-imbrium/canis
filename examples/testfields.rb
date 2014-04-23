@@ -72,26 +72,26 @@ if $0 == __FILE__
           row  r 
           col  fc 
           display_length  30
-          #set_buffer "abcd " 
+          #text "abcd " 
           set_label Label.new @form, {:text => w, :color=> :cyan, :mnemonic => mnemonics[i]}
         end
         r += 1
       end
 
       f = @form.by_name["line"]
-      f.display_length(3).set_buffer(24).valid_range(1..200).
+      f.display_length(3).text(24).valid_range(1..200).
         maxlen(3).
         type(:integer)
 
-      @form.by_name["name"].set_buffer( "Not focusable").
+      @form.by_name["name"].text( "Not focusable").
         set_focusable(false)
       
       @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
-        set_buffer( "SYNOP").
+        text( "SYNOP").
         display_length(10).
         maxlen = 20
 
-      @form.by_name["password"].set_buffer("").
+      @form.by_name["password"].text("").
         show('*').
         color(:red).
         values(%w[scotty tiger secret pass qwerty]).
