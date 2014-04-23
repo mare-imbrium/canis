@@ -15,9 +15,9 @@ class SetupTabbedPane
 
     r = Container.new nil, :suppress_borders => true
     l1 = Label.new nil, :name => "profile", :attr => 'bold', :text => "Profile"
-    f1 = Field.new nil,  :name => "name", :maxlen => 20, :display_length => 20, :bgcolor => :white, 
+    f1 = Field.new nil,  :name => "name", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => ' Name: '
-    f2 = Field.new nil, :name => "email", :display_length => 20, :bgcolor => :white, 
+    f2 = Field.new nil, :name => "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => 'Email: '
     f3 = RadioButton.new nil, :variable => $config_hash, :text => "red", :value => "RED", :color => :red
     f4 = RadioButton.new nil, :variable => $config_hash, :text => "blue", :value => "BLUE", :color => :blue
@@ -53,7 +53,7 @@ class SetupTabbedPane
         item RadioButton.new nil, :row => 3, :col => 2, :text => "ignore", :value => "ignore", :variable => $config_hash[:term]
         item RadioButton.new nil, :row => 4, :col => 2, :text => "popup", :value => "popup", :variable => $config_hash[:term]
         item RadioButton.new nil, :row => 5, :col => 2, :text => "next", :value => "next", :variable => $config_hash[:term]
-        cb = ComboBox.new nil, :row => 7, :col => 2, :display_length => 20, 
+        cb = ComboBox.new nil, :row => 7, :col => 2, :width => 20, 
           :list => %w[xterm xterm-color xterm-256color screen vt100 vt102],
           :label => "Declare terminal as: "
         #radio.update_command() {|rb| ENV['TERM']=rb.value }
