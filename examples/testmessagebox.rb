@@ -91,7 +91,7 @@ if $0 == __FILE__
         users= %w[john tim lee wong kepler edward _why chad andy]
         #index = popuplist(users, :relative_to => field, :col => field.col + 6, :width => field.display_length)
         index = popuplist(users, listconfig)
-        field.set_buffer users[index] if index
+        field.text users[index] if index
       end
       mb.run
 
@@ -104,7 +104,7 @@ if $0 == __FILE__
         listb = Listbox.new :name => "mylist", :row => 4, :col => 3, :width => 50, :height => 10,
           :list => flist, :title => "File List", :selected_bgcolor => :white, :selected_color => :blue,
           :selection_mode => :single, :border_attrib => REVERSE
-        #listb.bind(:ENTER_ROW) { field.set_buffer listb.selected_item }
+        #listb.bind(:ENTER_ROW) { field.text listb.selected_item }
         # if you find that cursor goes into listbox while typing, then
         # i've put set_form_row in listbox list_data_changed
         field.bind(:CHANGE) do |f|   
