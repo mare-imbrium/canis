@@ -375,16 +375,17 @@ module Canis
       # or
       #@blk = block # for later execution using @blk.call()
       #colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
-      #var = Canis::Label.new @form, {'text_variable' => $results, "row" => r, "col" => fc}
     alias :text :label
     
     # print a title on first row -- this is so bad, not even a label
     def title string, config={}
+      raise "don't use DELETE dead code"
       ## TODO center it
       @window.printstring 1, 30, string, $normalcolor, 'reverse'
     end
     # print a sutitle on second row, center and use a label, if this is even used.
     def subtitle string, config={}
+      raise "don't use DELETE"
       @window.printstring 2, 30, string, $datacolor, 'normal'
     end
     # menu bar
