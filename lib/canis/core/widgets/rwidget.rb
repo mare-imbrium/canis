@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-24 00:17
+  * Last update: 2014-04-25 13:31
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -629,15 +629,15 @@ module Canis
       ##
       # bind an event to a block, optional args will also be passed when calling
       def bind event, *xargs, &blk
-       #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
-          if @_events
-            $log.warn "bind: #{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
-            #raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
-          else
-            # it can come here if bind in initial block, since widgets add to @_event after calling super
-            # maybe we can change that.
-            $log.warn "BIND #{self.class} (#{event})  XXXXX no events defined in @_events. Please do so to avoid bugs and debugging. This will become a fatal error soon."
-          end
+        #$log.debug "#{self} called EventHandler BIND #{event}, args:#{xargs} "
+        if @_events
+          $log.warn "bind: #{self.class} does not support this event: #{event}. #{@_events} " if !event? event
+          #raise ArgumentError, "#{self.class} does not support this event: #{event}. #{@_events} " if !event? event
+        else
+          # it can come here if bind in initial block, since widgets add to @_event after calling super
+          # maybe we can change that.
+          $log.warn "BIND #{self.class} (#{event})  XXXXX no events defined in @_events. Please do so to avoid bugs and debugging. This will become a fatal error soon."
+        end
         @handler ||= {}
         @event_args ||= {}
         @handler[event] ||= []
@@ -649,7 +649,7 @@ module Canis
 
       # NOTE: Do we have a way of removing bindings
       # # TODO check if event is valid. Classes need to define what valid event names are
-    
+
       ##
       # Fire all bindings for given event
       # e.g. fire_handler :ENTER, self
@@ -663,7 +663,7 @@ module Canis
         $log.debug "inside def fire_handler evt:#{event}, o: #{object.class}"
         if !@handler.nil?
           if @_events
-            raise ArgumentError, "fire_handler: #{self.class} does not support this event: #{event}. #{@_events} " if !@_events.include? event
+            raise ArgumentError, "fire_handler: #{self.class} does not support this event: #{event}. #{@_events} " if !event? event
           else
             $log.debug "bIND #{self.class}  XXXXX TEMPO no events defined in @_events "
           end
@@ -707,29 +707,39 @@ module Canis
           # I've done this since list traps ENTER but rarely uses it.
           # For buttons default, we'd like to trap ENTER even when focus is elsewhere
           # we must behave exactly as processkey
-            # NOTE this is too risky since then buttons and radio buttons
-            # that don't have any command don;t update,so removing 2011-12-2 
+          # NOTE this is too risky since then buttons and radio buttons
+          # that don't have any command don;t update,so removing 2011-12-2 
           #return :UNHANDLED
           # If caller wants, can return UNHANDLED such as list and ENTER.
-            return :NO_BLOCK
+          return :NO_BLOCK
         end # if
       end
       ## added on 2009-01-08 00:33 
       # goes with dsl_property
       # Need to inform listeners - done 2010-02-25 23:09 
       # Can throw a FieldValidationException or PropertyVetoException
-    def fire_property_change text, oldvalue, newvalue
-      return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
-      $log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
-      if @pce.nil?
-        @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
-      else
-        @pce.set( self, text, oldvalue, newvalue)
+      def fire_property_change text, oldvalue, newvalue
+        return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
+        $log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+        if @pce.nil?
+          @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
+        else
+          @pce.set( self, text, oldvalue, newvalue)
+        end
+        fire_handler :PROPERTY_CHANGE, @pce
+        @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
+        repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
       end
-      fire_handler :PROPERTY_CHANGE, @pce
-      @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
-      repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
-    end
+
+      # returns boolean depending on whether this widget has registered the given event
+      def event? eve
+        @_events.include? eve
+      end
+
+      # returns event list for this widget
+      def event_list
+        @_events
+      end
 
     end # module eventh }}}
 
@@ -791,7 +801,8 @@ module Canis
     dsl_property :highlight_foreground, :highlight_background  # FIXME use color_pair
 
     # FIXME is enabled used? is menu using it
-    dsl_accessor :focusable, :enabled # boolean
+    #dsl_accessor :focusable, :enabled # boolean
+    # This means someone can change label to focusable ! there should be someting like CAN_TAKE_FOCUS
     dsl_property :row, :col            # location of object
     dsl_property :color, :bgcolor      # normal foreground and background
     # moved to a method which calculates color 2011-11-12 
@@ -811,8 +822,6 @@ module Canis
 
     attr_accessor  :_object_created   # 2010-09-16 12:12 to prevent needless property change firing when object being set
     
-    ## I think parent_form was not a good idea since i can't add parent widget offsets
-    ##+ thus we should use parent_comp and push up.
     attr_accessor :parent_component  # added 2010-01-12 23:28 BUFFERED - to bubble up
 
     # sometimes inside a container there's no way of knowing if an individual comp is in focus
@@ -883,18 +892,6 @@ module Canis
       @form.modified = true if tf
     end
     alias :modified :set_modified
-    ##
-    # getter and setter for text_variable
-    def text_variable(*val)
-      raise "deprecated. pls use text() with a String"
-      if val.empty?
-        @text_variable
-      else
-        @text_variable = val[0] 
-        $log.debug " GOING TO CALL ADD DELPENDENT #{self}"
-        @text_variable.add_dependent(self)
-      end
-    end
 
     ## got left out by mistake 2008-11-26 20:20 
     def on_enter
@@ -970,7 +967,7 @@ module Canis
       end
       # execute those actions delayed due to absence of form -- used internally 
       # mostly by buttons and labels to bind hotkey to form
-      fire_handler(:FORM_ATTACHED, self) if @_events.include? :FORM_ATTACHED
+      fire_handler(:FORM_ATTACHED, self) if event? :FORM_ATTACHED
     end
     
     # puts cursor on correct row.
@@ -1015,6 +1012,23 @@ module Canis
       if @form.validate_field != -1
         @form.select_field @id
       end
+    end
+    # set or unset focusable (boolean). Whether a widget can get keyboard focus.
+    def focusable(*val)
+      return @focusable if val.empty?
+      oldv = @focusable
+      @focusable = val[0]
+
+      return self if oldv.nil? || @_object_created.nil?
+      # once the form has been painted then any changes will trigger update of focusables.
+      @form.update_focusables if @form
+      # actually i should only set the forms focusable_modified flag rather than call this. FIXME
+      self
+    end
+
+    # is this widget accessible from keyboard or not.
+    def focusable?
+      @focusable
     end
     ##
     # remove a binding that you don't want
@@ -1165,10 +1179,11 @@ module Canis
      end
 
      # returns array of events defined for this object
-     def event_list
-       return @_events if defined? @_events
-       nil
-     end
+     # @deprecated, should be in eventhandler
+     #def event_list
+       #return @_events if defined? @_events
+       #nil
+     #end
 
      # 2011-11-12 trying to make color setting a bit sane
      # You may set as a color_pair using get_color which gives a fixnum
@@ -1201,7 +1216,7 @@ module Canis
      # Ideally this is where the block in the constructor should land up.
      # @since 1.5.0    2011-11-21 
      def command *args, &block
-       if @_events.include? :PRESS
+       if event? :PRESS
          bind :PRESS, *args, &block
        else
          bind :CHANGED, *args, &block
@@ -1225,7 +1240,7 @@ module Canis
   class Form # {{{
     include EventHandler
     include Canis::Utils
-    attr_reader :value # ???
+    #attr_reader :value # ???
     
     # array of widgets
     attr_reader :widgets
@@ -1245,25 +1260,20 @@ module Canis
     attr_accessor :active_index
      
     # hash containing widgets by name for retrieval
-    #   Useful if one widget refers to second before second created.
+    # Useful if one widget refers to second before second created.
+    #     lb = @form.by_name["listb"]
     attr_reader :by_name   
 
     # associated menubar
     attr_reader :menu_bar
 
+    # this influences whether navigation will return to first component after last or not
+    # Default is :CYCLICAL which cycles between first and last. In some cases, where a form
+    # or container exists inside a form with buttons or tabs, you may not want cyclical traversal.
     attr_accessor :navigation_policy  # :CYCLICAL will cycle around. Needed to move to other tabs
-    ## i need some way to move the cursor by telling the main form what the coords are
-    ##+ perhaps this will work
-    attr_accessor :parent_form  # added 2009-12-28 23:01 BUFFERED - to bubble up row col changes 
-
-    # how many rows the component is panning embedded widget by
-    attr_accessor :rows_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
-    # how many cols the component is panning embedded widget by
-    attr_accessor :cols_panned  # HACK added 2009-12-30 16:01 BUFFERED  USED ??? CLEANUP XXX
-
 
     # name given to form for debugging
-    attr_accessor :name # for debugging 2010-02-02 20:12 
+    attr_accessor :name 
 
     def initialize win, &block
       @window = win
@@ -1271,15 +1281,18 @@ module Canis
       @by_name = {}
       @active_index = -1
       @row = @col = -1
-      @handler = {}
       @modified = false
       @focusable = true
+      # when widgets are added, add them here if focusable so traversal is easier. However,
+      #  if user changes this during the app, we need to update this somehow. FIXME
+      @focusables = [] # added 2014-04-24 - 12:28 to make traversal easier
       @navigation_policy ||= :CYCLICAL
-      @_events = [:ENTER, :LEAVE, :RESIZE]
+      # 2014-04-24 - 17:42 NO MORE ENTER LEAVE at FORM LEVEL
+      #register_events([:ENTER, :LEAVE, :RESIZE])
+      register_events(:RESIZE)
       instance_eval &block if block_given?
       ## I need some counter so a widget knows it has been panned and can send a correct
       ##+ cursor coordinate to system.
-      @rows_panned = @cols_panned = 0 # how many rows were panned, typically at a higher level
       @_firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
 
@@ -1328,13 +1341,12 @@ module Canis
     def add_widget widget
       # this help to access widget by a name
       if widget.respond_to? :name and !widget.name.nil?
-        ##$log.debug "NAME #{self} adding a widget #{@widgets.length} .. #{widget.name} "
         @by_name[widget.name] = widget
       end
 
-
-      #$log.debug " #{self} adding a widget #{@widgets.length} .. #{widget} "
       @widgets << widget
+      @focusable_modified = true
+
       return @widgets.length-1
     end
     alias :add :add_widget
@@ -1345,8 +1357,26 @@ module Canis
      if widget.respond_to? :name and !widget.name.nil?
        @by_name.delete(widget.name)
      end
+     @focusable_modified = true
      @widgets.delete widget
    end
+
+   # sets a flag that focusables should be updated
+   # called whenever a widgets changes its focusable property
+   def update_focusables
+     $log.debug "XXX:  inside update focusables"
+     @focusable_modified = true
+   end
+
+   private
+   # does the actual job of updating the focusables array
+   def _update_focusables  #:nodoc:
+     @focusable_modified = false
+     @focusables = @widgets.select { |w| w.focusable? }
+   end
+
+   public
+     
    # form repaint
    # to be called at some interval, such as after each keypress.
     def repaint
@@ -1358,11 +1388,11 @@ module Canis
         f.repaint
         f._object_created = true # added 2010-09-16 13:02 now prop handlers can be fired
       end
+      
+      _update_focusables if @focusable_modified
       #  this can bomb if someone sets row. We need a better way!
       if @row == -1 and @_firsttime == true
-        #set_field_cursor 0
-        #  this part caused an endless loop on 2010-01-02 19:20 when scrollpane scrolled up
-        #$log.debug "form repaint calling select field 0 SHOULD HAPPEN FIRST TIME ONLY"
+   
         select_first_field
         @_firsttime = false
       end
@@ -1382,7 +1412,7 @@ module Canis
     # move cursor to where the fields row and col are
     # private
     def setpos r=@row, c=@col
-      $log.debug "setpos : (#{self.name}) #{r} #{c} XXX"
+      #$log.debug "setpos : (#{self.name}) #{r} #{c} XXX"
       ## adding just in case things are going out of bounds of a parent and no cursor to be shown
       return if r.nil? or c.nil?  # added 2009-12-29 23:28 BUFFERED
       return if r<0 or c<0  # added 2010-01-02 18:49 stack too deep coming if goes above screen
@@ -1401,7 +1431,7 @@ module Canis
       # this results in on_leave of last field being executed when form starts.
       #@active_index = -1 # FIXME HACK
       #select_next_field
-      ix =  index_of_first_focusable_field()
+      ix =  @focusables.first
       return unless ix # no focussable field
 
       # if the user is on a field other than current then fire on_leave
@@ -1422,16 +1452,6 @@ module Canis
       select_field ix
     end
 
-    # return the offset of first field that takes focus
-    def index_of_first_focusable_field
-      @widgets.each_with_index do |f, i| 
-        if focusable?(f)
-          #select_field i
-          return i
-        end
-      end
-      nil
-    end
     # take focus to last field on form
     def select_last_field
       @active_index = nil 
@@ -1449,7 +1469,8 @@ module Canis
       # should this not be f.text_var ... f.buffer ?  2008-11-25 18:58 
       #f.text_variable.value = f.buffer if !f.text_variable.nil? # 2008-12-20 23:36 
       f.on_leave if f.respond_to? :on_leave
-      fire_handler :LEAVE, f 
+      # 2014-04-24 - 17:42 NO MORE ENTER LEAVE at FORM LEVEL
+      #fire_handler :LEAVE, f 
       ## to test XXX in combo boxes the box may not be editable by be modified by selection.
       if f.respond_to? :editable and f.modified?
         $log.debug " Form about to fire CHANGED for #{f} "
@@ -1472,21 +1493,23 @@ module Canis
       f.modified false
       #f.set_modified false
       f.on_enter if f.respond_to? :on_enter
-      fire_handler :ENTER, f 
+      # 2014-04-24 - 17:42 NO MORE ENTER LEAVE at FORM LEVEL
+      #fire_handler :ENTER, f 
     end
-    ## is a field focusable
-    # Added a method here, so forms can extend this to avoid focussing on off-screen components
-    def focusable?(f)
-      return f.focusable
-    end
+
     ##
     # puts focus on the given field/widget index
+    # @param index of field in @widgets (or can be a Widget too)
     # XXX if called externally will not run a on_leave of previous field
     def select_field ix0
-      return if @widgets.nil? or @widgets.empty? or !focusable?(@widgets[ix0])
+      if ix0.is_a? Widget
+        ix0 = @widgets.index(ix0)
+      end
+      return if @widgets.nil? or @widgets.empty?
      #$log.debug "inside select_field :  #{ix0} ai #{@active_index}" 
       f = @widgets[ix0]
-      if focusable?(f)
+      return if !f.focusable?
+      if f.focusable?
         @active_index = ix0
         @row, @col = f.rowcol
         #$log.debug " WMOVE insdie sele nxt field : ROW #{@row} COL #{@col} " 
@@ -1536,6 +1559,7 @@ module Canis
       return :UNHANDLED if @widgets.nil? || @widgets.empty?
       #$log.debug "insdie sele nxt field :  #{@active_index} WL:#{@widgets.length}" 
       if @active_index.nil?  || @active_index == -1 # needs to be tested out A LOT
+        # what is this silly hack for still here 2014-04-24 - 13:04  DELETE FIXME
         @active_index = -1 
       else
         f = @widgets[@active_index]
@@ -1554,28 +1578,22 @@ module Canis
          return 0
         end
       end
-      index = @active_index + 1
-      index.upto(@widgets.length-1) do |i|
-        f = @widgets[i]
-        #$log.debug "insdie sele nxt field :  i #{i}  #{index} WL:#{@widgets.length}, field #{f}" 
-        if focusable?(f)
-          select_field i
-          return 0
-        end
+      f = @widgets[@active_index]
+      index = @focusables.index(f)
+      index += 1
+      f = @focusables[index]
+      if f
+        select_field f 
+        return 0
       end
       #
       #$log.debug "insdie sele nxt field FAILED:  #{@active_index} WL:#{@widgets.length}" 
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
       if @navigation_policy == :CYCLICAL
-        @active_index = nil
-        # recursive call worked, but bombed if no focusable field!
-        #select_next_field
-        0.upto(index-1) do |i|
-          f = @widgets[i]
-          if focusable?(f)
-            select_field i
-            return 0
-          end
+        f = @focusables.first
+        if f
+          select_field f
+          return 0
         end
       end
       $log.debug "inside sele nxt field : NO NEXT  #{@active_index} WL:#{@widgets.length}" 
@@ -1605,11 +1623,13 @@ module Canis
         end
       end
 
-      index = @active_index - 1
-      (index).downto(0) do |i|
-        f = @widgets[i]
-        if focusable?(f)
-          select_field i
+      f = @widgets[@active_index]
+      index = @focusables.index(f)
+      if index > 0
+        index -= 1
+        f = @focusables[index]
+        if f
+          select_field f
           return
         end
       end
@@ -1617,17 +1637,10 @@ module Canis
       ## added on 2008-12-14 18:27 so we can skip to another form/tab
       # 2009-01-08 12:24 no recursion, can be stack overflows if no focusable field
       if @navigation_policy == :CYCLICAL
-        @active_index = nil # HACK !!!
-        #select_prev_field
-        total = @widgets.length-1
-        total.downto(index-1) do |i|
-          f = @widgets[i]
-          if focusable?(f)
-            select_field i
-            return
-          end
-        end
+        f = @focusables.last
+        select_field @widgets.index(f) if f
       end
+
       return :NO_PREV_FIELD
     end
     ##
@@ -1649,11 +1662,7 @@ module Canis
       @col += col
       @row += row
       @window.wmove @row, @col
-      # added on 2010-01-05 22:26 so component widgets like scrollpane can get the cursor
-      if !@parent_form.nil? and @parent_form != @form
-        $log.debug " #{@name} addrowcol calling parents setrowcol #{row}, #{col}  "
-        @parent_form.setrowcol row, col
-      end
+    
     end
 
     ## Form
@@ -1662,12 +1671,6 @@ module Canis
     def setrowcol r, c
       @row = r unless r.nil?
       @col = c unless c.nil?
-      if !@parent_form.nil? and @parent_form != self
-        $log.debug " (#{@name}) addrow calling parents setrowcol #{r}, #{c} : pare: #{@parent_form}; self:  #{self}, #{self.class}  "
-        #r += @parent_form.window.top unless  r.nil?
-        #c += @parent_form.window.left unless c.nil?
-        @parent_form.setrowcol r, c
-      end
     end
   ##
 
@@ -2218,10 +2221,12 @@ module Canis
     if @label_unattached
       alert "came here unattachd"
       @label.set_form(@form)
+      @label_unattached = nil
     end
     if @label_unplaced
       alert "came here unplaced"
       position_label
+      @label_unplaced = nil
     end
     @bgcolor ||= $def_bg_color
     @color   ||= $def_fg_color
@@ -2258,9 +2263,15 @@ module Canis
     @field_col = c
     @repaint_required = false
   end
+
+  # deprecated
+  # set or unset focusable 
   def set_focusable(tf)
-    @focusable = tf
+    $log.warn "pls don't use, deprecated. use focusable(boolean)"
+    focusable tf
   end
+ 
+
   def map_keys
     return if @keys_mapped
     bind_key(FFI::NCurses::KEY_LEFT, :cursor_backward )
@@ -2344,8 +2355,7 @@ module Canis
     @delete_buffer = @buffer[@curpos..-1]
     # if pos is 0, pos-1 becomes -1, end of line!
     @buffer = pos == -1 ? "" : @buffer[0..pos]
-    #fire_handler :CHANGE, self    # 2008-12-09 14:51 
-    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, 0, @delete_buffer)     # 2010-09-11 13:01 
+    fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE, 0, @delete_buffer)
     return @delete_buffer
   end
   def cursor_forward
@@ -2480,7 +2490,9 @@ module Canis
     alias :default :text
     def text=(val)
       return unless val # added 2010-11-17 20:11, dup will fail on nil
-      _set_buffer(val.dup)
+      # will bomb on integer or float etc !!
+      #_set_buffer(val.dup)
+      _set_buffer(val)
     end
   # ADD HERE FIELD
   end # }}}
@@ -2490,6 +2502,15 @@ module Canis
   # will update the Variable. A variable can be used to link a field with a label or 
   # some other widget.
   # This is the new version of Variable. Deleting old version on 2009-01-17 12:04 
+  # == Example
+  #    x = Variable.new
+  # If x is passed as the +variable+ for a RadioButton group, then this keeps the value of the
+  # button that is on.
+  #    y = Variable.new false
+  #
+  #    z = Variable.new Hash.new
+  # If z is passed as variable to create several Checkboxes, and each has the +name+ property set,
+  # then this hash will contain the status of each checkbox with +name+ as key.
 
   class Variable # {{{
   
@@ -2504,6 +2525,7 @@ module Canis
     # This is to ensure that change handlers for all dependent objects are called
     # so they are updated. This is called from text_variable property of some widgets. If you 
     # use one text_variable across objects, all will be updated auto. User does not need to call.
+    # NOTE: I have removed text_variable from widget to simplify, so this seems to be dead.
     # @ private
     def add_dependent obj
       $log.debug " ADDING DEPENDE #{obj}"
@@ -2542,11 +2564,11 @@ module Canis
       if @klass == 'String'
         @value = val
       elsif @klass == 'Hash'
-        $log.debug " Variable setting hash #{key} to #{val}"
+        #$log.debug " Variable setting hash #{key} to #{val}"
         oldval = @value[key]
         @value[key]=val
       elsif @klass == 'Array'
-        $log.debug " Variable setting array #{key} to #{val}"
+        #$log.debug " Variable setting array #{key} to #{val}"
         oldval = @value[key]
         @value[key]=val
       else
@@ -2707,6 +2729,12 @@ module Canis
   end # }}}
   ##
   # action buttons
+  # Use +text+ to pass the string to be printed on the button
+  # An ampersand is understaod to denote a shortcut and will map Alt-char to that button's FIRE event
+  # Alternative, +mnemonic(char)+ can also be used.
+  # In the config hash, ':hotkey' may be passed which maps the character itself to the button's FIRE.
+  # This is for menulinks, and maybe a form that has only buttons.
+  # 
   # NOTE: When firing event, an ActionEvent will be passed as the first parameter, followed by anything
   # you may have passed when binding, or calling the command() method. 
   #  - Action: may have to listen to Action property changes so enabled, name etc change can be reflected
@@ -2717,16 +2745,12 @@ module Canis
     dsl_accessor :surround_chars   # characters to use to surround the button, def is square brackets
     # char to be underlined, and bound to Alt-char
     dsl_accessor :mnemonic
-    # boolean for whether this is the default button. Careful, don't do this for more than 1
     def initialize form, config={}, &block
       require 'canis/core/include/ractionevent'
       @focusable = true
       @editable = false
       # hotkey denotes we should bind the key itself not alt-key (for menulinks)
       @hotkey = config.delete(:hotkey) 
-      $log.debug "XXX:  HOTKEY: #{@hotkey} "
-      #@handler={} # event handler
-      #@event_args ||= {}
       register_events([:PRESS, :FORM_ATTACHED])
       @default_chars = ['> ', ' <'] 
       super
@@ -2738,7 +2762,6 @@ module Canis
     end
     ##
     # set button based on Action
-    #  2009-01-21 19:59 
     def action a
       text a.name
       mnemonic a.mnemonic unless a.mnemonic.nil?
@@ -2754,14 +2777,13 @@ module Canis
         s = s.to_s if !s.is_a? String  # 2009-01-15 17:32 
         if (( ix = s.index('&')) != nil)
           s.slice!(ix,1)
-          # 2011-10-20 NOTE XXX I have removed form check since bindkey is called conditionally
           @underline = ix #unless @form.nil? # this setting a fake underline in messageboxes
           @text = s # mnemo needs this for setting description
           mnemonic s[ix,1]
         end
         @text = s
       end
-      return self # added 2014-03-23 - 22:59 so that we can chain methods
+      return self 
     end
 
     ## 
@@ -2774,13 +2796,11 @@ module Canis
     def mnemonic char=nil
       return @mnemonic unless char  # added 2011-11-24 so caller can get mne
 
-      #$log.error "ERROR WARN #{self} COULD NOT SET MNEMONIC since form NIL" if @form.nil?
       unless @form
         # we have some processing for when a form is attached, registering a hotkey
         bind(:FORM_ATTACHED) { mnemonic char }
         return self # added 2014-03-23 - 22:59 so that we can chain methods
       end
-      #return if @form.nil?
       @mnemonic = char
       ch = char.downcase()[0].ord ##  1.9 
       # meta key 
@@ -2794,7 +2814,9 @@ module Canis
     ##
     # bind hotkey to form keys. added 2008-12-15 20:19 
     # use ampersand in name or underline
+    # IS THIS USED ??
     def bind_hotkey
+      alert "bind_hotkey was called in button"
       if @form.nil? 
         if @underline
           bind(:FORM_ATTACHED){ bind_hotkey }
@@ -2802,7 +2824,6 @@ module Canis
         return
       end
       _value = @text || getvalue # hack for Togglebutton FIXME
-      #_value = getvalue
       $log.debug " bind hot #{_value} #{@underline}"
       ch = _value[@underline,1].downcase()[0].ord ##  1.9  2009-10-05 18:55  TOTEST
       @mnemonic = _value[@underline,1]
@@ -2891,13 +2912,10 @@ module Canis
     # added args 2008-12-20 19:22 
     def command *args, &block
       bind :PRESS, *args, &block
-      $log.debug "#{text} bound PRESS"
     end
     ## fires PRESS event of button
     def fire
-      $log.debug "firing PRESS #{text}"
-      # why the .... am i passing form ? Pass a ActionEvent with source, text() and getvalue()
-      #fire_handler :PRESS, @form  changed on 2010-09-12 19:22 
+      #$log.debug "firing PRESS #{text}"
       fire_handler :PRESS, ActionEvent.new(self, :PRESS, text)
     end
     # for campatibility with all buttons, will apply to radio buttons mostly
@@ -2981,22 +2999,20 @@ module Canis
   ##
   # A button that may be switched off an on. 
   # To be extended by RadioButton and checkbox.
+  # WARNING, pls do not override +text+ otherwise checkboxes etc will stop functioning.
   # TODO: add editable here nd prevent toggling if not so.
   class ToggleButton < Button # {{{
+    # text for on value and off value
     dsl_accessor :onvalue, :offvalue
+    # boolean, which value to use currently, onvalue or offvalue
     dsl_accessor :value
+    # characters to use for surround, array, default square brackets
     dsl_accessor :surround_chars 
     dsl_accessor :variable    # value linked to this variable which is a boolean
-    #dsl_accessor :display_length    #  2009-01-06 00:10 
     # background to use when selected, if not set then default
     dsl_accessor :selected_background 
     dsl_accessor :selected_foreground 
 
-    # For consistency, now width equates to display_length
-    #alias :width :display_length
-    #alias :width= :display_length=
-
-    # item_event
     def initialize form, config={}, &block
       super
       
@@ -3005,6 +3021,9 @@ module Canis
     def getvalue
       @value ? @onvalue : @offvalue
     end
+
+    # WARNING, pls do not override +text+ otherwise checkboxes etc will stop functioning.
+
     # added for some standardization 2010-09-07 20:28 
     # alias :text :getvalue # NEXT VERSION
     # change existing text to label
@@ -3048,26 +3067,22 @@ module Canis
     # caller should check state of itemevent passed to block
     def fire
       checked(!@value)
-      # added ItemEvent on 2008-12-31 13:44 
       @item_event = ItemEvent.new self, self if @item_event.nil?
       @item_event.set(@value ? :SELECTED : :DESELECTED)
       fire_handler :PRESS, @item_event # should the event itself be ITEM_EVENT
-    #  fire_handler :PRESS, @form
-    #  super
     end
     ##
     # set the value to true or false
     # user may programmatically want to check or uncheck
     def checked tf
       @value = tf
-      if !@variable.nil?
+      if @variable
         if @value 
           @variable.set_value((@onvalue || 1), @name)
         else
           @variable.set_value((@offvalue || 0), @name)
         end
       end
-      # call fire of button class 2008-12-09 17:49 
     end
   end # class # }}}
 
@@ -3106,7 +3121,13 @@ module Canis
   ##
   # A selectable button that has a text value. It is based on a Variable that
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
-  # 2008-11-27 18:45 just made this inherited from Checkbox
+  # +text+ is the value to display, which can include an ampersand for a hotkey
+  # +value+ is the value returned if selected, which usually is similar to text (or a short word)
+  # +width+ is helpful if placing the brackets to right of text, used to align round brackets
+  #   By default, radio buttons place the button on the left of the text.
+  #
+  # Typically, the variable's update_command is passed a block to execute whenever any of the 
+  # radiobuttons of this group is fired.
 
   class RadioButton < ToggleButton # {{{
     dsl_accessor :align_right    # the button will be on the right 2008-12-09 23:41 
@@ -3114,7 +3135,7 @@ module Canis
     def initialize form, config={}, &block
       @surround_chars = ['(', ')'] if @surround_chars.nil?
       super
-      $log.warn "XXX: FIXME Please set 'value' for radiobutton. If you don't know, try setting it to 'text'" unless @value
+      $log.warn "XXX: FIXME Please set 'value' for radiobutton. If not sure, try setting it to the same value as 'text'" unless @value
       # I am setting value of value here if not set 2011-10-21 
       @value ||= @text
       ## trying with off since i can't do conventional style construction
@@ -3123,7 +3144,6 @@ module Canis
 
     # all radio buttons will return the value of the selected value, not the offered value
     def getvalue
-      #@text_variable.value
       @variable.get_value @name
     end
 
@@ -3150,7 +3170,7 @@ module Canis
 
     # added for bindkeys since that calls fire, not toggle - XXX i don't like this
     def fire
-      @variable.set_value  @value,@name
+      @variable.set_value  @value, @name
       super
     end
 
@@ -3161,7 +3181,7 @@ module Canis
       if tf
         toggle
       elsif !@variable.nil? and getvalue() != @value # XXX ???
-        @variable.set_value "",""
+        @variable.set_value "", ""
       end
     end
   end # class radio # }}}
