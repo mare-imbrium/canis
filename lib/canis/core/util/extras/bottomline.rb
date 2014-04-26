@@ -28,7 +28,7 @@ module Canis
   # I do not raise error on nil array, i create a dummy array
   # which you likely will not be able to use, in any case it will have only one value
   #
-  # Enable field history on UP and DOWN during rbgetstr
+  # Enable field history on UP and DOWN during rb_getstr
   class History < Struct.new(:array, :current_index)
     attr_reader :last_index
     attr_reader :current_index
@@ -1189,7 +1189,7 @@ module Canis
     # Taken from io.rb, has some improvements to it. However, does not print the prompt
     # any longer
     # Completion proc is vim style, on pressing tab it cycles through options
-    def rbgetstr
+    def rb_getstr
       r = @message_row
       c = 0
       win = @window
@@ -1199,7 +1199,7 @@ module Canis
       maxlen = @limit || 100 # fixme
 
 
-      raise "rbgetstr got no window. bottomline.rb" if win.nil?
+      raise "rb_getstr got no window. bottomline.rb" if win.nil?
       ins_mode = false
       oldstr = nil # for tab completion, origal word entered by user
       default = @default || ""
@@ -1228,7 +1228,7 @@ module Canis
         entries = nil
         while true
           ch=win.getchar()
-          $log.debug " XXXX FFI rbgetstr got ch:#{ch}, str:#{str}. "
+          $log.debug " XXXX FFI rb_getstr got ch:#{ch}, str:#{str}. "
           case ch
           when 3 # -1 # C-c  # sometimes this causes an interrupt and crash
             return -1, nil
@@ -1491,7 +1491,7 @@ module Canis
       #if @question.character.nil?
       #  if @question.echo == true #and @question.limit.nil?
       $log.debug "XXX: before RBGETS got default: #{@default} "
-      ret, str = rbgetstr
+      ret, str = rb_getstr
       if ret == 0
         return @question.change_case(@question.remove_whitespace(str))                
       end
@@ -1512,57 +1512,6 @@ module Canis
       end
     end
 
-    # presents given list in numbered format in a window above last line
-    # and accepts input on last line
-    # The list is a list of strings. e.g.
-    #      %w{ ruby perl python haskell }
-    # Multiple levels can be given as:
-    #      list = %w{ ruby perl python haskell }
-    #      list[0] = %w{ ruby ruby1.9 ruby 1.8 rubinius jruby }
-    # In this case, "ruby" is the first level option. The others are used
-    # in the second level. This might make it clearer. first3 has 2 choices under it.
-    #      [ "first1" , "first2", ["first3", "second1", "second2"], "first4"]
-    #
-    # Currently, we return an array containing each selected level
-    #
-    # @return [Array] selected option/s from list
-    def numbered_menu list1, config={}
-      if list1.nil? || list1.empty?
-        say_with_pause "empty list passed to numbered_menu" 
-        return nil
-      end
-      prompt = config[:prompt] || "Select one: "
-      require 'canis/core/util/rcommandwindow'
-      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
-      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
-      w = rc.window
-      # should we yield rc, so user can bind keys or whatever
-      # attempt a loop so we do levels.
-      retval = []
-      begin
-        while true
-          rc.display_menu list1, :indexing => :number
-          ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
-          val = list1[ret-1]
-          if val.is_a? Array
-            retval << val[0]
-            $log.debug "NL: #{retval} "
-            list1 = val[1..-1]
-            rc.clear
-          else
-            retval << val
-            $log.debug "NL1: #{retval} "
-            break
-          end
-        end
-      ensure
-        rc.destroy
-        rc = nil
-      end
-      #list1[ret-1]
-            $log.debug "NL2: #{retval} , #{retval.class} "
-      retval
-    end
     # Allows a selection in which options are shown over prompt. As user types
     # options are narrowed down.
     # NOTE: For a directory we are not showing a slash, so currently you
@@ -1639,6 +1588,7 @@ module Canis
       #hide_bottomline # since we called ask() we need to close bottomline
       return str
     end
+    # XXX FIXME this uses only rcommand so what is it doing here.
     def display_text_interactive text, config={}
       require 'canis/core/util/rcommandwindow'
       ht = config[:height] || 15
@@ -1652,6 +1602,8 @@ module Canis
       }
       rc = nil
     end
+
+    # XXX FIXME this uses only rcommand so what is it doing here.
     #def display_list_interactive text, config={}
     # returns a ListObject since you may not know what the list itself contained
     # You can do ret.list[ret.current_index] to get value
