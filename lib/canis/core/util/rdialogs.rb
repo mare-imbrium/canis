@@ -165,6 +165,7 @@ def print_status_message text, aconfig={}, &block
   _print_message :status, text, aconfig, &block
 end
 alias :rb_puts print_status_message
+alias :say print_status_message
 
 # new version with a window created on 2011-10-1 12:30 AM 
 # Now can be separate from window class, needing nothing, just a util class
@@ -226,7 +227,7 @@ def _print_message type, text, aconfig={}, &block  #:nodoc:
   ewin.destroy
 end
 #
-# Alternative to confirm dialog, if you want this look and feel, at last 2 lines of screen
+# Alternative to +confirm+ dialog, if you want this look and feel, at last 2 lines of screen
 # @param [String] text to prompt
 # @return [true, false] 'y' is true, all else if false
 public
@@ -275,7 +276,7 @@ def rb_confirm text, aconfig={}, &block
   end
   retval
 end
-alias :confirm_window :rb_confirm
+alias :agree :rb_confirm
 # class created to display multiple messages without asking for user to hit a key
 # returns a window to which one can keep calling printstring with 0 or 1 as row.
 # destroy when finished.
@@ -284,7 +285,7 @@ alias :confirm_window :rb_confirm
 # I was trying out in App.rb. 2011-10-1 1:27 AM 
 # Testing from test2.rb
 # TODO: add option of putting progress_bar
-class StatusWindow
+class StatusWindow # --- {{{
   attr_reader :h, :w, :top, :left # height, width, top row, left col of window
   attr_reader :win
   attr_accessor :color_pair
@@ -354,7 +355,7 @@ class StatusWindow
     @win.show unless @visible
     @visible = true
   end
-end
+end # }}}
 # returns instance of a status_window for sending multiple
 # statuses during some process
 def status_window aconfig={}, &block
