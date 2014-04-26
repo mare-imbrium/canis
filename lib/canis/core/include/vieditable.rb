@@ -109,8 +109,8 @@ module Canis
       config={}; 
       oldline = line.dup
       config[:default] = line
-      ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
-      $log.debug " rbgetstr returned #{ret} , #{str} "
+      ret, str = rb_getstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+      $log.debug " rb_getstr returned #{ret} , #{str} "
       return if ret != 0
       # we possibly cou;d have done []= but maybe in textpad or something that would replace a row pointer ??
       self[lineno].replace(str)
@@ -126,10 +126,10 @@ module Canis
       maxlen = 80
       #config={}; 
       #config[:default] = line
-      #ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+      #ret, str = rb_getstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
       ret, str = input_string prompt
-      #ret, str = rbgetstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
-      $log.debug " rbgetstr returned #{ret} , #{str} "
+      #ret, str = rb_getstr(@form.window, @row+@height-1, @col+1, prompt, maxlen, config)
+      $log.debug " rb_getstr returned #{ret} , #{str} "
       return if ret != 0
 
       # pad based expect @content not list
@@ -150,7 +150,7 @@ module Canis
     def edit_string string, prompt="Edit: ", maxlen=80
       config={}; 
       config[:default] = string
-      ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+      ret, str = rb_getstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
       #return str if ret == 0
       #return ""
     end
@@ -160,8 +160,8 @@ module Canis
     # @param [int] max length of input
     # @return [0, -1] return value 0 if okay, -1 if error
     def input_string prompt="Insert: ", maxlen=80
-      #ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
-      ret, str = rbgetstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+      #ret, str = rb_getstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
+      ret, str = rb_getstr(@form.window, $error_message_row, $error_message_col,  prompt, maxlen, config)
       #return str if ret == 0
       #return ""
     end
