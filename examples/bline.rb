@@ -1,5 +1,6 @@
 require 'canis/core/util/app'
-require 'canis/core/util/extras/bottomline'
+#require 'canis/core/util/extras/bottomline'
+require 'canis/core/util/rcommandwindow'
 require 'fileutils'
 
 # this will go into top namespace so will conflict with other apps!
@@ -16,13 +17,16 @@ def testdisplay_list
   text = Dir.glob "*.rb"
   $log.debug "XXX:  DDD got #{text.size} "
   str = display_list text, :title => "Select a file"
-  $log.debug "23 We got #{str} :  #{str.class} , #{str.list[str.current_index]}  "
-  file = str.list[str.current_index]
+  #$log.debug "23 We got #{str} :  #{str.class} , #{str.list[str.current_index]}  "
+  $log.debug "23 We got #{str} "
+  #file = str.list[str.current_index]
+  file = str
   #message "We got #{str.list[str.current_index]} "
-  show file
+  show file if file
 end
 def testdisplay_text
-  str = display_text_interactive File.read($0), :title => "#{$0}"
+  #str = display_text_interactive File.read($0), :title => "#{$0}"
+  str = display_text_interactive $0, :title => "#{$0}"
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
@@ -115,6 +119,7 @@ App.new do
     #install_help_text help_text
 
     def app_menu
+      require 'canis/core/util/promptmenu'
       menu = PromptMenu.new self do
         item :c, :testchoose
         item :d, :testdir
