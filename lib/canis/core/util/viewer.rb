@@ -1,4 +1,3 @@
-#require 'canis/core/widgets/rtextview'
 require 'canis/core/widgets/textpad'
 require 'fileutils'
 
@@ -6,8 +5,6 @@ require 'fileutils'
 #
 # CHANGES
 #   - 2014-04-09 - 00:58 changed textview to textpad 
-# NOTE: experimental, not yet firmed up
-# If you use in application, please copy to some application folder in case i change this.
 # Can be used for print_help_page
 # TODO: add vi_keys here
 # SUGGESTIONS WELCOME.
@@ -37,7 +34,17 @@ module Canis
       wl = 0 # left margin
       wh = Ncurses.LINES-wt # height, goes to bottom of screen
       ww = Ncurses.COLS-wl  # width, goes to right end
-      wt, wl, wh, ww = config[:layout] if config.has_key? :layout
+      layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
+      if config.has_key? :layout
+        layout = config[:layout]
+        case layout
+        when Array
+          wt, wl, wh, ww = layout
+          layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
+        when Hash
+          # okay
+        end
+      end
 
       fp = config[:title] || ""
       pf = config.fetch(:print_footer, true)
@@ -45,7 +52,6 @@ module Canis
       fa = config.fetch(:footer_attrib, 'bold')
       type = config[:content_type]
 
-      layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
       v_window = Canis::Window.new(layout)
       v_form = Canis::Form.new v_window
       colors = Ncurses.COLORS
@@ -85,7 +91,7 @@ module Canis
       }
       # yielding textview so you may further configure or bind keys or events
       begin
-        # why the add_content ?
+        # multibuffer requires add_Co after set_co
       textview.set_content content, :content_type => type
       textview.add_content content, :content_type => type
       # the next can also be used to use formatted_text(text, :ansi)
@@ -93,11 +99,14 @@ module Canis
       v_form.repaint
       v_window.wrefresh
       Ncurses::Panel.update_panels
+      retval = ""
       # allow closing using q and Ctrl-q in addition to any key specified
       #  user should not need to specify key, since that becomes inconsistent across usages
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
+          retval = textview.current_value() if ch == config[:close_key] 
           break if ch == config[:close_key] || ch == ?q.ord || ch == 2727 # added double esc 2011-12-27 
           # if you've asked for ENTER then i also check for 10 and 13
+          retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           v_form.handle_key ch
           v_form.repaint
@@ -109,10 +118,11 @@ module Canis
       ensure
         v_window.destroy if !v_window.nil?
       end
+      return retval
     end
     private
     def self._get_contents fp
-      return "File #{fp} not readable"  unless File.readable? fp 
+      raise "File #{fp} not readable"  unless File.readable? fp 
       return Dir.new(fp).entries if File.directory? fp
       case File.extname(fp)
       when '.tgz','.gz'
