@@ -82,10 +82,11 @@ if $0 == __FILE__
         row(row).
         col(col)
       row += 1
-      @cb_rev = Variable.new false # related to checkbox reverse
-      cbb = @cb_rev
+      # trying to do without thse stupid variables.
+      #@cb_rev = Variable.new false # related to checkbox reverse
+      #cbb = @cb_rev
       checkbutton1 = CheckBox.new @form do
-        variable cbb # $cb_rev
+        #variable cbb # $cb_rev
         #value = true
         onvalue "Selected reverse   "
         offvalue "UNselected reverse"
@@ -120,21 +121,18 @@ if $0 == __FILE__
         "color"=>"cyan", "mnemonic" => 'S'}
       $radio = Variable.new
       $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
-      #$radio.update_command() {|tv|  message_label.color tv.value; align.bgcolor tv.value; combo1.bgcolor tv.value}
+#
       $radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
-        e.bgcolor tv.value };  }
+        #e.bgcolor tv.value };  }
 
       # whenever updated set colorlabel and messagelabel to bold
       $results.update_command(colorlabel,checkbutton) {|tv, label, cb| 
         attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
 
-      # whenever updated set colorlabel and messagelabel to reverse
-      #@cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| attrs =  cb.value ? 'reverse' : nil; label.attr(attrs); message_label.attr(attrs)}
-      # changing nil to normal since PROP CHAN handler will not fire if nil being set.
-      @cb_rev.update_command(colorlabel,checkbutton1) {|tv, label, cb| 
-        attrs =  cb.value ? 'reverse' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
-
+      checkbutton1.command do 
+        attrs =  checkbutton1.value ? 'reverse' : 'normal'; colorlabel.attr(attrs); message_label.attr(attrs)
+      end
       row += 1
       dlen = 10
       # if we try conventional style then constructor throws exception since @variable must be set
@@ -176,6 +174,10 @@ if $0 == __FILE__
         row row
         col col+24
       end
+      #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
+#
+      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+        #e.bgcolor tv.value };  }
       colorlabel.label_for radio1
 
       # instead of using frozen, I will use a PropertyVeto
