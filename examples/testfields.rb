@@ -84,7 +84,7 @@ if $0 == __FILE__
         type(:integer)
 
       @form.by_name["name"].text( "Not focusable").
-        set_focusable(false)
+        focusable(false)
       
       @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
         text( "SYNOP").
@@ -119,8 +119,7 @@ if $0 == __FILE__
       row(r).col(fc).
       chars_allowed(/[\d\-]/)
       # a form level event, whenever any widget is focussed, make the label red
-      @form.bind(:ENTER) { |f|   f.label && f.label.bgcolor = :red if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}
-      @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}
+    #
 
       @form.bind_key(FFI::NCurses::KEY_F3,'view log') { 
         require 'canis/core/util/viewer'
@@ -141,6 +140,12 @@ if $0 == __FILE__
       #@form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help help_text() }
       @form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help }
       @form.repaint
+      @form.widgets.each { |ff|
+        if ff.focusable?
+          ff.bind(:ENTER) { |f|   f.label && f.label.bgcolor = :red if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}
+          ff.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if (f.respond_to? :label and f.label.respond_to?(:bgcolor))}
+        end
+      }
       @window.wrefresh
       Ncurses::Panel.update_panels
 
