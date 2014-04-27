@@ -2,6 +2,7 @@ require 'canis/core/util/app'
 #require 'canis/core/util/extras/bottomline'
 require 'canis/core/util/rcommandwindow'
 require 'fileutils'
+require 'pathname'
 
 # this will go into top namespace so will conflict with other apps!
 def testnumberedmenu
@@ -26,12 +27,12 @@ def testdisplay_list
 end
 def testdisplay_text
   #str = display_text_interactive File.read($0), :title => "#{$0}"
-  str = display_text_interactive $0, :title => "#{$0}"
+  str = display_text $0, :title => "#{$0}"
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
-  str = ask("File?  ", Pathname)  do |q| 
-    q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
+  str = rb_gets("File?  ", Pathname)  do |q| 
+    #q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
     q.help_text = "Enter start of filename and tab to get completion"
   end
   message "We got #{str} "
@@ -55,7 +56,11 @@ end
 App.new do 
   def show file
     w = @form.by_name["tv"]
-    if File.exists? file
+    if File.directory? file
+      lines = Dir.entries(file)
+      w.text lines
+      w.title "[ #{file} ]"
+    elsif File.exists? file
       lines = File.open(file,'r').readlines 
       w.text lines
       w.title "[ #{file} ]"
@@ -64,9 +69,11 @@ App.new do
   def testchoose
     # list filters as you type
     $log.debug "called CHOOSE " if $log.debug? 
-    filter = "*"
-    filter = ENV['PWD']+"/*"
-    str = choose filter, :title => "Files", :prompt => "Choose a file: (Alt-h Help) ", 
+    filter = "*.rb"
+    #filter = ENV['PWD']+"/*"
+    str = choose_file  :title => "Select a file", 
+      :recursive => true,
+      :dirs => true,
       :help_text => "Enter first char/s and tab to complete filename. Scroll with C-n, C-p"
     if str
       message "We got #{str} " 
