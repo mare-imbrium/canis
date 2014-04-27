@@ -17,6 +17,7 @@
 # 2011-12-6 : removed many old, outdated methods.
 # 2014-04-25 - 12:36 moved Promptmenu to util/promptmenu.rb
 #*******************************************************#
+require 'pathname'
 module Canis
   module Io
 
@@ -68,6 +69,12 @@ module Canis
         }
         config = {}
         config[:tab_completion] = completion_proc
+      elsif config == Pathname
+        completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
+        help_text = "Enter start of filename and tab to get completion"
+        config = {}
+        config[:tab_completion] = completion_proc
+        config[:help_text] = help_text
       end
       begin
         win = __create_footer_window
