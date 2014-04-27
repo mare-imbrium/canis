@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-25 - 12:32
 #      License: MIT
-#  Last update: 2014-04-25 12:35
+#  Last update: 2014-04-27 00:10
 # ----------------------------------------------------------------------------- #
 #  promptmenu.rb  Copyright (C) 2012-2014 j kepler
 #  Depends on rcommandwindow for display_menu
@@ -196,13 +196,19 @@ module Canis
             title = rc.title
             rc.title title +" => " + action.text # set title of window to submenu
           when Proc
+            #rc.destroy
+            ##bottom needs to be refreshed somehow
+            #FFI::NCurses.ungetch ?j
+            rc.hide
             ret = action.call
             break
           when Symbol
             if @caller.respond_to?(action, true)
+              rc.hide
               $log.debug "XXX:  IO caller responds to action #{action} "
               ret = @caller.send(action)
             elsif @caller.respond_to?(:execute_this, true)
+              rc.hide
               ret = @caller.send(:execute_this, action)
             else
               alert "PromptMenu: unidentified action #{action} for #{@caller.class} "
@@ -221,6 +227,7 @@ module Canis
       end
     end
     alias :display_new :display_columns
+    alias :display :display_columns
 
   end # class PromptMenu
 
