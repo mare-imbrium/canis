@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-25 13:31
+  * Last update: 2014-04-27 15:13
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -277,8 +277,8 @@ module Canis
       # @example get_color $promptcolor, :white, :cyan
       def get_color default=$datacolor, color=@color, bgcolor=@bgcolor
         return default if color.nil? || bgcolor.nil?
-        raise ArgumentError, "Color not valid: #{color}: #{ColorMap.colors} " if !ColorMap.is_color? color
-        raise ArgumentError, "Bgolor not valid: #{bgcolor} : #{ColorMap.colors} " if !ColorMap.is_color? bgcolor
+        #raise ArgumentError, "Color not valid: #{color}: #{ColorMap.colors} " if !ColorMap.is_color? color
+        #raise ArgumentError, "Bgolor not valid: #{bgcolor} : #{ColorMap.colors} " if !ColorMap.is_color? bgcolor
         acolor = ColorMap.get_color(color, bgcolor)
         return acolor
       end
@@ -358,7 +358,7 @@ module Canis
       #  TODO add symbol so easy to map from config file or mapping file
       def bind_key keycode, *args, &blk
         #$log.debug " #{@name} bind_key received #{keycode} "
-        @key_handler ||= {}
+        @_key_map ||= {}
         #
         # added on 2011-12-4 so we can pass a description for a key and print it
         # The first argument may be a string, it will not be removed
@@ -381,7 +381,7 @@ module Canis
           keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
           #$log.debug " #{name} Widg String called bind_key BIND #{keycode}, #{keycode_tos(keycode)}  "
           #$log.debug " assigning #{keycode}  " if $log.debug? 
-          @key_handler[keycode] = blk
+          @_key_map[keycode] = blk
         when Array
           # double assignment
           # for starters lets try with 2 keys only
@@ -390,16 +390,16 @@ module Canis
           a0 = keycode[0].getbyte(0) if keycode[0].class == String
           a1 = keycode[1]
           a1 = keycode[1].getbyte(0) if keycode[1].class == String
-          @key_handler[a0] ||= OrderedHash.new
+          @_key_map[a0] ||= OrderedHash.new
           #$log.debug " assigning #{keycode} , A0 #{a0} , A1 #{a1} " if $log.debug? 
-          @key_handler[a0][a1] = blk
-          #$log.debug " XX assigning #{keycode} to  key_handler " if $log.debug? 
+          @_key_map[a0][a1] = blk
+          #$log.debug " XX assigning #{keycode} to  _key_map " if $log.debug? 
         else
-          #$log.debug " assigning #{keycode} to  key_handler " if $log.debug? 
-          @key_handler[keycode] = blk
+          #$log.debug " assigning #{keycode} to  _key_map " if $log.debug? 
+          @_key_map[keycode] = blk
         end
-        @key_args ||= {}
-        @key_args[keycode] = args
+        @_key_args ||= {}
+        @_key_args[keycode] = args
 
       end
 
@@ -557,8 +557,8 @@ module Canis
       #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
       #  except maybe for window pointer. TODO not tested
       def _process_key keycode, object, window
-        return :UNHANDLED if @key_handler.nil?
-        blk = @key_handler[keycode]
+        return :UNHANDLED if @_key_map.nil?
+        blk = @_key_map[keycode]
         $log.debug "XXX:  _process key keycode #{keycode} #{blk.class}, #{self.class} "
         return :UNHANDLED if blk.nil?
         if blk.is_a? OrderedHash 
@@ -591,7 +591,7 @@ module Canis
         end
         if blk.is_a? Symbol
           if respond_to? blk
-            return send(blk, *@key_args[keycode])
+            return send(blk, *@_key_args[keycode])
           else
             ## 2013-03-05 - 19:50 why the hell is there an alert here, nowhere else
             alert "This ( #{self.class} ) does not respond to #{blk.to_s} [PROCESS-KEY]"
@@ -600,7 +600,7 @@ module Canis
           end
         else
           $log.debug "rwidget BLOCK called _process_key " if $log.debug? 
-          return blk.call object,  *@key_args[keycode]
+          return blk.call object,  *@_key_args[keycode]
         end
         #0
       end
@@ -832,7 +832,7 @@ module Canis
     # height percent and width percent used in stacks and flows.
     dsl_accessor :height_pc, :width_pc # tryin out in stacks and flows 2011-11-23 
 
-    # descriptions for each key set in key_handler
+    # descriptions for each key set in _key_map
     attr_reader :key_label
     attr_reader :handler                       # event handler
 
@@ -1033,8 +1033,8 @@ module Canis
     ##
     # remove a binding that you don't want
     def unbind_key keycode
-      @key_args.delete keycode unless @key_args.nil?
-      @key_handler.delete keycode unless @key_handler.nil?
+      @_key_args.delete keycode unless @_key_args.nil?
+      @_key_map.delete keycode unless @_key_map.nil?
     end
 
     # e.g. process_key ch, self
