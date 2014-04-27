@@ -13,15 +13,13 @@ module Canis
   # a data viewer for viewing some text or filecontents
   # view filename, :close_key => KEY_ENTER
   # send data in an array
-  # view Array, :close_key => KEY_ENTER, :layout => [0,0,23,80]
+  # view Array, :close_key => KEY_ENTER, :layout => [23,80,0,0]
   # when passing layout reserve 4 rows for window and border. So for 2 lines of text
   # give 6 rows.
   class Viewer
     # @param filename as string or content as array
     # @yield textview object for further configuration before display
-    # NOTE: i am experimentally yielding textview object so i could supress borders
-    # just for kicks, but on can also bind_keys or events if one wanted.
-    def self.view what, config={} #:yield: textview
+    def self.view what, config={}, &block  #:yield: textview
       case what
       when String # we have a path
         content = _get_contents(what)
@@ -39,7 +37,9 @@ module Canis
         layout = config[:layout]
         case layout
         when Array
-          wt, wl, wh, ww = layout
+          #wt, wl, wh, ww = layout
+          # 2014-04-27 - 11:22 changed to the same order as window, otherwise confusion and errors
+          wh, ww, wt, wl = layout
           layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
         when Hash
           # okay
@@ -50,6 +50,7 @@ module Canis
       pf = config.fetch(:print_footer, true)
       ta = config.fetch(:title_attrib, 'bold')
       fa = config.fetch(:footer_attrib, 'bold')
+      b_ah = config[:app_header]
       type = config[:content_type]
 
       v_window = Canis::Window.new(layout)
@@ -58,13 +59,21 @@ module Canis
       back = :blue
       back = 235 if colors >= 256
       blue_white = get_color($datacolor, :white, back)
+
+      tprow = 0
+      ah = nil
+      if b_ah
+        ah = ApplicationHeader.new v_form, "", :text_center => fp
+        tprow += 1
+      end
+
       #blue_white = Canis::Utils.get_color($datacolor, :white, 235)
       textview = TextPad.new v_form do
         name   "Viewer" 
-        row  0
+        row  tprow
         col  0
         width ww
-        height wh-0 # earlier 2 but seems to be leaving space.
+        height wh-tprow # earlier 2 but seems to be leaving space.
         title fp
         title_attrib ta
         print_footer pf
@@ -77,25 +86,34 @@ module Canis
       textview.extend(Canis::MultiBuffers)
 
       t = textview
+      # just for fun -- seeing how we can move window around
       t.bind_key('<', 'move window left'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
-        f.reset_layout([f.height, f.width, f.top, c]); 
+        f.set_layout([f.height, f.width, f.top, c]); 
       }
       t.bind_key('>', 'move window right'){ f = t.form.window; c = f.left + 1; f.hide; f.mvwin(f.top, c); 
-        f.reset_layout([f.height, f.width, f.top, c]); f.show;
+        f.set_layout([f.height, f.width, f.top, c]); f.show;
       }
       t.bind_key('^', 'move window up'){ f = t.form.window; c = f.top - 1 ; f.hide; f.mvwin(c, f.left); 
-        f.reset_layout([f.height, f.width, c, f.left]) ; f.show;
+        f.set_layout([f.height, f.width, c, f.left]) ; f.show;
       }
       t.bind_key('V', 'move window down'){ f = t.form.window; c = f.top + 1 ; f.hide; f.mvwin(c, f.left); 
-        f.reset_layout([f.height, f.width, c, f.left]); f.show;
+        f.set_layout([f.height, f.width, c, f.left]); f.show;
       }
-      # yielding textview so you may further configure or bind keys or events
+      items = {:header => ah}
       begin
         # multibuffer requires add_Co after set_co
-      textview.set_content content, :content_type => type
-      textview.add_content content, :content_type => type
-      # the next can also be used to use formatted_text(text, :ansi)
-      yield textview if block_given? 
+        textview.set_content content, :content_type => type
+        textview.add_content content, :content_type => type
+        # the next can also be used to use formatted_text(text, :ansi)
+        # yielding textview so you may further configure or bind keys or events
+        if block_given?
+          if block.arity > 0
+            yield textview, items
+          else
+            textview.instance_eval(&block)
+          end
+        end
+      #yield textview if block_given? 
       v_form.repaint
       v_window.wrefresh
       Ncurses::Panel.update_panels
@@ -104,7 +122,7 @@ module Canis
       #  user should not need to specify key, since that becomes inconsistent across usages
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
           retval = textview.current_value() if ch == config[:close_key] 
-          break if ch == config[:close_key] || ch == ?q.ord || ch == 2727 # added double esc 2011-12-27 
+          break if ch == config[:close_key] || ch == 3|| ch == 2727 # added double esc 2011-12-27 
           # if you've asked for ENTER then i also check for 10 and 13
           retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
@@ -114,7 +132,8 @@ module Canis
       rescue => err
           $log.error " VIEWER ERROR #{err} "
           $log.debug(err.backtrace.join("\n"))
-          textdialog ["Error in viewer: #{err} ", *err.backtrace], :title => "Exception"
+          alert "#{err}"
+          #textdialog ["Error in viewer: #{err} ", *err.backtrace], :title => "Exception"
       ensure
         v_window.destroy if !v_window.nil?
       end
