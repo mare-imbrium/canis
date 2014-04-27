@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-22 13:37
+#  Last update: 2014-04-27 10:30
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -64,6 +64,8 @@ module Canis
       @width = FFI::NCurses.COLS   if @width == 0
 
       @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
+      # trying out refreshing underlying window.
+      $global_windows ||= []
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
@@ -103,7 +105,25 @@ module Canis
       @window.name = "Window::ROOTW"
       @window.wrefresh
       Ncurses::Panel.update_panels
+      $global_windows << @window
       return @window
+    end
+    # idea was to update background window 
+    # but still not working.
+    def self.refresh_all
+      #Ncurses.touchwin(FFI::NCurses.stdscr)
+      # above blanks out entire screen
+      $global_windows.each do |w|
+        w.ungetch(1000)
+      # below blanks out entire screen too
+        #FFI::NCurses.touchwin(w.get_window)
+        #$log.debug "XXX:  refreshall diong window "
+        #w.hide
+        #w.show
+        Ncurses.refresh
+        w.wrefresh 
+      end
+      #Ncurses::Panel.update_panels
     end
     # 2009-10-13 12:24 
     # not used as yet
@@ -145,7 +165,7 @@ module Canis
         @height, @width, @top, @left = *layout
         raise ArgumentError, "Nil in window constructor" if @top.nil? || @left.nil?
 
-        @layout = { :height => @height, :width => @width, :top => @top, :left => @top }
+        @layout = { :height => @height, :width => @width, :top => @top, :left => @left }
       when Hash
         @layout = layout
 
@@ -238,10 +258,10 @@ module Canis
     #--
     # removing some methods that not used or used once
     # leaving here so we not what to do to print in these cases 
-    #def print(string, width = width)
-      #w = width == 0? Ncurses.COLS : width
-      #waddnstr(string.to_s, w) # changed 2011 dts  
-    #end
+    def print(string, width = width)
+      w = width == 0? Ncurses.COLS : width
+      waddnstr(string.to_s, w) # changed 2011 dts  
+    end
 
     #def print_yx(string, y = 0, x = 0)
       #w = width == 0? Ncurses.COLS : width
@@ -279,8 +299,9 @@ module Canis
     end
 
     def wnoutrefresh
-      raise "dead code ???"
+      #raise "dead code ???"
       return unless visible?
+      # next line gives error XXX DEAD
       @window.wnoutrefresh
     end
 
@@ -552,6 +573,7 @@ module Canis
 
       #$log.debug "win destroy start"
 
+      $global_windows.delete self
       Ncurses::Panel.del_panel(@panel.pointer) if @panel
       delwin() if @window 
       Ncurses::Panel.update_panels # added so below window does not need to do this 2011-10-1 
