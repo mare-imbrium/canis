@@ -1,20 +1,20 @@
 # ----------------------------------------------------------------------------- #
 #         File: listbindings.rb
-#  Description: bindings for multi-row widgets such as listbox, table, textview
+#  Description: bindings for multi-row widgets such as listbox, table, 
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-18 00:58
+#  Last update: 2014-04-27 16:53
 # ----------------------------------------------------------------------------- #
 #
 module Canis
   # 
-  #  bindings for multi-row widgets such as listbox, table, textview
+  #  bindings for multi-row widgets such as listbox, table, 
   # 
   module ListBindings
     extend self
     def bindings
-    $log.debug "XXX:  INSIDE LISTBINDING FOR #{self.class} "
+      $log.debug "YYYY:  INSIDE LISTBINDING FOR #{self.class} "
       bind_key(Ncurses::KEY_LEFT, 'cursor backward'){ cursor_backward } if respond_to? :cursor_backward
       bind_key(Ncurses::KEY_RIGHT, 'cursor_forward'){ cursor_forward } if respond_to? :cursor_forward
       # very irritating when user pressed up arrow, commented off 2012-01-4  can be made optional
@@ -70,13 +70,12 @@ module Canis
       bind_key(?\M-l, :scroll_right)
       bind_key(?\M-h, :scroll_left)
 
-      # save as and edit_external are only in textview and textarea
+      # save as and edit_external are only in tv and textarea
       # save_as can be given to list's also and tables
       # put them someplace so the code can be shared.
       bind_key([?\C-x, ?\C-s], :saveas)
       bind_key([?\C-x, ?e], :edit_external)
       
-      # textview also uses space for scroll_forward
     end # def
   end
 end
