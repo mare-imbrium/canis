@@ -174,7 +174,20 @@ module Canis
       @height = height
       @width = width
     end
+    def show
+      @window.show
+    end
+    # this really helps if we are creating another window over this and we find the lower window
+    # still showing through. destroy does not often work so this clears current window.
+    # However, lower window may still have a black region. FIXME
+    def hide
+      @window.hide
+      Window.refresh_all
+    end
     def destroy
+      @window.destroy
+    end
+    def OLDdestroy
       $log.debug "DESTROY : rcommandwindow"
       if @window
         begin
@@ -216,9 +229,13 @@ module Canis
     #  it will result in first letter being highlighted in indexcolor
     # indexcolor - color of mnemonic, default green
     def display_menu list, options={}  # --- {{{
+      $log.debug "XXX:  normal color = #{$normalcolor} "
+      $log.debug "XXX:  colormap = #{@@colors} "
       indexing = options[:indexing]
-      indexcolor = options[:indexcolor] || get_color($normalcolor, :yellow, :black)
+      #indexcolor = options[:indexcolor] || get_color($normalcolor, :yellow, :black)
+      indexcolor = $datacolor || 7 # XXX above line crashing on choose()
       indexatt = Ncurses::A_BOLD
+      $log.debug "XXX:  after get_color, ll #{list.size} "
       #
       # the index to start from (used when scrolling a long menu such as file list)
       startindex = options[:startindex] || 0
@@ -307,6 +324,86 @@ module Canis
 
 
   end # class CommandWindow
+    # Allows a selection in which options are shown over prompt. As user types
+    # options are narrowed down.
+    # NOTE: For a directory we are not showing a slash, so currently you
+    # have to enter the slash manually when searching.
+    # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
+    # @param [Array]  a list of items to select from
+    # NOTE: if you use this please copy it to your app. This does not conform to highline's
+    # choose, and I'd like to somehow get it to be identical.
+    #
+    # this required to be inside the Question class since it has various procs. Requires quite a bit of work.
+    def OLDchoose list1, config={}
+      dirlist = true
+      start = 0
+      case list1
+      when NilClass
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
+      when String
+        list1 = Dir.glob(list1).collect { |f| File.directory?(f) ? f+"/" : f  }
+      when Array
+        dirlist = false
+        # let it be, that's how it should come
+      else
+        # Dir listing as default
+        #list1 = Dir.glob("*")
+        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
+      end
+      $log.debug "XXX:  reached here 111"
+      require 'canis/core/util/rcommandwindow'
+      prompt = config[:prompt] || "Choose: "
+      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
+      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
+      begin
+        w = rc.window
+        $log.debug "XXX:  reached here before display_menu"
+        rc.display_menu list1
+        $log.debug "XXX:  reached here after display_menu"
+        # earlier wmove bombed, now move is (window.rb 121)
+        str = rb_gets(prompt) { |q| q.help_text = config[:help_text] ;  q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  
+
+          l = list1.select{|e| e.index(str)==0}  ;  # select those starting with str
+
+          if (l.size == 0 || str[-1]=='/') && dirlist
+            # used to help complete directories so we can drill up and down
+            #l = Dir.glob(str+"*")
+            l = Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  }
+          end
+          rc.display_menu l; 
+          l
+        }
+        q.key_handler_proc = Proc.new { |ch| 
+          # this is not very good since it does not respect above list which is filtered
+          # # need to clear the screen before printing - FIXME
+          case ch
+          when ?\C-n.getbyte(0)
+            start += 2 if start < list1.length - 2
+
+            w.wmove(1,1) ; w.wclrtobot;  
+            rc.display_menu list1, :startindex => start
+          when ?\C-p.getbyte(0)
+            start -= 2 if start > 2
+            w.wmove(1,1) ; w.wclrtobot;  
+            rc.display_menu list1, :startindex => start
+          else
+            alert "unhalderlind by jey "
+          end
+        
+        }
+        }
+        # need some validation here that its in the list TODO
+      ensure
+        rc.destroy
+        rc = nil
+        $log.debug "XXX: HIDE B IN ENSURE"
+        #hide_bottomline # since we called ask() we need to close bottomline
+      end
+        $log.debug "XXX: HIDE B AT END OF ASK"
+      #hide_bottomline # since we called ask() we need to close bottomline
+      return str
+    end
 
   # presents given list in numbered format in a window above last line
   # and accepts input on last line
@@ -364,6 +461,47 @@ module Canis
     $log.debug "NL2: #{retval} , #{retval.class} "
     retval
   end
+  def choose_file glob, config={}
+    if glob.is_a? Hash
+      config = glob
+      glob = nil
+    end
+    frec = true
+    frec = config.delete :recursive if config.key? :recursive
+    fdir = config.delete :dirs
+    if glob.nil?
+      glob = "*"
+      if frec
+        glob = "**/*"
+      end
+      if fdir
+        glob << "/"
+      end
+    end
+    maxh = 15
+    fstartdir = config.delete :startdir
+    Dir.chdir(fstartdir) if fstartdir
+    command = config.delete(:command)
+    text = Dir.glob(glob)
+    if !text or text.empty?
+      text = [".."]
+    end
+    if text.size < maxh
+      config[:height] = text.size + 1
+    end
+    _update_default_settings config
+    default_layout = config[:layout]
+    view(text, config) do |t, hash|
+      t.suppress_borders true
+      t.print_footer false
+      t.key_handler = ControlPHandler.new(t)
+      t.key_handler.maxht = maxh
+      t.key_handler.default_layout = default_layout
+      t.key_handler.header = hash[:header]
+      t.key_handler.recursive_search(glob)
+      t.key_handler.default_key_map
+    end
+  end
   # NOTE:  moved from bottomline since it used commandwindow but now we;ve
   # moved away from ListObject to view. and i wonder what this really
   # gives ?
@@ -378,25 +516,247 @@ module Canis
   # and defaults to 15.
   # All other config elements are passed to +view+. See viewer.rb.
   def display_text text, config={}
-    ht = config[:height] || 15
-    sh = Ncurses.LINES-1
-    sc = Ncurses.COLS-0
-    layout = { :height => ht, :width => Ncurses.COLS-1, :top => Ncurses.LINES-ht+1, :left => 0 }
-    layout = [ 10,0,20,80]
-    layout = [ sh-ht ,0,ht,sc]
-    config[:layout] = layout
-    config[:close_key] = KEY_ENTER
-    $log.debug "XXX:  DISP TEXT #{config[:title]} "
+    _update_default_settings config
     view(text, config) do |t|
       t.suppress_borders true
     end
   end
+  # update given hash with layout, close_key and app_header
+  # so this is shared across various methods.
+  # The layout created is weighted to the bottom, so it is always ending at the second last row
+  def _update_default_settings config={}
+    ht = config[:height] || 15
+    sh = Ncurses.LINES-1
+    sc = Ncurses.COLS-0
+    layout = [ ht, sc, sh-ht ,0]
+    config[:layout] = layout
+    config[:close_key] = KEY_ENTER
+    config[:app_header] = true
+  end
+  # create a new layout array based on size of data given
+  # The layout created is weighted to the bottom, so it is always ending at the second last row
+  # The +top+ keeps changing based on height.
+  def _new_layout size
+    ht = size
+    sh = Ncurses.LINES-1
+    sc = Ncurses.COLS-0
+    layout = [ ht, sc, sh-ht ,0]
+  end
   # return a blank if user quits list, or the value
   # can we prevent a user from quitting, he must select ? 
-  # Can we suppress borders but have a reverse bar above, like the old
-  # one ?
+  #
+  # Display a list of valies given in +text+ and allows user to shrink the list based on keys entered
+  # much like control-p.
+  #
+  # @param [Array<String>] array of Strings to print
+  # @param [ Hash ] config hash passed to Viewer.view
+  #    May contain +:command+ which is a Proc that replenishes the list everytime user
+  #    enters a key (updates the search string). The proc is supplied user-entered string.
+  #    The following example is a proc that matches all the files returned by Dir.glob
+  #    with the user entered string.
+  #
+  #     Proc.new {|str| Dir.glob("**/*").select do |p| p.index str; end }
+  #
+  # @return [ String ] text of line user pressed ENTER on, or "" if user pressed ESC or C-c
+  # x show keys entered
+  # x shrink the pad based on results
+  # TODO if no results show somethinf like "No entries". or don't change
+  # TODO take left and right arrow key and adjust insert point
+  # TODO have some proc so user can keep querying, rather than passing a list. this way if the 
+  # list is really long, all values don't need to be passed.
   def display_list text, config={}
-    $log.debug "XXX:  DISP #{config[:title]} "
-    ret = display_text text, config
+    maxh = 15
+    _update_default_settings config
+    default_layout = config[:layout]
+    command = config.delete(:command)
+    view(text, config) do |t, hash|
+      t.suppress_borders true
+      t.print_footer false
+      t.key_handler = ControlPHandler.new(t)
+      t.key_handler.maxht = maxh
+      t.key_handler.default_layout = default_layout
+      t.key_handler.header = hash[:header]
+      t.key_handler.command = command if command
+    end
   end
+
+  # This is a keyhandler that traps some keys, much like control-p which filters down a list
+  # based on some alpha numeric chars. The rest, such as arrow-keys, are passed to the key_map
+  # TODO : take window sizing out of keyhander try to place somewhere else
+  #
+  class ControlPHandler # --- {{{
+    attr_accessor :maxht
+    attr_accessor :default_layout
+    # string the user is currently entering in (pattern to filter on)
+    attr_accessor :buffer
+    # application_header object whose text can be changed
+    attr_accessor :header
+    attr_accessor :key_map
+    def initialize source
+      @source = source
+      @list = source.text
+      # backup of data to refilter from if no command given to update
+      @__list = @list
+      @buffer = ""
+      @maxht ||=15
+    end
+
+    # a default proc to requery data based on glob supplied and the pattern user enters
+    def recursive_search glob="**/*"
+      @command = Proc.new {|str| Dir.glob(glob).select do |p| p.index str; end }
+    end
+
+    # specify command to requery data
+    def command &block
+      @command = block
+    end
+
+    # signal that the data has changed and should be redisplayed
+    # with window resizing etc.
+    def data_changed list
+      # can we move this resiing to another place XXX TODO
+      sz = list.size
+      @source.text(list)
+      wh = @source.form.window.height
+      @source.form.window.hide
+      th = @source.height
+      sh = Ncurses.LINES-1
+      if sz < th
+        # rows is less than tp size so reduce tp and window
+        @source.height = sz
+        nl = _new_layout sz+1
+        $log.debug "XXX:  reduce ht to #{sz} layout is #{nl} "
+        @source.form.window.resize_with(nl)
+      elsif sz > th && th < @maxht && sz < @maxht
+        # increase it
+        @source.height = sz
+        nl = _new_layout sz+1
+        $log.debug "XXX:  increase ht to #{sz} layout is #{nl} "
+        @source.form.window.resize_with(nl)
+      elsif sz > th && th < @maxht && sz > @maxht
+        # expand the window ht to maxht
+        @source.height = @maxht-1
+        nl = _new_layout @maxht
+        $log.debug "XXX:  increase ht to #{@maxht} def layout is #{nl} "
+        @source.form.window.resize_with(nl)
+      else
+        @source.height = @maxht-1
+        nl = _new_layout @maxht
+        $log.warn "XXX:  ELSE increase ht to #{@maxht} def layout is #{nl} "
+        @source.form.window.resize_with(nl)
+
+      end
+      @source.fire_dimension_changed
+
+      @source.init_vars # do if rows is less than current_index.
+      @source.set_form_row
+      @source.form.window.show
+
+      #Window.refresh_all
+      @source.form.window.wrefresh
+      Ncurses::Panel.update_panels();
+      Ncurses.doupdate();
+    end
+    # modify the pattern (used if some procs are trying to change using handle to self)
+    def set_buffer str
+      @buffer = str
+      buffer_changed
+    end
+    # signal that the user has added or deleted a char from the pattern
+    # and data should be requeried, etc
+    #
+    def buffer_changed
+      # display the pattern on the header
+      @header.text1(">>>#{@buffer}_") if @header
+      @header.text_right(Dir.pwd) if @header
+
+      if @command
+        @list = @command.call(@buffer)
+      else
+        @list = @__list.select do |line|
+          line.index @buffer
+        end
+      end
+      sz = @list.size
+      if sz == 0
+        Ncurses.beep
+        return 1
+      end
+      data_changed @list
+      0
+    end
+    def handle_key ch
+      # accumulate keys in a string
+      # need to track insertion point if user uses left and right arrow
+        @buffer ||= ""
+        chr = nil
+
+        chr = ch.chr if ch > 47 and ch < 127
+        changed = false
+        if (ch >= 48 and ch <= 122) || ch == 127
+          if chr && chr =~ /[a-zA-Z0-9_\.]/
+            @buffer << chr
+            changed = true
+          end
+          if ch == 127
+            # backspace
+            @buffer = @buffer[0..-2] unless @buffer == ""
+            changed = true
+          end
+          if changed
+            buffer_changed
+            return 0
+          end
+        end
+        process_key ch
+        # revert to the basic handling of key_map and refreshing pad.
+        @source._handle_key(ch)
+    end
+    def process_key ch
+      chr = nil
+      if ch > 0 and ch < 256
+        chr = ch.chr
+      end
+      @key_map.each_pair do |k,p|
+        $log.debug "XXX:  processing key #{ch}  #{chr} "
+        if (k == ch || k == chr)
+          $log.debug "XXX:  found match 1 #{ch}  #{chr} "
+          p.call(self)
+          return 0
+        elsif k.respond_to? :include
+          if k.include?( ch ) || k.include?(chr)
+            $log.debug "XXX:  found match include #{ch}  #{chr} "
+            p.call(self)
+            return 0
+          end
+        elsif k.is_a? Regexp
+          if k.match(chr)
+            $log.debug "XXX:  found match regex #{ch}  #{chr} "
+            p.call(self)
+            return 0
+          end
+        end
+      end
+      return :UNHANDLED
+    end
+    def default_key_map
+      @key_map ||= {}
+      @key_map["<"] = Proc.new { |obj|
+        $log.debug "XXX:  called proc for <"
+        Dir.chdir("..")
+        obj.buffer_changed
+      }
+      @key_map[">"] = Proc.new { |obj|
+        $log.debug "XXX:  called proc for > : #{obj.current_value} "
+        Dir.chdir(obj.current_value)
+        #obj.set_buffer("")
+        obj.buffer_changed
+      }
+    end
+
+    # the line on which focus is.
+    def current_value
+      @source.current_value
+    end
+  end # -- class }}}
 end # module
