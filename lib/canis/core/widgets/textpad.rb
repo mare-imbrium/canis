@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-22 18:12
+#  Last update: 2014-04-28 01:42
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -52,6 +52,9 @@ module Canis
     attr_reader :lastrow, :lastcol
     # for external methods or classes to advance cursor
     #attr_accessor :curpos
+    # the object that handles keys that are sent to this object by the form.
+    # This widget creates its own default handler if not overridden by user.
+    attr_accessor :key_handler
     # You may pass height, width, row and col for creating a window otherwise a fullscreen window
     # will be created. If you pass a window from caller then that window will be used.
     # Some keys are trapped, jkhl space, pgup, pgdown, end, home, t b
@@ -98,6 +101,7 @@ module Canis
       #  ---------------------------------------------------
       #@height = @height.ifzero(FFI::NCurses.LINES)
       #@width = @width.ifzero(FFI::NCurses.COLS)
+      # FIXME rows calculated only once, so if height changes then row not calculated onless we call this again.
       @rows = @height
       @cols = @width
       # NOTE XXX if cols is > COLS then padrefresh can fail
@@ -136,6 +140,7 @@ module Canis
       #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
       #@pad = FFI::NCurses.newpad(@content_rows, @content_cols)
       @pad = @window.get_pad(@content_rows, @content_cols )
+      clear_pad
     end
 
     private
@@ -161,6 +166,28 @@ module Canis
       render_all
 
     end
+
+    # clear the pad.
+    # There seem to be some cases when previous content of a pad remains
+    # in the last row or last col.
+    def clear_pad
+      # this still doesn't work since somehow content_rows is less than height.
+      (0..@content_rows).each do |n|
+        clear_row @pad, n
+      end
+      # so i use this copied from print_border
+      row = 0
+      ww=width-2
+      startcol = 1
+      startcol = 0 if @suppress_borders
+      # need to account for borders. in col+1 and ww
+      ww=@width-0 if @suppress_borders
+      color = $datacolor # check this out XXX
+      att = NORMAL
+      (row+1).upto(row+@height-startcol) do |r|
+        @window.printstring( r, @col+0," "*ww , color, att)
+      end
+    end
     # destroy the pad, this needs to be called from somewhere, like when the app
     # closes or the current window closes , or else we could have a seg fault
     # or some ugliness on the screen below this one (if nested).
@@ -176,6 +203,7 @@ module Canis
     # padrefresh can fail if width is greater than NCurses.COLS
     # padrefresh can fail if height (@rows + sr) is greater than NCurses.LINES or tput lines
     #   try reducing height when creating textpad.
+    public
     def padrefresh
       top = @window.top
       left = @window.left
@@ -186,19 +214,18 @@ module Canis
 
       # this is a fix, but the entire popup is not moved up. title and borders are still
       # drawn in wrong positions, and left there after popup is off.
-=begin
       maxr = FFI::NCurses.LINES - 2
       if ser > maxr
-        $log.warn "XXX PADRE correcting ser #{sr} and #{ser} "
-        _t = ser - maxr
-        ser = maxr
-        sr -= _t
-        $log.warn "XXX PADRE after correcting ser #{sr} and #{ser} "
+        $log.warn "XXX PADRE ser > max. sr= #{sr} and ser #{ser}. sr:#{@startrow}+ #{top} , sc:#{@startcol}+ #{left},  rows:#{@rows}+ #{sr} cols:#{@cols}+ #{sc}  top #{top} left #{left} "
+        #_t = ser - maxr
+        #ser = maxr
+        #sr -= _t
+        #$log.warn "XXX PADRE after correcting ser #{sr} and #{ser} "
       end
-=end
 
       retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
       $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
+      $log.debug "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
       # padrefresh can fail if width is greater than NCurses.COLS
       # or if height exceeds tput lines. As long as content is less, it will work
       # the moment content_rows exceeds then this issue happens. 
@@ -219,12 +246,13 @@ module Canis
     # to be called with program / user has added a row or changed column widths so that 
     # the pad needs to be recreated. However, cursor positioning is maintained since this
     # is considered to be a minor change. 
-    # We do not call init_vars since user is continuing to do some work on a row/col.
+    # We do not call `init_vars` since user is continuing to do some work on a row/col.
     def fire_dimension_changed
       # recreate pad since width or ht has changed (row count or col width changed)
       @_populate_needed = true
       @repaint_required = true
       @repaint_all = true
+      @__first_time = nil
     end
     # repaint only one row since content of that row has changed. 
     # No recreate of pad is done.
@@ -349,6 +377,7 @@ module Canis
     # print footer containing line and position
     def print_foot #:nodoc:
       return unless @print_footer
+      return unless @suppress_borders
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
       @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
 =begin
@@ -783,61 +812,53 @@ module Canis
 #---- Section: movement end -----# }}}
 #---- Section: internal stuff start -----# {{{
     public
+    def create_default_keyhandler
+      @key_handler = DefaultKeyHandler.new self
+    end
     #
     def handle_key ch
       return :UNHANDLED unless @list
+      # trying to somehow get this to update when there's a window on top CLEANUP
+      if ch == 1000
+        FFI::NCurses.touchwin(@window.get_window)
+        @repaint_required = true
+        #repaint()
+        $log.debug "XXX:  textpad got 1000"
+        $error_message.value = "textpad got 1000"
+        #padrefresh
+        #Ncurses::Panel.update_panels
+        #@window.wrefresh
+        return 0
+      end
 
-
+      unless @key_handler
+        create_default_keyhandler
+      end
       @oldrow = @prow
       @oldcol = @pcol
-      $log.debug "XXX: PAD got #{ch} prow = #{@prow}"
+      $log.debug "XXX: TEXTPAD got #{ch} prow = #{@prow}"
+      ret = @key_handler.handle_key(ch)
+    end
+    # this is a barebones handler to be used only if an overriding key handler
+    # wishes to fall back to default processing after it has handled some keys.
+    # The complete version is in Defaultkeyhandler.
+    def _handle_key ch
       begin
-        case ch
-      when ?0.getbyte(0)..?9.getbyte(0)
-        if ch == ?0.getbyte(0) && $multiplier == 0
-          cursor_bol
-          return 0
-        end
-        # storing digits entered so we can multiply motion actions
-        $multiplier *= 10 ; $multiplier += (ch-48)
-        return 0
-        when ?\C-c.getbyte(0)
-          $multiplier = 0
-          return 0
-        else
-          # check for bindings, these cannot override above keys since placed at end
-          begin
-            ret = process_key ch, self
-            $multiplier = 0
-            bounds_check
-            ## If i press C-x > i get an alert from rwidgets which blacks the screen
-            # if i put a padrefresh here it becomes okay but only for one pad,
-            # i still need to do it for all pads.
-          rescue => err
-            $log.error " TEXTPAD ERROR INS #{err} "
-            $log.debug(err.backtrace.join("\n"))
-            textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
-          end
-          ## NOTE if textpad does not handle the event and it goes to form which pops
-          # up a messagebox, then padrefresh does not happen, since control does not 
-          # come back here, so a black rect is left on screen
-          # please note that a bounds check will not happen for stuff that 
-          # is triggered by form, so you'll have to to it yourself or 
-          # call setrowcol explicity if the cursor is not updated
-          return :UNHANDLED if ret == :UNHANDLED
-        end
+        ret = process_key ch, self
+        $multiplier = 0
+        bounds_check
       rescue => err
-        $log.error " TEXTPAD ERROR 591 #{err} "
-        $log.debug( err) if err
-        $log.debug(err.backtrace.join("\n")) if err
-        textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
-        $error_message.value = ""
+        $log.error " TEXTPAD ERROR INS #{err} "
+        $log.debug(err.backtrace.join("\n"))
+        alert "#{err}"
+        #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
       ensure
         padrefresh
         Ncurses::Panel.update_panels
       end
       return 0
-    end # while loop
+    end
+
 
     #
     # event when user hits ENTER on a row, user would bind :PRESS
@@ -887,6 +908,7 @@ module Canis
     # sets row (and someday col too)
     # sets repaint_required
 
+    public
     def bounds_check
       r,c = rowcol
       @current_index = 0 if @current_index < 0
@@ -897,7 +919,7 @@ module Canis
       #$log.debug "XXX: PAD BOUNDS ci:#{@current_index} , old #{@oldrow},pr #{@prow}, max #{@maxrow} pcol #{@pcol} maxcol #{@maxcol}"
       @crow = @current_index + r - @prow
       @crow = r if @crow < r
-      # 2 depends on whetehr suppressborders
+      # 2 depends on whetehr suppress_borders
       if @suppress_borders
         @crow = @row + @height -1 if @crow >= r + @height -1
       else
@@ -1250,4 +1272,68 @@ module Canis
     end
   end
 # renderer }}}
+# This is the default key handler.
+  # It takes care of catching numbers so that vim's movement can use numeric args. 
+  # That is taken care of by multiplier. Other than that it has the key_map process the key.
+  #
+  class DefaultKeyHandler # ---- {{{
+    def initialize source
+      @source = source
+    end
+
+    def handle_key ch
+      begin
+        case ch
+        when ?0.getbyte(0)..?9.getbyte(0)
+          if ch == ?0.getbyte(0) && $multiplier == 0
+            @source.cursor_bol
+            return 0
+          end
+          # storing digits entered so we can multiply motion actions
+          $multiplier *= 10 ; $multiplier += (ch-48)
+          return 0
+        when ?\C-c.getbyte(0)
+          $multiplier = 0
+          return 0
+        else
+          # check for bindings, these cannot override above keys since placed at end
+          begin
+            ret = @source.process_key ch, self
+            $multiplier = 0
+            @source.bounds_check
+            ## If i press C-x > i get an alert from rwidgets which blacks the screen
+            # if i put a padrefresh here it becomes okay but only for one pad,
+            # i still need to do it for all pads.
+          rescue => err
+            $log.error " TEXTPAD ERROR INS #{err} "
+            $log.debug(err.backtrace.join("\n"))
+            alert "#{err}"
+            #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
+          end
+          # --- NOTE ABOUT BLACK RECT LEFT on SCREEN {{{
+          ## NOTE if textpad does not handle the event and it goes to form which pops
+          # up a messagebox, then padrefresh does not happen, since control does not 
+          # come back here, so a black rect is left on screen
+          # please note that a bounds check will not happen for stuff that 
+          # is triggered by form, so you'll have to to it yourself or 
+          # call setrowcol explicity if the cursor is not updated
+          # --- }}}
+
+          return :UNHANDLED if ret == :UNHANDLED
+        end
+      rescue => err
+        $log.error " TEXTPAD ERROR 591 #{err} "
+        $log.debug( err) if err
+        $log.debug(err.backtrace.join("\n")) if err
+        # NOTE: textdialog itself is based on this class.
+        alert "#{err}"
+        #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
+        $error_message.value = ""
+      ensure
+        @source.padrefresh
+        Ncurses::Panel.update_panels
+      end
+      return 0
+    end # def
+  end # class }}}
 end # mod
