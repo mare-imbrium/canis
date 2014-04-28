@@ -461,6 +461,23 @@ module Canis
     $log.debug "NL2: #{retval} , #{retval.class} "
     retval
   end
+
+  # This is a variation of display_list which is more for selecting a file, or dir.
+  # It maps some keys to go up to parent dir, and to step into directory under cursor
+  # if you are in directory mode.
+  # @param [String] (optional) glob is a glob to apply when creating a listing
+  # @param [Hash] config options for configuring the listing
+  # @option config [Boolean] :recursive Should listing recurse, default true
+  # @option config [Boolean] :dirs Should list directories only, default false
+  # @option config [String] :startdir Directory to use as current
+  #  You may also add other config pairs to be passed to textpad such as title
+  #
+  # @example list directories recursively
+  #
+  #    str = choose_file  :title => "Select a file", 
+  #       :recursive => true,
+  #       :dirs => true,
+  #
   def choose_file glob, config={}
     if glob.is_a? Hash
       config = glob
@@ -489,6 +506,7 @@ module Canis
     if text.size < maxh
       config[:height] = text.size + 1
     end
+    # calc window coords
     _update_default_settings config
     default_layout = config[:layout]
     view(text, config) do |t, hash|
@@ -500,9 +518,10 @@ module Canis
       t.key_handler.default_layout = default_layout
       t.key_handler.header = hash[:header]
       t.key_handler.recursive_search(glob)
-      t.key_handler.default_key_map
+      t.key_handler.directory_key_map
     end
   end
+  
   # NOTE:  moved from bottomline since it used commandwindow but now we;ve
   # moved away from ListObject to view. and i wonder what this really
   # gives ?
@@ -600,6 +619,8 @@ module Canis
     attr_accessor :header
     attr_accessor :key_map
     attr_reader :source
+    attr_reader :keyint
+    attr_reader :keychr
     def initialize source
       @source = source
       @list = source.text
@@ -607,6 +628,7 @@ module Canis
       @__list = @list
       @buffer = ""
       @maxht ||=15
+      default_key_map
     end
 
     # a default proc to requery data based on glob supplied and the pattern user enters
@@ -644,28 +666,6 @@ module Canis
         @source.form.window.resize_with(nl)
       end
 
-=begin
-
-      elsif sz > th && th < @maxht && sz < @maxht
-        # increase it
-        @source.height = sz
-        nl = _new_layout sz+1
-        $log.debug "XXX:  increase ht to #{sz} layout is #{nl} size is #{sz}"
-        @source.form.window.resize_with(nl)
-      elsif sz > th && th < @maxht && sz > @maxht
-        # expand the window ht to maxht
-        tt = @maxht
-        @source.height = tt
-        nl = _new_layout tt
-        $log.debug "XXX:  increase ht to #{tt} def layout is #{nl} size is #{sz}"
-        @source.form.window.resize_with(nl)
-      else
-        @source.height = @maxht-1
-        nl = _new_layout @maxht
-        $log.warn "XXX:  ELSE increase ht to #{@maxht} def layout is #{nl} size is #{sz} "
-        @source.form.window.resize_with(nl)
-      end
-=end
       @source.fire_dimension_changed
 
       @source.init_vars # do if rows is less than current_index.
@@ -706,28 +706,16 @@ module Canis
       0
     end
     def handle_key ch
+      @keyint = ch
+      @keychr = nil
       # accumulate keys in a string
       # need to track insertion point if user uses left and right arrow
         @buffer ||= ""
         chr = nil
-
         chr = ch.chr if ch > 47 and ch < 127
-        changed = false
-        if (ch >= 48 and ch <= 122) || ch == 127
-          if chr && chr =~ /[a-zA-Z0-9_\.]/
-            @buffer << chr
-            changed = true
-          end
-          if ch == 127
-            # backspace
-            @buffer = @buffer[0..-2] unless @buffer == ""
-            changed = true
-          end
-          if changed
-            buffer_changed
-            return 0
-          end
-        end
+        @keychr = chr
+
+
         ret = process_key ch
         # revert to the basic handling of key_map and refreshing pad.
         # but this will rerun the keys and may once again run a mapping.
@@ -742,19 +730,23 @@ module Canis
       @key_map.each_pair do |k,p|
         $log.debug "KKK:  processing key #{ch}  #{chr} "
         if (k == ch || k == chr)
+          $log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
+          # compare both int key and chr
           $log.debug "KKK:  found match 1 #{ch}  #{chr} "
-          p.call(self)
+          p.call(self, ch)
           return 0
-        elsif k.respond_to? :include
-          if k.include?( ch ) || k.include?(chr)
+        elsif k.respond_to? :include?
+            $log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
+            # this bombs if its a String and we check for include of a ch.
+          if !k.is_a?( String ) && (k.include?( ch ) || k.include?(chr))
             $log.debug "KKK:  found match include #{ch}  #{chr} "
-            p.call(self)
+            p.call(self, ch)
             return 0
           end
         elsif k.is_a? Regexp
           if k.match(chr)
             $log.debug "KKK:  found match regex #{ch}  #{chr} "
-            p.call(self)
+            p.call(self, ch)
             return 0
           end
         end
@@ -768,8 +760,27 @@ module Canis
     def default_key_map
       require 'canis/core/include/action'
       @key_map ||= {}
-      # go to parent dir
+      @key_map[ Regexp.new('[a-zA-Z0-9_\.]') ] = Action.new("Append to pattern") { |obj, ch|
+        obj.buffer << ch.chr
+        obj.buffer_changed
+      }
+      @key_map[ [127, ?\C-h.getbyte(0)] ] = Action.new("Delete Prev Char") { |obj, ch|
+        # backspace
+        buff = obj.buffer
+        buff = buff[0..-2] unless buff == ""
+        obj.set_buffer buff
+      }
+      tp = source
+      source.bind_key(?\M-n.getbyte(0), 'goto_end'){ tp.goto_end } 
+      source.bind_key(?\M-p.getbyte(0), 'goto_start'){ tp.goto_start } 
+    end
+
+    # specific actions for directory listers
+    # currently for stepping into directory under cursor
+    # and going to parent dir.
+    def directory_key_map
       @key_map["<"] = Action.new("Goto Parent Dir") { |obj|
+        # go to parent dir
         $log.debug "KKK:  called proc for <"
         Dir.chdir("..")
         obj.buffer_changed
@@ -784,9 +795,6 @@ module Canis
           obj.buffer_changed
         end
       }
-      tp = source
-      source.bind_key(?\M-n.getbyte(0), 'goto_end'){ tp.goto_end } 
-      source.bind_key(?\M-p.getbyte(0), 'goto_start'){ tp.goto_start } 
     end
 
     # the line on which focus is.
