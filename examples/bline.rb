@@ -139,7 +139,7 @@ App.new do
   @form.bind_key(?:) { app_menu; }
 
   stack :margin_top => 1, :margin_left => 0, :width => :expand , :height => FFI::NCurses.LINES-2 do
-    tv = textview :height_pc => 100, :width_pc => 100, :name => "tv"
+    tv = textview :height_pc => 100, :width_pc => 100, :name => "tv", :suppress_borders => true
   end # stack
     
   sl = status_line :row => Ncurses.LINES-1
