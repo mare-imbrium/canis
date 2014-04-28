@@ -494,6 +494,7 @@ module Canis
     view(text, config) do |t, hash|
       t.suppress_borders true
       t.print_footer false
+      #t.fixed_bounds config.delete(:fixed_bounds)
       t.key_handler = ControlPHandler.new(t)
       t.key_handler.maxht = maxh
       t.key_handler.default_layout = default_layout
@@ -532,12 +533,17 @@ module Canis
     config[:layout] = layout
     config[:close_key] = KEY_ENTER
     config[:app_header] = true
+    # repeated resetting seems to play with left and other things.
+    # let's say we know that my window will always have certain settings, then let me do a check for them in padrefresh
+    # in this window the only thing changing is the top (based on rows). all else is same.
+    #config[:fixed_bounds] = [nil, 0, sh, sc]
   end
   # create a new layout array based on size of data given
   # The layout created is weighted to the bottom, so it is always ending at the second last row
   # The +top+ keeps changing based on height.
   def _new_layout size
     ht = size
+    #ht = 15
     sh = Ncurses.LINES-1
     sc = Ncurses.COLS-0
     layout = [ ht, sc, sh-ht ,0]
@@ -567,11 +573,12 @@ module Canis
   def display_list text, config={}
     maxh = 15
     _update_default_settings config
-    default_layout = config[:layout]
+    default_layout = config[:layout].dup
     command = config.delete(:command)
     view(text, config) do |t, hash|
       t.suppress_borders true
       t.print_footer false
+      #t.fixed_bounds config.delete(:fixed_bounds)
       t.key_handler = ControlPHandler.new(t)
       t.key_handler.maxht = maxh
       t.key_handler.default_layout = default_layout
@@ -592,6 +599,7 @@ module Canis
     # application_header object whose text can be changed
     attr_accessor :header
     attr_accessor :key_map
+    attr_reader :source
     def initialize source
       @source = source
       @list = source.text
@@ -621,31 +629,43 @@ module Canis
       @source.form.window.hide
       th = @source.height
       sh = Ncurses.LINES-1
-      if sz < th
+      if sz < @maxht
         # rows is less than tp size so reduce tp and window
         @source.height = sz
         nl = _new_layout sz+1
-        $log.debug "XXX:  reduce ht to #{sz} layout is #{nl} "
+        $log.debug "XXX:  adjust ht to #{sz} layout is #{nl} size is #{sz}"
         @source.form.window.resize_with(nl)
+      else
+        # expand the window ht to maxht
+        tt = @maxht
+        @source.height = tt
+        nl = _new_layout tt+1
+        $log.debug "XXX:  increase ht to #{tt} def layout is #{nl} size is #{sz}"
+        @source.form.window.resize_with(nl)
+      end
+
+=begin
+
       elsif sz > th && th < @maxht && sz < @maxht
         # increase it
         @source.height = sz
         nl = _new_layout sz+1
-        $log.debug "XXX:  increase ht to #{sz} layout is #{nl} "
+        $log.debug "XXX:  increase ht to #{sz} layout is #{nl} size is #{sz}"
         @source.form.window.resize_with(nl)
       elsif sz > th && th < @maxht && sz > @maxht
         # expand the window ht to maxht
-        @source.height = @maxht-1
-        nl = _new_layout @maxht
-        $log.debug "XXX:  increase ht to #{@maxht} def layout is #{nl} "
+        tt = @maxht
+        @source.height = tt
+        nl = _new_layout tt
+        $log.debug "XXX:  increase ht to #{tt} def layout is #{nl} size is #{sz}"
         @source.form.window.resize_with(nl)
       else
         @source.height = @maxht-1
         nl = _new_layout @maxht
-        $log.warn "XXX:  ELSE increase ht to #{@maxht} def layout is #{nl} "
+        $log.warn "XXX:  ELSE increase ht to #{@maxht} def layout is #{nl} size is #{sz} "
         @source.form.window.resize_with(nl)
-
       end
+=end
       @source.fire_dimension_changed
 
       @source.init_vars # do if rows is less than current_index.
@@ -708,30 +728,32 @@ module Canis
             return 0
           end
         end
-        process_key ch
+        ret = process_key ch
         # revert to the basic handling of key_map and refreshing pad.
-        @source._handle_key(ch)
+        # but this will rerun the keys and may once again run a mapping.
+        @source._handle_key(ch) if ret == :UNHANDLED
     end
     def process_key ch
       chr = nil
       if ch > 0 and ch < 256
         chr = ch.chr
       end
+      return :UNHANDLED unless @key_map
       @key_map.each_pair do |k,p|
-        $log.debug "XXX:  processing key #{ch}  #{chr} "
+        $log.debug "KKK:  processing key #{ch}  #{chr} "
         if (k == ch || k == chr)
-          $log.debug "XXX:  found match 1 #{ch}  #{chr} "
+          $log.debug "KKK:  found match 1 #{ch}  #{chr} "
           p.call(self)
           return 0
         elsif k.respond_to? :include
           if k.include?( ch ) || k.include?(chr)
-            $log.debug "XXX:  found match include #{ch}  #{chr} "
+            $log.debug "KKK:  found match include #{ch}  #{chr} "
             p.call(self)
             return 0
           end
         elsif k.is_a? Regexp
           if k.match(chr)
-            $log.debug "XXX:  found match regex #{ch}  #{chr} "
+            $log.debug "KKK:  found match regex #{ch}  #{chr} "
             p.call(self)
             return 0
           end
@@ -739,19 +761,32 @@ module Canis
       end
       return :UNHANDLED
     end
+    # setting up some keys
+    # This is not a good way since it requires internals to be knowm of objects.
+    # We should ideally get the key_map or register with the object so it's internal checks 
+    # are maintained.
     def default_key_map
+      require 'canis/core/include/action'
       @key_map ||= {}
-      @key_map["<"] = Proc.new { |obj|
-        $log.debug "XXX:  called proc for <"
+      # go to parent dir
+      @key_map["<"] = Action.new("Goto Parent Dir") { |obj|
+        $log.debug "KKK:  called proc for <"
         Dir.chdir("..")
         obj.buffer_changed
       }
-      @key_map[">"] = Proc.new { |obj|
-        $log.debug "XXX:  called proc for > : #{obj.current_value} "
-        Dir.chdir(obj.current_value)
-        #obj.set_buffer("")
-        obj.buffer_changed
+      @key_map[">"] = Action.new("Change Dir"){ |obj|
+        $log.debug "KKK:  called proc for > : #{obj.current_value} "
+        # step into directory
+
+        dir = obj.current_value
+        if File.directory? dir
+          Dir.chdir dir
+          obj.buffer_changed
+        end
       }
+      tp = source
+      source.bind_key(?\M-n.getbyte(0), 'goto_end'){ tp.goto_end } 
+      source.bind_key(?\M-p.getbyte(0), 'goto_start'){ tp.goto_start } 
     end
 
     # the line on which focus is.
