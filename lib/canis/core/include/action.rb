@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: been around since the beginning
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: use ,,L
+#  Last update: 2014-04-28 14:53
 #  NOTE: I don't like the dependence on rwidget and EventHandler. Seems it needs
 #   that only for fire_handler and not sure if that's used. I've not bound :FIRE
 #   ever.
@@ -15,7 +15,7 @@
 #   themselves when a dsl_property is modified ?
 # ----------------------------------------------------------------------------- #
 #
-require 'canis/core/widgets/rwidget'
+#require 'canis/core/widgets/rwidget'
 include Canis
 module Canis
   ## encapsulates behaviour allowing centralization
@@ -28,15 +28,16 @@ module Canis
   #      ...
   #    end
   class Action < Proc
-    include EventHandler # removed 2012-01-3 maybe you can bind FIRE
+    # once again commented on 2014-04-28 - 14:37 to keep simple
+    #include EventHandler # removed 2012-01-3 maybe you can bind FIRE
     #include ConfigSetup # removed 2012-01-3 
     # name used on button or menu
-    dsl_property :name
-    dsl_property :enabled
-    dsl_accessor :tooltip_text
-    dsl_accessor :help_text
-    dsl_accessor :mnemonic
-    dsl_accessor :accelerator
+    attr_accessor :name
+    attr_accessor :enabled
+    attr_accessor :tooltip_text
+    attr_accessor :help_text
+    attr_accessor :mnemonic
+    attr_accessor :accelerator
 
     def initialize name, config={}, &block
       super &block
@@ -50,14 +51,16 @@ module Canis
       keys.each do |e| 
         variable_set(e, @config[e])
       end
-      @_events = [:FIRE]
+      #@_events = [:FIRE]
     end
-    def call
+    def call *args
       return unless @enabled
       # seems to be here, if you've bound :FIRE no this, not on any widget
-      fire_handler :FIRE, self  
+      #fire_handler :FIRE, self  
       super
     end
+
+
     # the next 3 are to adapt this to CMenuitems
     def hotkey
       return @mnemonic if @mnemonic
