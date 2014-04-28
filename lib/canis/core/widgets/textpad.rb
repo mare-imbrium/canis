@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-28 01:42
+#  Last update: 2014-04-28 20:14
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -55,6 +55,10 @@ module Canis
     # the object that handles keys that are sent to this object by the form.
     # This widget creates its own default handler if not overridden by user.
     attr_accessor :key_handler
+
+    # an array of 4 items for h w t and l which can be nil, padrefresh will check
+    # its bounds against this to ensure no caller messes up.
+    dsl_accessor :fixed_bounds
     # You may pass height, width, row and col for creating a window otherwise a fullscreen window
     # will be created. If you pass a window from caller then that window will be used.
     # Some keys are trapped, jkhl space, pgup, pgdown, end, home, t b
@@ -212,9 +216,19 @@ module Canis
       ser = @rows + sr
       sec = @cols + sc
 
+      if @fixed_bounds
+        #retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
+        $log.debug "PAD going into fixed_bounds with #{@fixed_bounds}"
+        sr = @fixed_bounds[0] if @fixed_bounds[0]
+        sc = @fixed_bounds[1] if @fixed_bounds[1]
+        ser = @fixed_bounds[2] if @fixed_bounds[2]
+        sec = @fixed_bounds[3] if @fixed_bounds[3]
+      end
+
       # this is a fix, but the entire popup is not moved up. title and borders are still
       # drawn in wrong positions, and left there after popup is off.
-      maxr = FFI::NCurses.LINES - 2
+      maxr = FFI::NCurses.LINES - 1
+      maxc = FFI::NCurses.COLS
       if ser > maxr
         $log.warn "XXX PADRE ser > max. sr= #{sr} and ser #{ser}. sr:#{@startrow}+ #{top} , sc:#{@startcol}+ #{left},  rows:#{@rows}+ #{sr} cols:#{@cols}+ #{sc}  top #{top} left #{left} "
         #_t = ser - maxr
@@ -222,10 +236,30 @@ module Canis
         #sr -= _t
         #$log.warn "XXX PADRE after correcting ser #{sr} and #{ser} "
       end
+      # there are some freak cases where prow or pcol comes as -1, but prefresh does not return a -1. However, this 
+      # could affect some other calculation somewhere.
 
       retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
-      $log.warn "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
-      $log.debug "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
+      $log.warn "XXXPADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
+      # remove next debug statement after some testing DELETE
+      $log.debug "0PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
+      if retval < 0
+        Ncurses.beep
+        if sr > maxr
+          $log.warn "XXXPADREF #{sr} should be <= #{maxr} "
+        end
+        if sc < 0 || sc >= maxc
+          $log.warn "XXXPADREF #{sc} should be less than #{maxc} "
+        end
+        if ser > maxr || ser < sr
+          $log.warn "XXXPADREF #{ser} should be less than #{maxr} and gt #{sr}  "
+        end
+        if sec > maxc || sec < sc
+          $log.warn "XXXPADREF #{sec} should be less than #{maxc} and gt #{sc}  "
+        end
+        $log.warn "XXXPADRE sr= #{sr} and ser #{ser}. sr:#{@startrow}+ #{top} , sc:#{@startcol}+ #{left},  rows:#{@rows}+ #{sr} cols:#{@cols}+ #{sc}  top #{top} left #{left} "
+      end
+      #$log.debug "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
       # padrefresh can fail if width is greater than NCurses.COLS
       # or if height exceeds tput lines. As long as content is less, it will work
       # the moment content_rows exceeds then this issue happens. 
@@ -615,6 +649,7 @@ module Canis
       @current_index += num
       # no , i don't like this here. it scrolls up too much making prow = current_index
       unless is_visible? @current_index
+        #alert "#{@current_index} not visible prow #{@prow} #{@scrollatrows} "
           @prow += num
       end
       #ensure_visible
@@ -842,6 +877,7 @@ module Canis
     # this is a barebones handler to be used only if an overriding key handler
     # wishes to fall back to default processing after it has handled some keys.
     # The complete version is in Defaultkeyhandler.
+    # BUT the key will be executed again.
     def _handle_key ch
       begin
         ret = process_key ch, self
@@ -1126,11 +1162,11 @@ module Canis
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       ## =~ does not give an error, but it does not work.
       @list.each_with_index do |line, ix|
-        col = line.index str
-        if col
-          first ||= [ ix, col ]
+        _col = line.index str
+        if _col
+          first ||= [ ix, _col ]
           if ix > @current_index
-            return [ix, col]
+            return [ix, _col]
           end
         end
       end
