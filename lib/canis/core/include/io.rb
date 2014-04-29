@@ -28,29 +28,6 @@ module Canis
     end
     # 2011-11-27 I have replaced the getting of chars with a field
 
-    # routine to get a string at bottom of window.
-    # The first 3 params are no longer required since we create a window
-    # of our own. 
-    # @param [String] prompt - label to show
-    # @param [Fixnum] maxlen - max length of input
-    # @param [Hash] config - :default, :width of Field, :help_text, :tab_completion
-    # help_text is displayed on F1
-    # tab_completion is a proc which helps to complete user input
-    # NOTE : This method is now only for **backward compatibility**
-    # rb_getstr had various return codes based on whether user asked for help
-    # possibly mimicking alpine, or because i could do nothing about it.
-    # Now, rb_getstr handles that and only returns if the user cancels or enters
-    # a string, so rb_getstr does not need to return other codes.
-    def rb_getstr(nolongerused, r, c, prompt, maxlen, config={})
-      config[:maxlen] = maxlen
-      str = rb_gets(prompt, config)
-      if str
-        return 0, str
-      else
-        return -1, nil
-      end
-    end
-
     # get a string at the bottom of the screen
     #
     # @param [String] prompt - label to show
@@ -60,7 +37,10 @@ module Canis
     # @yield [Field] for overriding or customization
     # @return [String, nil] String if entered, nil if canceled
     def rb_gets(prompt, config={}) # yield field
-      if config.is_a? Array
+      if config.is_a? Hash
+        # okay
+        #
+      elsif config.is_a? Array
         # an array is supplied, and tabbing helps complete from that
         # array.
         options = config
@@ -70,11 +50,25 @@ module Canis
         config = {}
         config[:tab_completion] = completion_proc
       elsif config == Pathname
+        # we need to return a pathname TODO and prepend dirname
+        # allow user to specify startdir else take current
         completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
         help_text = "Enter start of filename and tab to get completion"
         config = {}
         config[:tab_completion] = completion_proc
         config[:help_text] = help_text
+      elsif config == Integer
+        config = {}
+        config[:datatype] = 1.class
+        config[:type] = :integer
+      elsif config == Float
+        config = {}
+        v = 0.11
+        config[:datatype] = v.class
+        config[:type] = :float
+      elsif config == :phone
+
+        config = {}
       end
       begin
         win = __create_footer_window
@@ -87,6 +81,8 @@ module Canis
         maxlen = config[:maxlen] || _max
         field = Field.new form, :row => r, :col => c, :maxlen => maxlen, :default => default, :label => prompt,
           :width => displen
+        field.datatype(config[:datatype]) if config[:datatype]
+        field.type(config[:type]) if config[:type]
         bg = Ncurses.COLORS >= 236 ? 233 : :blue
         field.bgcolor = bg
         field.cursor_end if default.size > 0
@@ -94,13 +90,9 @@ module Canis
 
         # if user wishes to use the yield and say "field.history = [x,y,z] then
         # we should alredy have extended this, so lets make it permanent
-        #if config[:history]
-        #raise ArgumentError, "Field history must be an array" unless config[:history].is_a? Array
         require 'canis/core/include/rhistory'
         field.extend(FieldHistory)
-        #field.history_config :row => 
         field.history = config[:history]
-        #end
 
         yield field if block_given?
         form.repaint
@@ -134,6 +126,9 @@ module Canis
           if ch == KEY_TAB
             if config
               str = field.text
+              # tab_completion
+              # if previous char was not tab, execute tab_completion_proc and push first entry
+              # else push the next entry
               if prevchar == KEY_TAB
                 if !entries.nil? && !entries.empty?
                   str = entries.delete_at(0)
@@ -159,9 +154,6 @@ module Canis
               win.wrefresh
             end
 
-            # tab_completion
-            # if previous char was not tab, execute tab_completion_proc and push first entry
-            # else push the next entry
           elsif ch == KEY_F1
             help_text = config[:help_text] || "No help provided. C-c/C-g aborts. <TAB> completion. Alt-h history. C-a/e"
             print_status_message help_text, :wait => 7
@@ -240,6 +232,7 @@ module Canis
 
     # This is just experimental, trying out tab_completion
     # Prompt user for a file name, allowing him to tab to complete filenames
+    # @see #choose_file from rcommandwindow.rb
     # @param [String] label to print before field
     # @param [Fixnum] max length of field
     # @return [String] filename or blank if user cancelled
@@ -291,6 +284,32 @@ module Canis
       $log.warn string
       Ncurses.beep
     end
+
+
+    # routine to get a string at bottom of window.
+    # The first 3 params are no longer required since we create a window
+    # of our own. 
+    # @param [String] prompt - label to show
+    # @param [Fixnum] maxlen - max length of input
+    # @param [Hash] config - :default, :width of Field, :help_text, :tab_completion
+    # help_text is displayed on F1
+    # tab_completion is a proc which helps to complete user input
+    # NOTE : This method is now only for **backward compatibility**
+    # rb_getstr had various return codes based on whether user asked for help
+    # possibly mimicking alpine, or because i could do nothing about it.
+    # Now, rb_getstr handles that and only returns if the user cancels or enters
+    # a string, so rb_getstr does not need to return other codes.
+    # @deprecated
+    def rb_getstr(nolongerused, r, c, prompt, maxlen, config={})
+      config[:maxlen] = maxlen
+      str = rb_gets(prompt, config)
+      if str
+        return 0, str
+      else
+        return -1, nil
+      end
+    end
+
 
 
   end # module
