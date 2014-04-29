@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-28 20:14
+#  Last update: 2014-04-29 20:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1130,7 +1130,7 @@ module Canis
       str = get_string("Enter pattern: ", :title => "Find pattern") unless str
       return if str.nil? 
       str = @last_regex if str == ""
-      return if str == ""
+      return if !str or str == ""
       ix = next_match str
       return unless ix
       @last_regex = str
@@ -1158,6 +1158,7 @@ module Canis
     # @return row and col offset of match, or nil
     # @param String to find
     def next_match str
+      return unless str
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       ## =~ does not give an error, but it does not work.
