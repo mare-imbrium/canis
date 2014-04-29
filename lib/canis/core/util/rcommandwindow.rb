@@ -324,86 +324,6 @@ module Canis
 
 
   end # class CommandWindow
-    # Allows a selection in which options are shown over prompt. As user types
-    # options are narrowed down.
-    # NOTE: For a directory we are not showing a slash, so currently you
-    # have to enter the slash manually when searching.
-    # FIXME we can put remarks in fron as in memacs such as [No matches] or [single completion]
-    # @param [Array]  a list of items to select from
-    # NOTE: if you use this please copy it to your app. This does not conform to highline's
-    # choose, and I'd like to somehow get it to be identical.
-    #
-    # this required to be inside the Question class since it has various procs. Requires quite a bit of work.
-    def OLDchoose list1, config={}
-      dirlist = true
-      start = 0
-      case list1
-      when NilClass
-        #list1 = Dir.glob("*")
-        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
-      when String
-        list1 = Dir.glob(list1).collect { |f| File.directory?(f) ? f+"/" : f  }
-      when Array
-        dirlist = false
-        # let it be, that's how it should come
-      else
-        # Dir listing as default
-        #list1 = Dir.glob("*")
-        list1 = Dir.glob("*").collect { |f| File.directory?(f) ? f+"/" : f  }
-      end
-      $log.debug "XXX:  reached here 111"
-      require 'canis/core/util/rcommandwindow'
-      prompt = config[:prompt] || "Choose: "
-      layout = { :height => 5, :width => Ncurses.COLS-1, :top => Ncurses.LINES-6, :left => 0 }
-      rc = CommandWindow.new nil, :layout => layout, :box => true, :title => config[:title]
-      begin
-        w = rc.window
-        $log.debug "XXX:  reached here before display_menu"
-        rc.display_menu list1
-        $log.debug "XXX:  reached here after display_menu"
-        # earlier wmove bombed, now move is (window.rb 121)
-        str = rb_gets(prompt) { |q| q.help_text = config[:help_text] ;  q.change_proc = Proc.new { |str| w.wmove(1,1) ; w.wclrtobot;  
-
-          l = list1.select{|e| e.index(str)==0}  ;  # select those starting with str
-
-          if (l.size == 0 || str[-1]=='/') && dirlist
-            # used to help complete directories so we can drill up and down
-            #l = Dir.glob(str+"*")
-            l = Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  }
-          end
-          rc.display_menu l; 
-          l
-        }
-        q.key_handler_proc = Proc.new { |ch| 
-          # this is not very good since it does not respect above list which is filtered
-          # # need to clear the screen before printing - FIXME
-          case ch
-          when ?\C-n.getbyte(0)
-            start += 2 if start < list1.length - 2
-
-            w.wmove(1,1) ; w.wclrtobot;  
-            rc.display_menu list1, :startindex => start
-          when ?\C-p.getbyte(0)
-            start -= 2 if start > 2
-            w.wmove(1,1) ; w.wclrtobot;  
-            rc.display_menu list1, :startindex => start
-          else
-            alert "unhalderlind by jey "
-          end
-        
-        }
-        }
-        # need some validation here that its in the list TODO
-      ensure
-        rc.destroy
-        rc = nil
-        $log.debug "XXX: HIDE B IN ENSURE"
-        #hide_bottomline # since we called ask() we need to close bottomline
-      end
-        $log.debug "XXX: HIDE B AT END OF ASK"
-      #hide_bottomline # since we called ask() we need to close bottomline
-      return str
-    end
 
   # presents given list in numbered format in a window above last line
   # and accepts input on last line
@@ -440,6 +360,7 @@ module Canis
         #ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
         # FIXME valid range won't work here since on_leave is not
         # triggered.
+        # FIXME if class is specifited then update type in Field
         ret = rb_gets(prompt) {|f| f.datatype = 1.class ; f.type :integer; f.valid_range(1..list1.size)}
         val = list1[ret-1]
         if val.is_a? Array
@@ -472,6 +393,10 @@ module Canis
   # @option config [String] :startdir Directory to use as current
   #  You may also add other config pairs to be passed to textpad such as title
   #
+  # NOTE: if you pass a glob, then :recursive will not apply. You must specify
+  # recursive by prepending "**/" or inserting it in the appropriate place such 
+  # as "a/b/c/**/*rb". We would not know where to place the "**/".
+  #
   # @example list directories recursively
   #
   #    str = choose_file  :title => "Select a file", 
@@ -496,12 +421,22 @@ module Canis
       end
     end
     maxh = 15
-    fstartdir = config.delete :startdir
-    Dir.chdir(fstartdir) if fstartdir
+    # i am not going through that route, since going up and down a dir will be difficult in a generic
+    # case the glob has the dir in it, or i pass directory to the handler.
+    # why not Dir.pwd in next line ?? XXX
+    #directory = Pathname.new(File.expand_path(File.dirname($0)))
+    #_d = config.delete :directory
+    #if _d
+      #directory = Pathname.new(File.expand_path(_d))
+    #end
+    directory = config.delete :directory
+    # this keeps going up with each invocation if I send ".."
+    Dir.chdir(directory) if directory
     command = config.delete(:command)
     text = Dir.glob(glob)
+    #text = Dir[File.join(directory.to_s, glob)]
     if !text or text.empty?
-      text = [".."]
+      text = ["No entries"]
     end
     if text.size < maxh
       config[:height] = text.size + 1
@@ -509,6 +444,7 @@ module Canis
     # calc window coords
     _update_default_settings config
     default_layout = config[:layout]
+    config[:close_key] = 1001
     view(text, config) do |t, hash|
       t.suppress_borders true
       t.print_footer false
@@ -629,6 +565,7 @@ module Canis
       @buffer = ""
       @maxht ||=15
       default_key_map
+      @no_match = false
     end
 
     # a default proc to requery data based on glob supplied and the pattern user enters
@@ -689,6 +626,7 @@ module Canis
       # display the pattern on the header
       @header.text1(">>>#{@buffer}_") if @header
       @header.text_right(Dir.pwd) if @header
+      @no_match = false
 
       if @command
         @list = @command.call(@buffer)
@@ -700,12 +638,22 @@ module Canis
       sz = @list.size
       if sz == 0
         Ncurses.beep
-        return 1
+        #return 1
+        #this should make ENTER and arrow keys unusable except for BS or Esc, 
+        @list = ["No entries"]
+        @no_match = true
       end
       data_changed @list
       0
     end
+
+    # key handler of Controlphandler 
+    # @param [Fixnum] ch is key read by window.
+    # WARNING: Please note that if this is used in +Viewer.view+, that +view+
+    # has already trapped CLOSE_KEY which is KEY_ENTER/13 for closing, so we won't get 13 
+    # anywhere
     def handle_key ch
+      $log.debug "  HANDLER GOT KEY #{ch} "
       @keyint = ch
       @keychr = nil
       # accumulate keys in a string
@@ -714,8 +662,19 @@ module Canis
         chr = nil
         chr = ch.chr if ch > 47 and ch < 127
         @keychr = chr
-
-
+        # Don't let user hit enter or keys if no match
+        if [13,10, KEY_ENTER, KEY_UP, KEY_DOWN].include? ch
+          if @no_match
+            $log.warn "XXX:  KEY GOT WAS #{ch},  #{chr} "
+            # viewer has already blocked KEY_ENTER !
+            return 0 if [13,10, KEY_ENTER, KEY_UP, KEY_DOWN].include? ch
+          else
+            if [13,10, KEY_ENTER].include? ch
+              @source.form.window.ungetch(1001)
+              return 0
+            end
+          end
+        end
         ret = process_key ch
         # revert to the basic handling of key_map and refreshing pad.
         # but this will rerun the keys and may once again run a mapping.
@@ -795,6 +754,24 @@ module Canis
           obj.buffer_changed
         end
       }
+    end
+    # convenience method to bind a key or array /range of keys, or regex to a block
+    # @param [int, String, #include?, Regexp] keycode If the user presses this key, then execute given block
+    # @param [String, Action] descr is either a textual description of the key
+    #     or an Action object
+    # @param [block] unless an Action object has been passed, a block is passed for execution
+    #
+    # @example
+    #     bind_key '%', 'Do something' {|obj, ch| actions ... }
+    #     bind_key [?\C-h.getbyte(0), 127], 'Delete something' {|obj, ch| actions ... }
+    #     bind_key Regexp.new('[a-zA-Z_\.]'), 'Append char' {|obj, ch| actions ... }
+    # TODO test this
+    def bind_key keycode, descr, &block
+      if descr.is_a? Action
+        @key_map[keycode] = descr
+     else
+       @key_map[keycode] = Action.new(descr), block
+     end
     end
 
     # the line on which focus is.
