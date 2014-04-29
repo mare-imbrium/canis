@@ -121,11 +121,13 @@ module Canis
       # allow closing using q and Ctrl-q in addition to any key specified
       #  user should not need to specify key, since that becomes inconsistent across usages
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
+          $log.debug "  VIEWER got key #{ch} , close key is #{config[:close_key]} "
           retval = textview.current_value() if ch == config[:close_key] 
           break if ch == config[:close_key] || ch == 3|| ch == 2727 # added double esc 2011-12-27 
           # if you've asked for ENTER then i also check for 10 and 13
           retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
+          $log.debug "  VIEWER got  1 key #{ch} "
           v_form.handle_key ch
           v_form.repaint
         end
