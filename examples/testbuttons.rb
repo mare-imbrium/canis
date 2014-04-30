@@ -2,6 +2,8 @@
 ## I have used both DSL and conventional constructors for each button to test out.
 ## Had to fix checkbox code (text and mnemonic to return self).
 # Had to fix radio button code, remove raise from constructor
+# 2014-04-30 - 23:46 removed variable in radiobutton to try out newly introduced
+# ButtonGroup.
 ## -----
 ## -- THIS WILL NOT WORK WITH < 0.0.15. WILL REQUIRE DOWNLOADING FIXES FROM GITHUB
 ## OR HAVING AT LEAST 0.0.15
@@ -54,9 +56,9 @@ if $0 == __FILE__
 
     catch(:close) do
       colors = Ncurses.COLORS
-      $log.debug "START #{colors} colors test2.rb --------- #{@window} "
+      $log.debug "START #{colors} colors  #{$0} --------- #{@window} "
       @form = Form.new @window
-      title = (" "*30) + "Original Demo of basic Ruby Curses Widgets " + Canis::VERSION
+      title = (" "*30) + "Demo of Buttons" + Canis::VERSION
       Label.new @form, {'text' => title, :row => 0, :col => 0, :color => 'green', :bgcolor => 'black'}
       r = 1; fc = 12;
         r += 1
@@ -119,10 +121,10 @@ if $0 == __FILE__
       row += 1
       colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, 
         "color"=>"cyan", "mnemonic" => 'S'}
-      $radio = Variable.new
-      $radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
+      #$radio = Variable.new
+      #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
 #
-      $radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
         #e.bgcolor tv.value };  }
 
       # whenever updated set colorlabel and messagelabel to bold
@@ -137,7 +139,7 @@ if $0 == __FILE__
       dlen = 10
       # if we try conventional style then constructor throws exception since @variable must be set
       radio1 = RadioButton.new(@form).
-        variable($radio).
+        #variable($radio).
         text("red").
         value("red").
         color("red").
@@ -146,7 +148,7 @@ if $0 == __FILE__
         col(col)
 
       radio11 = RadioButton.new @form do
-        variable $radio
+        #variable $radio
         text "c&yan"
         value "cyan"
         color "cyan"
@@ -157,7 +159,7 @@ if $0 == __FILE__
 
       row += 1
       radio2 = RadioButton.new @form do
-        variable $radio
+        #variable $radio
         text  "&green"
         value  "green"
         color "green"
@@ -166,7 +168,7 @@ if $0 == __FILE__
         col col
       end
       radio22 = RadioButton.new @form do
-        variable $radio
+        #variable $radio
         text "magenta"
         value "magenta"
         color "magenta"
@@ -179,6 +181,15 @@ if $0 == __FILE__
       #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
         #e.bgcolor tv.value };  }
       colorlabel.label_for radio1
+
+      group = ButtonGroup.new
+      [radio1, radio2, radio11, radio22].each { |r| 
+        group.add r
+      }
+      group.command(colorlabel) {|tv, label|  label.color tv.value; }
+#
+      group.command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+        e.bgcolor tv.value };  }
 
       # instead of using frozen, I will use a PropertyVeto
       # to disallow changes to color itself
@@ -232,9 +243,9 @@ if $0 == __FILE__
         if togglebutton.value == true
           ret = confirm("Do your really want to quit?") 
         else
-          ret = confirm_window("Do your really want to quit?") 
+          ret = rb_confirm("Do your really want to quit?") 
         end
-        if ret == :YES || ret == true
+        if ret 
           throw(:close); 
         else
           message_label = "Quit aborted"
