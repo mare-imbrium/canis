@@ -150,6 +150,7 @@ module Canis
       Ncurses.doupdate();
       @window.wrefresh
     end
+
     # might as well add more keys for paging.
     def configure(*val , &block)
       case val.size
@@ -324,6 +325,108 @@ module Canis
 
 
   end # class CommandWindow
+
+  # a generic key dispatcher that can be used in various classes for handling keys,
+  # setting key_map and processing keys.
+  module KeyDispatcher # --- {{{
+
+    # key handler of Controlphandler 
+    # This sets +@keyint+ with the value  read by window.
+    # This sets +@keychr+ with the +chr+ value of +ch+ if ch between 32 and 127 exclusive.
+    # @param [Fixnum] ch is key read by window.
+    def handle_key ch
+      $log.debug "  KeyDispatcher GOT KEY #{ch} "
+      @keyint = ch
+      @keychr = nil
+      chr = nil
+      chr = ch.chr if ch > 32 and ch < 127
+      @keychr = chr
+
+      ret = process_key ch
+      # revert to the basic handling of key_map and refreshing pad.
+      #####
+      # NOTE
+      # this is being done where we are creating some kind of front for a textpad by using +view+
+      # so we steal some keys, and pass the rest to +view+. Otherwise, next line is not needed.
+      # +@source+ typically would be handle to textpad yielded by +view+.
+      #####
+      @source._handle_key(ch) if ret == :UNHANDLED and @source
+    end
+
+    # checks the key against +@key_map+ if its set
+    # @param [Fixnum] ch character read by +Window+
+    # @return [0, :UNHANDLED] 0 if processed, :UNHANDLED if not processed so higher level can process
+    def process_key ch
+      chr = nil
+      if ch > 0 and ch < 256
+        chr = ch.chr
+      end
+      return :UNHANDLED unless @key_map
+      @key_map.each_pair do |k,p|
+        $log.debug "KKK:  processing key #{ch}  #{chr} "
+        if (k == ch || k == chr)
+          $log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
+          # compare both int key and chr
+          $log.debug "KKK:  found match 1 #{ch}  #{chr} "
+          p.call(self, ch)
+          return 0
+        elsif k.respond_to? :include?
+            $log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
+            # this bombs if its a String and we check for include of a ch.
+          if !k.is_a?( String ) && (k.include?( ch ) || k.include?(chr))
+            $log.debug "KKK:  found match include #{ch}  #{chr} "
+            p.call(self, ch)
+            return 0
+          end
+        elsif k.is_a? Regexp
+          if k.match(chr)
+            $log.debug "KKK:  found match regex #{ch}  #{chr} "
+            p.call(self, ch)
+            return 0
+          end
+        end
+      end
+      return :UNHANDLED
+    end
+    # setting up some keys
+    # This is currently an insertion key map, if you want a String named +@buffer+ updated.
+    # Expects buffer_changed and set_buffer to exist as well as +buffer()+.
+    # TODO add left and right arrow keys for changing insertion point. And other keys.
+    # XXX Why are we trying to duplicate a Field here ??
+    def default_string_key_map
+      require 'canis/core/include/action'
+      @key_map ||= {}
+      @key_map[ Regexp.new('[a-zA-Z0-9_\.\/]') ] = Action.new("Append to pattern") { |obj, ch|
+        obj.buffer << ch.chr
+        obj.buffer_changed
+      }
+      @key_map[ [127, ?\C-h.getbyte(0)] ] = Action.new("Delete Prev Char") { |obj, ch|
+        # backspace
+        buff = obj.buffer
+        buff = buff[0..-2] unless buff == ""
+        obj.set_buffer buff
+      }
+    end
+
+    # convenience method to bind a key or array /range of keys, or regex to a block
+    # @param [int, String, #include?, Regexp] keycode If the user presses this key, then execute given block
+    # @param [String, Action] descr is either a textual description of the key
+    #     or an Action object
+    # @param [block] unless an Action object has been passed, a block is passed for execution
+    #
+    # @example
+    #     bind_key '%', 'Do something' {|obj, ch| actions ... }
+    #     bind_key [?\C-h.getbyte(0), 127], 'Delete something' {|obj, ch| actions ... }
+    #     bind_key Regexp.new('[a-zA-Z_\.]'), 'Append char' {|obj, ch| actions ... }
+    # TODO test this
+    def bind_key keycode, descr, &block
+      if descr.is_a? Action
+        @key_map[keycode] = descr
+     else
+       @key_map[keycode] = Action.new(descr), block
+     end
+    end
+  end # module }}}
 
   # presents given list in numbered format in a window above last line
   # and accepts input on last line
@@ -521,7 +624,7 @@ module Canis
   # @return [ String ] text of line user pressed ENTER on, or "" if user pressed ESC or C-c
   # x show keys entered
   # x shrink the pad based on results
-  # TODO if no results show somethinf like "No entries". or don't change
+  # x if no results show somethinf like "No entries". or don't change
   # TODO take left and right arrow key and adjust insert point
   # TODO have some proc so user can keep querying, rather than passing a list. this way if the 
   # list is really long, all values don't need to be passed.
@@ -544,9 +647,11 @@ module Canis
 
   # This is a keyhandler that traps some keys, much like control-p which filters down a list
   # based on some alpha numeric chars. The rest, such as arrow-keys, are passed to the key_map
-  # TODO : take window sizing out of keyhander try to place somewhere else
   #
   class ControlPHandler # --- {{{
+    require 'canis/core/include/action'
+    include Canis::KeyDispatcher
+
     attr_accessor :maxht
     attr_accessor :default_layout
     # string the user is currently entering in (pattern to filter on)
@@ -564,6 +669,7 @@ module Canis
       @__list = @list
       @buffer = ""
       @maxht ||=15
+      default_string_key_map
       default_key_map
       @no_match = false
     end
@@ -581,7 +687,6 @@ module Canis
     # signal that the data has changed and should be redisplayed
     # with window resizing etc.
     def data_changed list
-      # can we move this resiing to another place XXX TODO
       sz = list.size
       @source.text(list)
       wh = @source.form.window.height
@@ -647,7 +752,8 @@ module Canis
       0
     end
 
-    # key handler of Controlphandler 
+    # key handler of Controlphandler which overrides KeyDispatcher since we need to
+    # intercept KEY_ENTER
     # @param [Fixnum] ch is key read by window.
     # WARNING: Please note that if this is used in +Viewer.view+, that +view+
     # has already trapped CLOSE_KEY which is KEY_ENTER/13 for closing, so we won't get 13 
@@ -680,55 +786,9 @@ module Canis
         # but this will rerun the keys and may once again run a mapping.
         @source._handle_key(ch) if ret == :UNHANDLED
     end
-    def process_key ch
-      chr = nil
-      if ch > 0 and ch < 256
-        chr = ch.chr
-      end
-      return :UNHANDLED unless @key_map
-      @key_map.each_pair do |k,p|
-        $log.debug "KKK:  processing key #{ch}  #{chr} "
-        if (k == ch || k == chr)
-          $log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
-          # compare both int key and chr
-          $log.debug "KKK:  found match 1 #{ch}  #{chr} "
-          p.call(self, ch)
-          return 0
-        elsif k.respond_to? :include?
-            $log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
-            # this bombs if its a String and we check for include of a ch.
-          if !k.is_a?( String ) && (k.include?( ch ) || k.include?(chr))
-            $log.debug "KKK:  found match include #{ch}  #{chr} "
-            p.call(self, ch)
-            return 0
-          end
-        elsif k.is_a? Regexp
-          if k.match(chr)
-            $log.debug "KKK:  found match regex #{ch}  #{chr} "
-            p.call(self, ch)
-            return 0
-          end
-        end
-      end
-      return :UNHANDLED
-    end
+
     # setting up some keys
-    # This is not a good way since it requires internals to be knowm of objects.
-    # We should ideally get the key_map or register with the object so it's internal checks 
-    # are maintained.
     def default_key_map
-      require 'canis/core/include/action'
-      @key_map ||= {}
-      @key_map[ Regexp.new('[a-zA-Z0-9_\.]') ] = Action.new("Append to pattern") { |obj, ch|
-        obj.buffer << ch.chr
-        obj.buffer_changed
-      }
-      @key_map[ [127, ?\C-h.getbyte(0)] ] = Action.new("Delete Prev Char") { |obj, ch|
-        # backspace
-        buff = obj.buffer
-        buff = buff[0..-2] unless buff == ""
-        obj.set_buffer buff
-      }
       tp = source
       source.bind_key(?\M-n.getbyte(0), 'goto_end'){ tp.goto_end } 
       source.bind_key(?\M-p.getbyte(0), 'goto_start'){ tp.goto_start } 
@@ -755,28 +815,11 @@ module Canis
         end
       }
     end
-    # convenience method to bind a key or array /range of keys, or regex to a block
-    # @param [int, String, #include?, Regexp] keycode If the user presses this key, then execute given block
-    # @param [String, Action] descr is either a textual description of the key
-    #     or an Action object
-    # @param [block] unless an Action object has been passed, a block is passed for execution
-    #
-    # @example
-    #     bind_key '%', 'Do something' {|obj, ch| actions ... }
-    #     bind_key [?\C-h.getbyte(0), 127], 'Delete something' {|obj, ch| actions ... }
-    #     bind_key Regexp.new('[a-zA-Z_\.]'), 'Append char' {|obj, ch| actions ... }
-    # TODO test this
-    def bind_key keycode, descr, &block
-      if descr.is_a? Action
-        @key_map[keycode] = descr
-     else
-       @key_map[keycode] = Action.new(descr), block
-     end
-    end
 
     # the line on which focus is.
     def current_value
       @source.current_value
     end
   end # -- class }}}
+
 end # module
