@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-30 18:01
+  * Last update: 2014-04-30 19:26
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2444,7 +2444,7 @@ module Canis
         end
         # added valid_range for numerics 2011-09-29 
         if !in_range?(val)
-          raise FieldValidationException, "Field not matching range #{@valid_range}, above #{@above,} or below #{@below}  "
+          raise FieldValidationException, "Field not matching range #{@valid_range}, above #{@above} or below #{@below}  "
         end
       end
       # here is where we should set the forms modified to true - 2009-01
@@ -3129,6 +3129,11 @@ module Canis
     end
   end # class # }}}
 
+  # This is not a visual class or a widget.
+  # This class allows us to attach several RadioButtons to it, so it can maintain which one is the 
+  # selected one.
+  class ButtonGroup
+  end
   ##
   # A selectable button that has a text value. It is based on a Variable that
   # is shared by other radio buttons. Only one is selected at a time, unlike checkbox
