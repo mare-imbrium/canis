@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-27 15:13
+  * Last update: 2014-04-30 18:01
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1990,6 +1990,8 @@ module Canis
     dsl_accessor :values             # validate against provided list, (+include?+)
     dsl_accessor :valid_regex        # validate against regular expression (+match()+)
     dsl_accessor :valid_range        # validate against numeric range, should respond to +include?+
+    # for numeric fields, specify lower or upper limit of entered value
+    attr_accessor :below, :above
 
     dsl_accessor :chars_allowed           # regex, what characters to allow entry, will ignore all else
     dsl_accessor :show                    # what charactr to show for each char entered (password field)
@@ -1998,11 +2000,12 @@ module Canis
     # any new widget that has editable should have modified also
     dsl_accessor :editable          # allow editing
 
-    # alreadt present in WIdget as accessor
-    #attr_reader :form
     # +type+ is just a convenience over +chars_allowed+ and sets some basic filters 
+    # @example:  :integer, :float, :alpha, :alnum
+    # NOTE: we do not store type, only chars_allowed, so this won't return any value
     attr_reader :type                          # datatype of field, currently only sets chars_allowed
-    # this is the class of the field set in +text()+, so it is returned in same class
+    # this is the class of the field set in +text()+, so value is returned in same class
+    # @example : Fixnum, Integer, Float
     attr_accessor :datatype                    # crrently set during set_buffer
     attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
@@ -2012,9 +2015,6 @@ module Canis
     attr_reader :field_col                     # column on which field is printed
                                                # required due to labels. Is updated after printing
     #                                          # so can be nil if accessed early 2011-12-8 
-    # For consistency, now width equates to display_length
-    #alias :width :display_length
-    #alias :width= :display_length=
 
     def initialize form=nil, config={}, &block
       @form = form
@@ -2047,13 +2047,16 @@ module Canis
     # integer and float. what about allowing a minus sign? 
     # These are pretty restrictive, so if you need an open field, use +chars_allowed+
     # @param symbol :integer, :float, :alpha, :alnum
+    # NOTE: there is some confusion and duplication between chars_allowed, type and datatype.
+    #    +datatype+ is set by set_buffer and can be set manually and decides return type.
+    #    +type+ is merely a convenience over chars_allowed
     def type dtype
       return self if @chars_allowed # disallow changing
       dtype = dtype.to_s.downcase.to_sym if dtype.is_a? String
       case dtype # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
-      when :integer
+      when :integer, Fixnum, Integer
         @chars_allowed = /\d/
-      when :numeric, :float
+      when :numeric, :float, Numeric, Float
         @chars_allowed = /[\d\.]/ 
       when :alpha
         @chars_allowed = /[a-zA-Z]/ 
@@ -2440,9 +2443,8 @@ module Canis
           raise FieldValidationException, "Field not matching regex #{@valid_regex}" unless valid
         end
         # added valid_range for numerics 2011-09-29 
-        if !@valid_range.nil?
-          valid = @valid_range.include?(val.to_i)
-          raise FieldValidationException, "Field not matching range #{@valid_range}" unless valid
+        if !in_range?(val)
+          raise FieldValidationException, "Field not matching range #{@valid_range}, above #{@above,} or below #{@below}  "
         end
       end
       # here is where we should set the forms modified to true - 2009-01
@@ -2452,6 +2454,15 @@ module Canis
       # if super fails we would have still set modified to true
       super
       #return valid
+    end
+
+    # checks field against +valid_range+, +above+ and +below+ , returning +true+ if it passes
+    # set attributes, +false+ if it fails any one.
+    def in_range?( val )
+      val = val.to_i
+      (@above.nil? or val > @above) and
+        (@below.nil? or val < @below) and
+        (@valid_range.nil? or @valid_range.include?(val))
     end
     ## save original value on enter, so we can check for modified.
     #  2009-01-18 12:25 
