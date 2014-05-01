@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-04-30 23:55
+  * Last update: 2014-05-01 20:43
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1277,6 +1277,8 @@ module Canis
 
     def initialize win, &block
       @window = win
+      # added 2014-05-01 - 20:43 so that a window can update its form, during overlapping forms.
+      @window.form = self if win
       @widgets = []
       @by_name = {}
       @active_index = -1
@@ -1775,6 +1777,17 @@ module Canis
     }
     @keys_mapped = true
   end
+  def repaint_all_widgets
+    $log.debug "  REPAINT ALL in WINDOW called "
+    @widgets.each do |w|
+      next if w.visible == false
+      $log.debug "   ---- REPAINT ALL #{w.name} "
+      w.repaint_required true
+      w.repaint
+    end
+    #  place cursor on current_widget 
+    setpos
+  end
   
   ## forms handle keys
   # mainly traps tab and backtab to navigate between widgets.
@@ -1804,6 +1817,10 @@ module Canis
         case ch
         when -1
           return
+        when 1000
+          $log.debug " form RESIZE HK #{ch} #{self}, #{@name} "
+          repaint_all_widgets
+          return
         #when Ncurses::KEY_RESIZE # SIGWINCH
         when FFI::NCurses::KEY_RESIZE # SIGWINCH #  FFI
           lines = Ncurses.LINES
@@ -1822,7 +1839,7 @@ module Canis
           field =  get_current_field
           if $log.debug?
             keycode = keycode_tos(ch)
-            #$log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}, field: giving to: #{field}, #{field.name}  " if field
+            $log.debug " form HK #{ch} #{self}, #{@name}, #{keycode}, field: giving to: #{field}, #{field.name}  " if field
           end
           handled = :UNHANDLED 
           handled = field.handle_key ch unless field.nil? # no field focussable
