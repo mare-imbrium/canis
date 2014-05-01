@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-04-16 22:35
+#  Last update: 2014-05-01 01:10
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -380,6 +380,7 @@ module Canis
     # returns first selection, meant for convenience of single select listboxes
     # earlier called selected_item
     def selected_value
+      return nil if @selected_indices.empty?
       @obj[@selected_indices.first]
       #selected_values.first
     end
