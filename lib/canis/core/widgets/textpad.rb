@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 16:09
+#  Last update: 2014-05-02 01:09
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -155,6 +155,8 @@ module Canis
     def populate_pad
       @_populate_needed = false
       @content_rows = @list.count
+
+      # content_rows can be more than size of pad, but never less. Same for cols.
       @content_cols = content_cols()
       @content_rows = @rows if @content_rows < @rows
       @content_cols = @cols if @content_cols < @cols
@@ -165,16 +167,20 @@ module Canis
       @clearstring = nil
       $log.debug "  populate pad color = #{@color} , bg = #{@bgcolor} "
       cp = get_color($datacolor, @color, @bgcolor)
+      # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
       @cp = FFI::NCurses.COLOR_PAIR(cp)
-      if cp != $datacolor
-        @clearstring ||= " " * @width
-      end
+      # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
+      #if cp != $datacolor
+        #@clearstring ||= " " * @width
+        @clearstring = " " * @width
+      #end
       # clear pad was needed in some places, or else previous data was still showing (bline.rb)
       # However, it is creating problems in other places, esp if the bg is white, as in messageboxes
       # textdialog etc.
       # Removing on 2014-05-01 - 01:49 till we fix messagebox issue FIXME
-      # clear can only clear the component, not the entire window.
-      #clear_pad
+      
+      # once again trying but only for datacolor.
+      clear_pad
 
       Ncurses::Panel.update_panels
       render_all
@@ -190,6 +196,9 @@ module Canis
     # and see if the left-most column is missing.
     def clear_pad
       # this still doesn't work since somehow content_rows is less than height.
+      # this is ineffectual if the rest of the code is functioning.
+      # But REQUIRED for listbox which has its own clear_row needed in cases of white background.
+      # as in testmessagebox.rb 5
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
@@ -203,12 +212,16 @@ module Canis
       startcol = 0 if @suppress_borders
       # need to account for borders. in col+1 and ww
       ww=@width-0 if @suppress_borders
-      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attrib} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
-      color = @cp || $datacolor # check this out XXX
+      color = @cp || $datacolor # check this out XXX @cp is already converted to COLOR_PAIR !!
+      color = get_color($datacolor, @color, @bgcolor)
       att = @attrib || NORMAL
-      (r+1).upto(r+@height-startcol) do |rr|
-        @window.printstring( rr, @col+0,"-"*ww , color, att)
-      end
+      sp = " "
+      #if color == $datacolor
+      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attrib} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
+        (r+1).upto(r+@height-startcol) do |rr|
+          @window.printstring( rr, @col+0,sp*ww , color, att)
+        end
+      #end
     end
     # destroy the pad, this needs to be called from somewhere, like when the app
     # closes or the current window closes , or else we could have a seg fault
@@ -227,6 +240,7 @@ module Canis
     #   try reducing height when creating textpad.
     public
     def padrefresh
+      # startrow is the row of TP plus 1 for border
       top = @window.top
       left = @window.left
       sr = @startrow + top
@@ -416,13 +430,19 @@ module Canis
     # we need to clear the row otherwise previous contents can show through
     def clear_row pad, lineno
       if @renderer
+        # required for listrenderer
         if @renderer.respond_to? :clear_row
           @renderer.clear_row pad, lineno
         end
       else
-        @clearstring = " " * @width
+        @clearstring ||= " " * @width
         # what about bg color ??? XXX, left_margin and internal width
+        #cp = get_color($datacolor, @color, @bgcolor)
+        cp = @cp || FFI::NCurses.COLOR_PAIR($datacolor)
+        att = @attrib || NORMAL
+        FFI::NCurses.wattron(pad,cp | att)
         FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
+        FFI::NCurses.wattroff(pad,cp | att)
       end
     end
 
@@ -871,21 +891,6 @@ module Canis
     #
     def handle_key ch
       return :UNHANDLED unless @list
-      # trying to somehow get this to update when there's a window on top CLEANUP
-      # this was causing more problems like wiping out screen
-      # but did NOT refresh underlying screen 2014-05-01 - 13:03 so i have disabled it by making it 10001
-      # To enable it has to be 1000.
-      if ch == 10001
-        FFI::NCurses.touchwin(@window.get_window)
-        @repaint_required = true
-        repaint()
-        $log.debug "XXX:  textpad got 1000"
-        $error_message.value = "textpad got 1000"
-        padrefresh
-        Ncurses::Panel.update_panels
-        @window.wrefresh
-        return 0
-      end
 
       unless @key_handler
         create_default_keyhandler
