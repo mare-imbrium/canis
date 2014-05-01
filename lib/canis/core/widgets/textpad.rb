@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 13:13
+#  Last update: 2014-05-01 16:09
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -169,7 +169,7 @@ module Canis
       if cp != $datacolor
         @clearstring ||= " " * @width
       end
-      # clear pad was needed in some places, or else previous data was still showing.
+      # clear pad was needed in some places, or else previous data was still showing (bline.rb)
       # However, it is creating problems in other places, esp if the bg is white, as in messageboxes
       # textdialog etc.
       # Removing on 2014-05-01 - 01:49 till we fix messagebox issue FIXME
@@ -185,8 +185,9 @@ module Canis
     # There seem to be some cases when previous content of a pad remains
     # in the last row or last col. So we clear.
     # WARNING : pad can only clear the portion of the component placed on the window.
-    # IOW it can only clear the part that is writes on in padrefresh not the whole window!!!
-    # that was a rare case of a listbox taking up the whole window in bline.
+    # As of 2014-05-01 - 16:07 this is no longer called since it messes with messagboxes.
+    # If you make this operational, pls test testmessageboxes.rb and look for black areas
+    # and see if the left-most column is missing.
     def clear_pad
       # this still doesn't work since somehow content_rows is less than height.
       (0..@content_rows).each do |n|
