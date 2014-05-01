@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 21:21
+#  Last update: 2014-05-02 00:17
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -262,8 +262,15 @@ module Canis
     # @param - pad
     # @param - line number (index of row to clear)
     def clear_row pad, lineno
+      @color_pair ||= get_color($datacolor, @obj.color, @obj.bgcolor)
+      cp = @color_pair
+      att = NORMAL
       clearstring = " " * (@obj.width - @left_margin - @int_w)
+      # added attr on 2014-05-02 - 00:16 otherwise a list inside a white bg messagebox shows
+      # empty rows in black bg.
+      FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
       FFI::NCurses.mvwaddstr(pad,lineno, @left_margin, clearstring) 
+      FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
     end
   end
 end # module
