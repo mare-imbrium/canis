@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 16:10
+#  Last update: 2014-05-01 21:04
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -35,6 +35,9 @@ module Canis
     attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     #attr_accessor :modified # has it been modified and may need a refresh 2014-04-22 - 10:23 CLEANUP
+    # for root windows we need to know the form so we can ask it to update when
+    #   there are overlapping windows.
+    attr_accessor :form
 
     # creation and layout related {{{
     # @param [Array, Hash] window coordinates (ht, w, top, left)
@@ -108,20 +111,38 @@ module Canis
       $global_windows << @window
       return @window
     end
-    # idea was to update background window 
-    # but still not working.
+
+    # This refreshes the root window whenever overlapping windows are 
+    # destroyed or moved.
+    # This works by asking the root window's form to repaint all its objects.
+    # This is now being called whenever a window is destroyed (and also resized). 
+    # However, it must
+    # manually be called if you move a window.
+    # NOTE : if there are too many root windows, this could get expensive since we are updating all.
+    # We may need to have a way to specify which window to repaint.
+    #  If there are non-root windows above, we may have manually refresh only the previous one.
+    #
     def self.refresh_all
       #Ncurses.touchwin(FFI::NCurses.stdscr)
       # above blanks out entire screen
       $global_windows.each do |w|
-        w.ungetch(1000)
+        $log.debug " REFRESH_ALL on #{w.name} sending 1000"
+        # NOTE 2014-05-01 - 20:25 although we have reached the root window from any level
+        #  however, this is sending the hack to whoever is trapping the key, which in our current
+        #  case happends to be Viewer, *not* the root form. We need to send to root form.
+        f = w.form
+        if f
+          # send hack to root windows form if passed. 
+          f.handle_key 1000
+        end
+        #w.ungetch(1000)
       # below blanks out entire screen too
         #FFI::NCurses.touchwin(w.get_window)
         #$log.debug "XXX:  refreshall diong window "
         #w.hide
         #w.show
-        Ncurses.refresh
-        w.wrefresh 
+        #Ncurses.refresh
+        #w.wrefresh 
       end
       #Ncurses::Panel.update_panels
     end
@@ -141,6 +162,7 @@ module Canis
       set_layout(layout)
       wresize(height, width)
       mvwin(top, left)
+      Window.refresh_all
     end
 
     %w[width height top left].each do |side|
@@ -583,6 +605,10 @@ module Canis
         FFI::NCurses.delwin(pad) if pad 
         pad = nil
       } if @pads
+      # added here to hopefully take care of this issue once and for all. 
+      # Whenever any window is destroyed, the root window is repainted.
+      #
+      Window.refresh_all
       #$log.debug "win destroy end"
     end
 
