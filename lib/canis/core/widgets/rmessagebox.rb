@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 01:52
+#  Last update: 2014-05-01 23:35
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -240,8 +240,10 @@ module Canis
 
         end # while loop
       end # close
-      $log.debug "XXX: CALLER GOT #{buttonindex} "
+      $log.debug "XXX: CALLER BEING RETURNED #{buttonindex} "
       @window.destroy
+      # added 2014-05-01 - 18:10 hopefully to refresh root_window.
+      #Window.refresh_all
       return buttonindex 
     end
     private
