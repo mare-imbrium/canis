@@ -578,6 +578,7 @@ module Canis
     _update_default_settings config
     view(text, config) do |t|
       t.suppress_borders true
+      t.print_footer false
     end
   end
   # update given hash with layout, close_key and app_header
@@ -699,6 +700,7 @@ module Canis
         nl = _new_layout sz+1
         $log.debug "XXX:  adjust ht to #{sz} layout is #{nl} size is #{sz}"
         @source.form.window.resize_with(nl)
+        #Window.refresh_all
       else
         # expand the window ht to maxht
         tt = @maxht-1
