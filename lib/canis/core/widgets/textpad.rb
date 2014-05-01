@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-29 20:54
+#  Last update: 2014-05-01 13:13
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -121,7 +121,10 @@ module Canis
       else
         # no borders printed
         @rows -= 1  # 3 is since print_border_only reduces one from width, to check whether this is correct
-        ## if next is 0 then padrefresh doesn't print
+        ## if next is 0 then padrefresh doesn't print, gives -1 sometimes.
+        ## otoh, if we reduce 1, then there is a blank or white left at 128 since clear_pad clears 128
+        # but this only writes 127 2014-05-01 - 12:31 CLEAR_PAD
+        #@cols -=0
         @cols -=1
         @scrollatrows = @height - 1 # check this out 0 or 1
         @row_offset = @col_offset = 0 
@@ -144,7 +147,7 @@ module Canis
       #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
       #@pad = FFI::NCurses.newpad(@content_rows, @content_cols)
       @pad = @window.get_pad(@content_rows, @content_cols )
-      clear_pad
+
     end
 
     private
@@ -160,11 +163,18 @@ module Canis
 
       # clearstring is the string required to clear the pad to background color
       @clearstring = nil
+      $log.debug "  populate pad color = #{@color} , bg = #{@bgcolor} "
       cp = get_color($datacolor, @color, @bgcolor)
       @cp = FFI::NCurses.COLOR_PAIR(cp)
       if cp != $datacolor
         @clearstring ||= " " * @width
       end
+      # clear pad was needed in some places, or else previous data was still showing.
+      # However, it is creating problems in other places, esp if the bg is white, as in messageboxes
+      # textdialog etc.
+      # Removing on 2014-05-01 - 01:49 till we fix messagebox issue FIXME
+      # clear can only clear the component, not the entire window.
+      #clear_pad
 
       Ncurses::Panel.update_panels
       render_all
@@ -173,23 +183,30 @@ module Canis
 
     # clear the pad.
     # There seem to be some cases when previous content of a pad remains
-    # in the last row or last col.
+    # in the last row or last col. So we clear.
+    # WARNING : pad can only clear the portion of the component placed on the window.
+    # IOW it can only clear the part that is writes on in padrefresh not the whole window!!!
+    # that was a rare case of a listbox taking up the whole window in bline.
     def clear_pad
       # this still doesn't work since somehow content_rows is less than height.
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
+      # next part is messing up messageboxes which have a white background
       # so i use this copied from print_border
-      row = 0
+      # In messageboxes the border is more inside. but pad cannot clear the entire
+      # window. The component may be just a part of the window.
+      r,c = rowcol
       ww=width-2
       startcol = 1
       startcol = 0 if @suppress_borders
       # need to account for borders. in col+1 and ww
       ww=@width-0 if @suppress_borders
-      color = $datacolor # check this out XXX
-      att = NORMAL
-      (row+1).upto(row+@height-startcol) do |r|
-        @window.printstring( r, @col+0," "*ww , color, att)
+      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attrib} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
+      color = @cp || $datacolor # check this out XXX
+      att = @attrib || NORMAL
+      (r+1).upto(r+@height-startcol) do |rr|
+        @window.printstring( rr, @col+0,"-"*ww , color, att)
       end
     end
     # destroy the pad, this needs to be called from somewhere, like when the app
@@ -475,7 +492,6 @@ module Canis
     # @param Array of lines
     # @param format (optional) can be :tmux :ansi or :none
     # If a format other than :none is given, then formatted_text is called.
-    #def text(lines, fmt=:none)
     def text(*val)
       if val.empty?
         return @list
@@ -506,6 +522,7 @@ module Canis
       @list = lines
       @_populate_needed = true
       @repaint_all = true
+      @repaint_required = true
       init_vars
       self
     end
@@ -854,15 +871,18 @@ module Canis
     def handle_key ch
       return :UNHANDLED unless @list
       # trying to somehow get this to update when there's a window on top CLEANUP
-      if ch == 1000
+      # this was causing more problems like wiping out screen
+      # but did NOT refresh underlying screen 2014-05-01 - 13:03 so i have disabled it by making it 10001
+      # To enable it has to be 1000.
+      if ch == 10001
         FFI::NCurses.touchwin(@window.get_window)
         @repaint_required = true
-        #repaint()
+        repaint()
         $log.debug "XXX:  textpad got 1000"
         $error_message.value = "textpad got 1000"
-        #padrefresh
-        #Ncurses::Panel.update_panels
-        #@window.wrefresh
+        padrefresh
+        Ncurses::Panel.update_panels
+        @window.wrefresh
         return 0
       end
 
@@ -1009,15 +1029,20 @@ module Canis
         @__first_time = true
       end
       return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32 
+      @graphic = @form.window unless @graphic
+      @window ||= @graphic
+      raise "Window not set in textpad" unless @window
 
       ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
       # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
       # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
       # it would get rejected. UNfortunately this may happen more often we want, but we never know
       # when something pops up on the screen.
+      $log.debug "  repaint textpad RR #{@repaint_required} #{@window.top} "
       unless @repaint_required
         print_foot if @repaint_footer_required  # set in on_enter_row
-        padrefresh 
+        # trying out removing this, since too many refreshes 2014-05-01 - 12:45 
+        #padrefresh 
         return 
       end
       # if repaint is required, print_foot not called. unless repaint_all is set, and that 
@@ -1028,9 +1053,6 @@ module Canis
       _convert_formatted
 
       # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
-      @graphic = @form.window unless @graphic
-      @window ||= @graphic
-      raise "Window not set in textpad" unless @window
 
       # creates pad and calls render_all
       populate_pad if @_populate_needed
