@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-27 15:38
+#  Last update: 2014-05-01 01:52
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
