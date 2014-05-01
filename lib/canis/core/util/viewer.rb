@@ -55,6 +55,7 @@ module Canis
 
       v_window = Canis::Window.new(layout)
       v_form = Canis::Form.new v_window
+      v_window.name = "Viewer"
       colors = Ncurses.COLORS
       back = :blue
       back = 235 if colors >= 256
@@ -127,7 +128,7 @@ module Canis
           # if you've asked for ENTER then i also check for 10 and 13
           retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
-          $log.debug "  VIEWER got  1 key #{ch} "
+          $log.debug "  1 VIEWER got key #{ch} "
           v_form.handle_key ch
           v_form.repaint
         end
