@@ -85,7 +85,7 @@ module Canis
       win.attron(color);
       win.mvprintw(x, y, "%s" % text);
       win.attroff(color);
-      win.refresh # FFI NW 2011-09-9  , added back gets overwritten
+      win.refresh 
     end
 
 
@@ -701,7 +701,7 @@ module Canis
         @source.form.window.resize_with(nl)
       else
         # expand the window ht to maxht
-        tt = @maxht
+        tt = @maxht-1
         @source.height = tt
         nl = _new_layout tt+1
         $log.debug "XXX:  increase ht to #{tt} def layout is #{nl} size is #{sz}"
