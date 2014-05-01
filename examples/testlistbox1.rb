@@ -1,6 +1,7 @@
 require 'canis/core/util/app'
 require 'canis/core/include/appmethods'
 require 'canis/core/widgets/listbox'
+require 'canis/core/util/promptmenu'
 
   def my_help_text
     <<-eos
