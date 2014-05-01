@@ -4,13 +4,13 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-27 10:30
+#  Last update: 2014-05-01 16:10
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
 #
 # == TODO
-#    strip and remove cruft. Now that I've stopped using pad, can we remove
+#    strip and remove cruft. Several methods marked as deprecated.
 # ----------------------------------------------------------------------------- #
 #
 require 'canis/core/system/ncurses'
