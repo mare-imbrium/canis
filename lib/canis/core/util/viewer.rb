@@ -6,8 +6,10 @@ require 'fileutils'
 # CHANGES
 #   - 2014-04-09 - 00:58 changed textview to textpad 
 # Can be used for print_help_page
-# TODO: add vi_keys here
 # SUGGESTIONS WELCOME.
+# NOTE - this was meant to be a viwer which could close on pressing q. Now it is being reused by rcommandwindow.
+# which uses all keys, so now we can't close on 'q'. This is ridiculous. if we need something that general purpose
+# we should create another pad for that.  Even for ENTER we had to put in hacks. 
 
 module Canis
   # a data viewer for viewing some text or filecontents
@@ -121,10 +123,12 @@ module Canis
       retval = ""
       # allow closing using q and Ctrl-q in addition to any key specified
       #  user should not need to specify key, since that becomes inconsistent across usages
+      #  NOTE: no longer can we close with just a q since often apps using this trap char keys
+      #  NOTE: 2727 is no longer operational, so putting just ESC
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
           $log.debug "  VIEWER got key #{ch} , close key is #{config[:close_key]} "
           retval = textview.current_value() if ch == config[:close_key] 
-          break if ch == config[:close_key] || ch == 3|| ch == 2727 # added double esc 2011-12-27 
+          break if ch == config[:close_key] || ch == 3|| ch == 27 # removed double esc 2014-05-04 - 17:30 
           # if you've asked for ENTER then i also check for 10 and 13
           retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
