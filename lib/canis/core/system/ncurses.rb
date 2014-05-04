@@ -10,7 +10,7 @@ module Canis
     # in case we want a blocking getch, you may want to first
     # set wtimeout to -1, and then reset it to this value.
     # Please first check that we are using this.
-    $ncurses_wtimeout = 500 # used by windows for timeout of wgetch
+    $ncurses_timeout = 500 # used by windows for timeout of wgetch
 
     # The initscr code determines the terminal type and initializes all curses
     # data structures.
@@ -88,7 +88,8 @@ module Canis
     # The value of tenths must be a number between 1 and 255.
     # Use nocbreak to leave half-delay mode.
     #Ncurses::halfdelay(tenths = 10)
-    # See above why switched off
+    # See above why switched off, halfdelay puts into cbreak mode, in which C-c pressed in quick
+    # succession crashes the program.
 
     # The nodelay option causes getch to be a non-blocking call. If no input is
     # ready, getch returns ERR. If disabled (bf is FALSE), getch waits until a
@@ -99,7 +100,7 @@ module Canis
     # wgetch(@window), For that do this with window.
     # I am disableing this 2011-12-20 since it does not work with combinations
     # such as gg. Any routine that does a getch will just immediatelt return an ERR.
-    #Ncurses::nodelay(stdscr.pointer, bf = true)
+    Ncurses::nodelay(stdscr.pointer, bf = true)
 
     # added these 2 so we can do resizing based on original and current size when terminal resized
     #  2012-01-8 
