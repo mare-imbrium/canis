@@ -15,7 +15,7 @@ module Canis
   # a data viewer for viewing some text or filecontents
   # view filename, :close_key => KEY_ENTER
   # send data in an array
-  # view Array, :close_key => KEY_ENTER, :layout => [23,80,0,0]
+  # view Array, :close_key => KEY_ENTER, :layout => [23,80,0,0] (ht, wid, top, left)
   # when passing layout reserve 4 rows for window and border. So for 2 lines of text
   # give 6 rows.
   class Viewer
@@ -89,7 +89,10 @@ module Canis
       textview.extend(Canis::MultiBuffers)
 
       t = textview
+=begin
       # just for fun -- seeing how we can move window around
+      # these are working, but can cause a padrefresh error. we should check for bounds or something.
+      #
       t.bind_key('<', 'move window left'){ f = t.form.window; c = f.left - 1; f.hide; f.mvwin(f.top, c); f.show;
         f.set_layout([f.height, f.width, f.top, c]); 
       }
@@ -102,9 +105,12 @@ module Canis
       t.bind_key('V', 'move window down'){ f = t.form.window; c = f.top + 1 ; f.hide; f.mvwin(c, f.left); 
         f.set_layout([f.height, f.width, c, f.left]); f.show;
       }
+=end
       items = {:header => ah}
+      close_keys = [ config[:close_key] , 3 , ?q.getbyte(0), 27 , 2727 ]
       begin
         # multibuffer requires add_Co after set_co
+        # We are using in help, therefore we need multibuffers.
         textview.set_content content, :content_type => type
         textview.add_content content, :content_type => type
         # the next can also be used to use formatted_text(text, :ansi)
@@ -123,12 +129,11 @@ module Canis
       retval = ""
       # allow closing using q and Ctrl-q in addition to any key specified
       #  user should not need to specify key, since that becomes inconsistent across usages
-      #  NOTE: no longer can we close with just a q since often apps using this trap char keys
       #  NOTE: 2727 is no longer operational, so putting just ESC
         while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
           $log.debug "  VIEWER got key #{ch} , close key is #{config[:close_key]} "
           retval = textview.current_value() if ch == config[:close_key] 
-          break if ch == config[:close_key] || ch == 3|| ch == 27 # removed double esc 2014-05-04 - 17:30 
+          break if close_keys.include? ch
           # if you've asked for ENTER then i also check for 10 and 13
           retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
           break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
