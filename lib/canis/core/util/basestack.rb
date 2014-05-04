@@ -1,12 +1,14 @@
-# 
 # Common stack flow functionality
 # * Name: basestack.rb
 # * Description: Classes that allow user to stack and flow components
+#  This is currently used only by experimental. +core+ does not use this 
+#  for stack and flow. it uses wsshortcuts which does not maintain objects.
+#  This maintains objects.
 #
 # * Date: 30.10.11 - 12:57
-# * Last update: 30.10.11 - 12:57
+# * Last update: 2014-05-02 20:15
 #
-module Canis
+module RubyCurses
   module ModStack
     #
     # Base class for stacks and flows.
@@ -28,7 +30,7 @@ module Canis
     end
     # XXX if user sets later, we won't be checking the config
     # We check the actual variables which config sets in init
-    %w[ parent_component width height weight row col orientation].each { |e|
+    %w[ parent_component width height weight row col orientation margin_top margin_bottom margin_left margin_right].each { |e|
       eval(
            "def #{e} 
               @config[:#{e}]
@@ -84,6 +86,8 @@ module Canis
           end
           comps.each { |e| 
             # should only happen if expandable FIXME
+            e.margin_top ||= 0
+            e.margin_bottom ||= 0
             e.height = 0.01 * e.weight * (ht - (e.margin_top + e.margin_bottom)) 
             hround = e.height.floor
             rem += e.height - hround
@@ -106,9 +110,11 @@ module Canis
               e.row = r 
               r += e.height + 0
             end
+            e.margin_left ||= 0
+            e.margin_right ||= 0
             e.width = width - (@margin_left + @margin_right + e.margin_left + e.margin_right)
             e.col = col + @margin_left + e.margin_left # ??? XXX
-            $log.debug "XXX: recalc stack #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * h:#{height} "
+            #$log.debug "XXX: recalc stack #{e.widget.class} r:#{e.row} c:#{e.col} h:#{e.height} = we:#{e.weight} * h:#{height} "
             #e.col_offset = col_offset # ??? XXX
             check_coords e
             e.repaint_all(true)
