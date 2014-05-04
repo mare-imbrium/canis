@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-01 20:43
+  * Last update: 2014-05-04 12:37
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -569,10 +569,10 @@ module Canis
           #
           # This is since i have removed timeout globally since resize was happeing
           # after a keypress. maybe we can revert to timeout and not worry about resize so much
-          Ncurses::wtimeout(window.get_window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
+          Ncurses::wtimeout(window.get_window, 500) # will wait a second on wgetch so we can get gg and qq
           ch = window.getch
-          Ncurses::nowtimeout(window.get_window, true)
-          #Ncurses::nodelay(window.get_window, bf = true)
+          #Ncurses::nowtimeout(window.get_window, true)
+          Ncurses::nodelay(window.get_window, bf = true)
 
           $log.debug " process_key: got #{keycode} , #{ch} "
           # next line ignores function keys etc. C-x F1, thus commented 255 2012-01-11 
@@ -1293,8 +1293,6 @@ module Canis
       #register_events([:ENTER, :LEAVE, :RESIZE])
       register_events(:RESIZE)
       instance_eval &block if block_given?
-      ## I need some counter so a widget knows it has been panned and can send a correct
-      ##+ cursor coordinate to system.
       @_firsttime = true; # added on 2010-01-02 19:21 to prevent scrolling crash ! 
       @name ||= ""
 
@@ -1339,7 +1337,7 @@ module Canis
     # Add given widget to widget list and returns an incremental id.
     # Adding to widgets, results in it being painted, and focussed.
     # removing a widget and adding can give the same ID's, however at this point we are not 
-    # really using ID. But need to use an incremental int in future.
+    # really using ID. But need to use an incremental int in future. (internal use)
     def add_widget widget
       # this help to access widget by a name
       if widget.respond_to? :name and !widget.name.nil?
@@ -1354,7 +1352,7 @@ module Canis
     alias :add :add_widget
 
     # remove a widget
-    #  added 2008-12-09 12:18 
+    # (internal use)
    def remove_widget widget
      if widget.respond_to? :name and !widget.name.nil?
        @by_name.delete(widget.name)
@@ -1379,8 +1377,8 @@ module Canis
 
    public
      
-   # form repaint
-   # to be called at some interval, such as after each keypress.
+   # form repaint,calls repaint on each widget which will repaint it only if it has been modified since last call.
+   # called after each keypress.
     def repaint
       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
       @widgets.each do |f|
@@ -1777,6 +1775,10 @@ module Canis
     }
     @keys_mapped = true
   end
+
+  # this forces a repaint of all visible widgets and has been added for the case of overlapping
+  # windows, since a black rectangle is often left when a window is destroyed. This is internally
+  # triggered whenever a window is destroyed, and currently only for root window.
   def repaint_all_widgets
     $log.debug "  REPAINT ALL in WINDOW called "
     @widgets.each do |w|
