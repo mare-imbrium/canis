@@ -534,7 +534,7 @@ def ORIGdisplay_app_help
   w = FFI::NCurses.COLS - 10
 
     require 'canis/core/util/viewer'
-    Canis::Viewer.view(arr, :layout => [2, 4, h, w],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
+    Canis::Viewer.view(arr, :layout => [h, w, 2 , 4],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
       # you may configure textview further here.
       #t.suppress_borders true
       #t.color = :black
