@@ -65,7 +65,7 @@ module Canis
       w = arr.max_by(&:length).length
 
       require 'canis/core/util/viewer'
-      Canis::Viewer.view(arr, :layout => [2, 10, [4+arr.size, 24].min, w+2],:close_key => KEY_ENTER, :title => "<Enter> to close", :print_footer => true) do |t|
+      Canis::Viewer.view(arr, :layout => [[4+arr.size, 24].min, w+2, 2, 10],:close_key => KEY_ENTER, :title => "<Enter> to close", :print_footer => true) do |t|
       # you may configure textview further here.
       #t.suppress_borders true
       #t.color = :black
