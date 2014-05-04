@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-04 22:44
+#  Last update: 2014-05-05 01:13
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -371,9 +371,12 @@ module Canis
     # indefinitely for a key
     # NOTE : caller may set a timeout prior to calling, but not change setting after since this method
     # maintains the default state in +ensure+. e.g. +widget.rb+ does a blocking get in +_process_key+
+    # Curses sets a timeout when ESCAPE is pressed, it is called ESCDELAY and is 1000 milliseconds.
+    # You may reduce it if you are not on some old slow telnet session. This returns faster from an esc
+    # although there are still some issues. ESC-ESC becomes an issue, but if i press ESC-ESC-1 then esc-esc comes
+    # together. otherwise there is a -1 between each esc.
     #
     def getch
-      $escstart = Time.now.to_f
       #c = @window.getch
       #FFI::NCurses::nodelay(@window, true)
       #FFI::NCurses::wtimeout(@window, 0)
@@ -382,11 +385,12 @@ module Canis
       # the only reason i am doing this is so ESC can be returned if no key is pressed
       # after that, not sure how this effects everything. most likely I should just
       # go back to using a wtimeout, and not worry about resize requiring a keystroke
-      if c == 272999
+      if c == 27
         $escstart = Time.now.to_f
         # if ESC pressed don't wait too long.
         #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait n millisecond on wgetch so that we can return if no
       else
+        FFI::NCurses.set_escdelay(100)
         # this means keep waiting for a key.
         #Ncurses::nowtimeout(@window, true)
       end
@@ -1232,8 +1236,10 @@ module Canis
             #$log.debug " #{Time.now.to_f} inside LOOP before getch "
             # This getch seems to take enough time not to return a -1 for almost a second
             # even if nodelay is true ??? XXX
+            FFI::NCurses.set_escdelay(5)
             k = self.getch
             #$log.debug "elapsed #{elapsed} millis  inside LOOP AFTER getch #{k} (#{elapsed1})"
+            $log.debug "inside LOOP AFTER getch #{k} "
 
             if k == 27
               # seems like two Meta keys pressed in quick succession without chance for -1 to kick in
@@ -1242,8 +1248,11 @@ module Canis
                 if buff == 27.chr
                   $key_chr = "<ESC-ESC>"
                   return 2727
+                else
+                  alert "buff is #{buff}"
                 end
               end
+              $log.debug "  1251 before evaluate "
               x = _evaluate_buff buff
               # return ESC so it can be interpreted again.
               @window.ungetch k
@@ -1283,6 +1292,7 @@ module Canis
               end
               #$log.debug "XXX:  getchar adding #{k}, #{k.chr} to buff #{buff} "
             else
+              $log.debug "  GOT -1 in escape "
               # it is -1 so evaluate
               x = _evaluate_buff buff
               $key_chr = x if x
@@ -1357,7 +1367,7 @@ module Canis
             when 0 
               "<C-@>"
             when 27
-              "<--ESC>"
+              "<-ESC>"
             when 2727
               "<ESC-ESC>"
             when 31
@@ -1378,11 +1388,15 @@ module Canis
               "<M-C-#{x.chr}>"
             when 160..255
               x = ch - 128
-              "<M-#{x.chr}>"
+              $log.debug "  x is #{x} "
+              xx = key_tos(x).gsub(/<>/,"")
+              $log.debug "  xx is #{xx} "
+              "<M-#{xx}>"
             when 255
               "<M-BACKSPACE>"
             else
 
+              $log.debug "  ELSE 1399 -#{ch}- "
               ch =  FFI::NCurses::keyname(ch) 
               # remove those ugly brackets around function keys
               if ch && ch[-1]==')'
@@ -1497,7 +1511,7 @@ module Canis
         $key_int = 27
         $escend = Time.now.to_f
         elapsed = ($escend - $escstart)*1000
-        #$log.debug " #{elapsed} evaluated to ESC"
+        $log.debug " #{elapsed} evaluated to ESC"
         $key_chr = "<ESC>"
         return $key_chr
       end
@@ -1514,7 +1528,10 @@ module Canis
         k = buff[-1]
         $key_int = 128 + k.ord
         return "<M-BACKSPACE>" if $key_int == 255
-        return "<M-#{k.chr}>"
+        xx = key_tos(k.ord).gsub(/[<>]/,"")
+        $log.debug "  xx is #{xx} "
+        return "<M-#{xx}>"
+        #return "<M-#{k.chr}>"
       end
       $key_int = 99999
       nil
