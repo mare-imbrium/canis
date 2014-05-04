@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 21:04
+#  Last update: 2014-05-04 15:00
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -91,7 +91,7 @@ module Canis
       # Added this so we can get Esc, and also C-c pressed in succession does not crash system
       #  2011-12-20 half-delay crashes system as does cbreak
       #This causes us to be unable to process gg qq since getch won't wait.
-      #Ncurses::nodelay(@window, bf = true)
+      FFI::NCurses::nodelay(@window, bf = true)
       # wtimeout was causing RESIZE sigwinch to only happen after pressing a key
       #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
       #@stack = [] # since we have moved to handler 2014-04-20 - 11:15 
@@ -364,17 +364,24 @@ module Canis
     #
     # @return int 
     # @return -1 if no char read
-    #
+    # ORIGINALLY After esc there was a timeout, but after others there was notimeout, so it would wait
+    # indefinitely for a key
     def getch
       #c = @window.getch
+      #FFI::NCurses::nodelay(@window, true)
+      #FFI::NCurses::wtimeout(@window, 0)
+      #$log.debug " #{Time.now.to_f} inside MAIN before getch " 
       c = FFI::NCurses.wgetch(@window)
       # the only reason i am doing this is so ESC can be returned if no key is pressed
       # after that, not sure how this effects everything. most likely I should just
       # go back to using a wtimeout, and not worry about resize requiring a keystroke
       if c == 27
-        Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
+        $escstart = Time.now.to_f
+        # if ESC pressed don't wait too long.
+        #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait n millisecond on wgetch so that we can return if no
       else
-        Ncurses::nowtimeout(@window, true)
+        # this means keep waiting for a key.
+        #Ncurses::nowtimeout(@window, true)
       end
       c
       # 2011-12-20 - i am trying setting a timer on wgetch, see timeout
@@ -416,7 +423,7 @@ module Canis
     #  Checking for quick press of Alt-[ followed by Alt or printable char
     #  I attempted keeping a hash of combination arrays but it fails in the above
     #  2 cases, so abandoned.
-    def _getchar 
+    def _getchar  
       while 1 
         ch = self.getch
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
@@ -973,7 +980,7 @@ module Canis
     #  Checking for quick press of Alt-[ followed by Alt or printable char
     #  I attempted keeping a hash of combination arrays but it fails in the above
     #  2 cases, so abandoned.
-    def _getchar 
+    def _getchar  # --- {{{
       while 1 
         ch = self.getch
         #$log.debug "window getchar() GOT: #{ch}" if ch != -1
@@ -1113,12 +1120,17 @@ module Canis
         end
         return ch
       end # while
-    end # def
+    end # def --- }}}
 
     # these should be read up from a file so program can update them for a user
     # These codes were required when we were using stdin outside of ncurses, but ncurses
     # gives us integer codes for these, and also deciphers function keys and arrow keys
+    #
+    # This hash is meantf for cases where Ncurses does not give a key or decipher, such as shift function keys
+    # and where possibly these differ across systems. In such cases, you may just enter the codes
+    # that the system generates as the key, and the value you want returned as the value.
     $kh=Hash.new
+    # --- {{{
 =begin
     $kh["OP"]="F1"
     $kh["[A"]="UP"
@@ -1161,6 +1173,7 @@ module Canis
     $kh[KEY_F9]="F9"
     $kh[KEY_F10]="F10"
 =end
+# --- }}}
     # testing out shift+Function. these are the codes my kb generates
     KEY_S_F1='[1;2P'
     $kh[KEY_S_F1]="S-F1"
@@ -1170,8 +1183,209 @@ module Canis
     $kh['[15;2~']="S-F5"
 
     def getchar
-      _getchar
+      #_getchar
+      getchar_as_int
     end
+
+    # NOTE: This is a reworked and much simpler version of the original getchar which was taken from manveru's 
+    # codebase. This also currently returns the keycode as int while placing the char version in a 
+    # global $key_chr. Until we are ready to return a char, we use this.
+    #
+    # FIXME : I have tried very hard to revert to nodelay but it does not seem to have an effect when ESC is pressed.
+    # Somewhere, there is a delay when ESC is pressed. I not longer wish to provide the feature of pressing ESC
+    # and then a key to be evaluated as Meta-key. This slows down when a user just presses ESC.
+    #
+    # Read a char from the window (from user) and returns int code.
+    # In some cases, such as codes entered in the $kh hash, we do not yet have a keycode defined
+    # so we return 9999 and the user can access $key_chr.
+    def getchar_as_int
+        c = nil
+        while true
+          c = self.getch
+          break if c != -1
+        end
+    
+        cn = c
+        #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
+        $key_int = c
+        # handle control codes 0 to 127 but not escape
+        if cn >= 0 && cn < 128 && cn != 27
+          $key_chr = key_tos(c)
+          return c
+        end
+        
+        # if escape then get into a loop and keep checking till -1 or another escape
+        #
+        if c == 27
+          buff=c.chr
+          # if there is another escape coming through then 2 keys were pressed so
+          # evaluate upon hitting an escape
+          # NOTE : i think only if ESc is followed by [ should be keep collectig
+          # otherwise the next char should evaluate. cases like F1 are already being sent in as high integer codes
+          while true
+            #$log.debug " #{Time.now.to_f} inside LOOP before getch "
+            # This getch seems to take enough time not to return a -1 for almost a second
+            # even if nodelay is true ??? XXX
+            k = self.getch
+            #$log.debug "elapsed #{elapsed} millis  inside LOOP AFTER getch #{k} (#{elapsed1})"
+
+            if k == 27
+              # seems like two Meta keys pressed in quick succession without chance for -1 to kick in
+              # but this still does not catch meta char followed by single char. M-za , it does.
+              x = _evaluate_buff buff
+              # return ESC so it can be interpreted again.
+              @window.ungetch k
+              $key_chr = x if x
+              return $key_int if x
+              $log.warn "getchar: window.rb 1200 Found no mapping for #{buff} "
+              $key_chr = buff
+              return $key_int
+              #return buff # otherwise caught in loop ???
+            elsif k > -1
+              # FIXME next lne crashes if M-C-h pressed which gives 263
+              if k > 255
+                $log.warn "getchar: window.rb 1247 Found no mapping for #{buff} #{k} "
+                # this contains ESc followed by a high number
+                ka = key_tos(k)
+                if ka
+                  $key_chr = "<M-" + ka[1..-1]
+                  $key_int = k + 128
+                  return $key_int
+                else
+                  $key_chr = "UNKNOWN: Meta + #{k}"
+                  return 9999
+                end
+              end
+
+              buff += k.chr
+              # this is an alt/meta code. All other complex codes seem to have a [ after the escape
+              # so we will keep accumulating them.
+              # NOTE this still means that user can press Alt-[ and some letter in quick succession
+              # and it will accumulate rather than be interpreted as M-[.
+              #
+              if buff.length == 2 and k.chr != '['
+                x = _evaluate_buff buff
+        
+                $key_chr = x
+                return $key_int if x
+              end
+              #$log.debug "XXX:  getchar adding #{k}, #{k.chr} to buff #{buff} "
+            else
+              # it is -1 so evaluate
+              x = _evaluate_buff buff
+              $key_chr = x if x
+              return $key_int if x
+              $log.warn "getchar: window.rb 1256 Found no mapping for #{buff} "
+              $key_chr = buff
+              return $key_int
+            end
+          end
+        end
+        
+        # what if keyname does not return anything
+        if c > 127
+          #$log.info "xxxgetchar: window.rb sending #{c} "
+          ch =  FFI::NCurses::keyname(c) 
+          # remove those ugly brackets around function keys
+          if ch && ch[-1]==')'
+            ch = ch.gsub(/[()]/,'')
+          end
+          if ch && ch.index("KEY_")
+            ch = ch.gsub(/KEY_/,'')
+          end
+          ch = "<#{ch}>" if ch
+          #return ch if ch
+          $key_chr = ch if ch
+          $key_chr = "UNKNOWN:#{c}" unless ch
+          $log.warn "getchar: window.rb 1234 Found no mapping for #{c} " unless ch
+          return c
+        end
+        #return c.chr if c
+        $key_chr =  c.chr if c
+        return c if c
+    end
+=begin
+    @@keycode_hash = {
+      10 => "<CR>",
+      13 => "<CR>",
+      KEY_ENTER => "<CR>",
+      127 => "<BS>",
+      0 => "<C-@>",
+      32 => "<SPACE>",
+      8 => "<TAB>"
+    }
+=end
+
+    # returns a string representation of a given int keycode
+    # @param [Fixnum] keycode read by window
+    #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
+    #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
+    # @return [String] a string representation which is what is to be used when binding a key to an
+    #     action or Proc. This is close to what vimrc recognizes such as <CR> <C-a> a-zA-z0-9 <SPACE>
+    #     Hopefully it should be identical to what vim recognizes in the map command.
+    #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
+    #     needs to take care of that combination. FIXME some numbers are missing in between.
+    #     - 31 ^- on C-/
+    #     - 28 ^\ on C\
+    #     - 99999 on ^[ C[
+    #     - 29 C]   31 C-
+    #     - 263 KEY_BACKSPACE on C-h
+    #     - M-C-m 41 same as M_S-ENTER
+    #     - M-del gives 255 and M-^?
+    #     31 C-/ now gives C-^?
+    # WARNING TODO the name needs to be fixed and standtardized and this is not accessible.
+    # It should be accessible from Window class
+    def key_tos ch # -- {{{
+      chr = case ch
+            when 10,13 , KEY_ENTER
+              "<CR>"
+            when 9 
+              "<TAB>"
+            when 0 
+              "<C-@>"
+            when 27
+              "<--ESC>"
+            when 2727
+              "<ESC-ESC>"
+            when 31
+              "<C-/>"
+            when 1..30
+              x= ch + 96
+              "<C-#{x.chr}>"
+            when 32 
+              "<SPACE>"
+            when 41
+              "<M-CR>"
+            when 33..126
+              ch.chr
+            when 127,263 
+              "<BACKSPACE>"
+            when 128..154
+              x = ch - 128
+              "<M-C-#{x.chr}>"
+            when 160..255
+              x = ch - 128
+              "<M-#{x.chr}>"
+            when 255
+              "<M-BACKSPACE>"
+            else
+
+              ch =  FFI::NCurses::keyname(ch) 
+              # remove those ugly brackets around function keys
+              if ch && ch[-1]==')'
+                ch = ch.gsub(/[()]/,'')
+              end
+              if ch
+                ch
+              else
+                "UNKNOWN:#{ch}"
+              end
+            end
+    end # --- }}}
+
+
+
+
     # NOTE I cannot use this since we are not ready to take a string, that is a big decision that
     # requries a lot of work, and some decisions. We may bind using "<CR>" or "<C-d>" so 
     # maybe that's how we may need to send back
@@ -1185,7 +1399,11 @@ module Canis
     #
     # If we wait for -1 then quick M-a can get concatenated. we need to take care
     # a ESC means the previous one should be evaluated and not contactenated
-    def getchar_as_string
+    # FIXME = ESCESC 2727 - can't do this as will clash with Esc, M-(n).
+    # this is a rework of the above but returns an int so that the existing programs can keep working.
+    # We will store the char codes/ in a global string so user can get esp if unknown.
+    # UNUSED since we are still using int codes.
+    def getchar_as_char # -- {{{
         c = nil
         while true
           c = self.getch
@@ -1194,16 +1412,10 @@ module Canis
     
         cn = c
         #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
-        return "ENTER" if cn == 10 || cn == 13
-        return "BACKSPACE" if cn == 127
-        return "C-SPACE" if cn == 0
-        return "SPACE" if cn == 32
-        # next does not seem to work, you need to bind C-i
-        return "TAB" if cn == 8
-        if cn >= 0 && cn < 27
-          x= cn + 96
-          return "C-#{x.chr}"
-          #return FFI::NCurses::keyname(c)  # this gives result as "^C" 
+        $key_int = c
+        if cn >= 0 && cn < 128 && cn != 27
+          $key_chr = key_tos(c)
+          return $key_chr
         end
         
         # if escape then get into a loop and keep checking till -1 or another escape
@@ -1261,21 +1473,38 @@ module Canis
           return c
         end
         return c.chr if c
-    end
+    end # -- ???
 
     # check buffer if some key mapped in global kh for this
     # Otherwise if it is 2 keys then it is a Meta key
     # Can return nil if no mapping
     private
     def _evaluate_buff buff
+      if buff == 27.chr
+        $key_int = 27
+        $escend = Time.now.to_f
+        elapsed = ($escend - $escstart)*1000
+        #$log.debug " #{elapsed} evaluated to ESC"
+        $key_chr = "<ESC>"
+        return $key_chr
+      end
       x=$kh[buff]
-      return x if x
+      if x
+        $key_int = 9999
+        # FIXME currently 9999 signifies unknown key, but since this is derived from a user list
+        #   we could have some dummy number being passed or set by user too.
+        return "<#{x}>"
+      end
       #$log.debug "XXX:  getchar returning with  #{buff}"
       if buff.size == 2
         ## possibly a meta/alt char
         k = buff[-1]
-        return "M-#{k.chr}"
+        $key_int = 128 + k.ord
+        return "<M-BACKSPACE>" if $key_int = 255
+        return "<M-#{k.chr}>"
       end
+      $key_int = 99999
+      nil
     end
 
   end # class DefaultKeyReader -- }}}
