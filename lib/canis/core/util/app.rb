@@ -109,7 +109,7 @@ module Canis
       #@message_row = Ncurses.LINES-1
       #@prompt_row = @message_row # hope to use for ask etc # 2011-10-17 14:06:27
       unless $log
-        path = File.join(ENV["LOGDIR"] || "./" ,"canis.log")
+        path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
         file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
         $log = Logger.new(path)
         $log.level = Logger::DEBUG # change to warn when you've tested your app.
