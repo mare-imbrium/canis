@@ -29,6 +29,8 @@ if $0 == __FILE__
       r = 1; c = 1;
       w = Ncurses.COLS - c
       h = Ncurses.LINES - 4
+      FFI::NCurses.set_escdelay(500)
+      nd = Ncurses.ESCDELAY
 
       # please use a hash to pass these values, avoid this old style
       # i want to move away from it as it comlpicates code
@@ -44,7 +46,7 @@ if $0 == __FILE__
           #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
           title_attrib (Ncurses::A_BOLD)
         end
-      help = "q to quit. Check keys. F1..10, C-a..z, Alt a-zA-Z0-9, C-left,rt, Sh-F5..10 .: #{$0}"
+      help = "q to quit. escdelay is #{nd}. Check keys. F1..10, C-a..z, Alt a-zA-Z0-9, C-left,rt, Sh-F5..10 .: #{$0}"
       help1 = "Press in quick succession: 1) M-[, w     and (2)  M-[, M-w.        (3)  M-Sh-O, w."  
       Canis::Label.new @form, {'text' => help, "row" => r+h+1, "col" => 2, "color" => "yellow"}
       Canis::Label.new @form, {'text' => help1, "row" => r+h+2, "col" => 2, "color" => "green"}
