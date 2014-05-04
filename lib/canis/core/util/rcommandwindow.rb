@@ -23,6 +23,102 @@
 require 'canis'
 
 module Canis
+
+  # this is taken from view and replaces the call to view, since we were
+  # modifying view a bit too much to fit it into the needs here.
+  #
+    def command_list content, config={}, &block  #:yield: textpad
+      wt = 0 # top margin
+      wl = 0 # left margin
+      wh = Ncurses.LINES-wt # height, goes to bottom of screen
+      ww = Ncurses.COLS-wl  # width, goes to right end
+      layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
+      if config.has_key? :layout
+        layout = config[:layout]
+        case layout
+        when Array
+          wh, ww, wt, wl = layout
+          layout = { :height => wh, :width => ww, :top => wt, :left => wl } 
+        when Hash
+          # okay
+        end
+      end
+
+      fp = config[:title] || ""
+      pf = config.fetch(:print_footer, false)
+      ta = config.fetch(:title_attrib, 'bold')
+      fa = config.fetch(:footer_attrib, 'bold')
+      b_ah = config[:app_header]
+      type = config[:content_type]
+
+      v_window = Canis::Window.new(layout)
+      v_form = Canis::Form.new v_window
+      v_window.name = "command-list"
+      colors = Ncurses.COLORS
+      back = :blue
+      back = 235 if colors >= 256
+      blue_white = get_color($datacolor, :white, back)
+
+      tprow = 0
+      ah = nil
+      if b_ah
+        ah = ApplicationHeader.new v_form, "", :text_center => fp
+        tprow += 1
+      end
+
+      textview = TextPad.new v_form do
+        name   "CommandList" 
+        row  tprow
+        col  0
+        width ww
+        height wh-tprow # earlier 2 but seems to be leaving space.
+        title fp
+        title_attrib ta
+        print_footer pf
+        footer_attrib fa
+        #border_attrib :reverse
+        border_color blue_white
+      end
+
+      t = textview
+      items = {:header => ah}
+      begin
+        textview.set_content content, :content_type => type
+        if block_given?
+          if block.arity > 0
+            yield textview, items
+          else
+            textview.instance_eval(&block)
+          end
+        end
+      v_form.repaint
+      v_window.wrefresh
+      Ncurses::Panel.update_panels
+      retval = ""
+      # allow closing using q and Ctrl-q in addition to any key specified
+      #  user should not need to specify key, since that becomes inconsistent across usages
+      #  NOTE: no longer can we close with just a q since often apps using this trap char keys
+      #  NOTE: 2727 is no longer operational, so putting just ESC
+        while((ch = v_window.getchar()) != ?\C-q.getbyte(0) )
+          # ideally we should be throwing a close rather than this since called will need keys.
+          retval = textview.current_value() if ch == config[:close_key] 
+          break if ch == config[:close_key] || ch == 3|| ch == 27 # removed double esc 2014-05-04 - 17:30 
+          # if you've asked for ENTER then i also check for 10 and 13
+          retval = textview.current_value() if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
+          break if (ch == 10 || ch == 13) && config[:close_key] == KEY_ENTER
+          v_form.handle_key ch
+          v_form.repaint
+        end
+      rescue => err
+          $log.error " command-list ERROR #{err} "
+          $log.debug(err.backtrace.join("\n"))
+          alert "#{err}"
+          #textdialog ["Error in command-list: #{err} ", *err.backtrace], :title => "Exception"
+      ensure
+        v_window.destroy if !v_window.nil?
+      end
+      return retval
+    end
   ##
   #  Creates a window at the bottom of the screen for some operations.
   #  Used for some operations such as:
@@ -51,6 +147,20 @@ module Canis
       @window = Canis::Window.new(@layout)
       @start = 0 # row for display of text with paging
       @list = []
+      draw_box
+      @window.wrefresh
+      @panel = @window.panel
+      Ncurses::Panel.update_panels
+      @window.wrefresh
+      @row_offset = 0
+      if @box
+        @row_offset = 1
+      end
+    end  # --- }}}
+
+    # draw the box, needed to redo this upon clear since clearing of windows
+    # was removing the top border 2014-05-04 - 20:14 
+    def draw_box
       if @box == :border
         @window.box 0,0
       elsif @box
@@ -62,15 +172,7 @@ module Canis
         #@window.printstring 0,0,@title, $normalcolor,  'reverse' if @title
         title @title
       end
-      @window.wrefresh
-      @panel = @window.panel
-      Ncurses::Panel.update_panels
-      @window.wrefresh
-      @row_offset = 0
-      if @box
-        @row_offset = 1
-      end
-    end  # --- }}}
+    end
 
     # not sure if this is really required. print_string is just fine.
     # print a string.
@@ -209,7 +311,8 @@ module Canis
     def clear
       @window.wmove 1,1
       @window.wclrtobot
-      @window.box 0,0 if @box == :border
+      #@window.box 0,0 if @box == :border
+      draw_box
       # lower line of border will get erased currently since we are writing to 
       # last line FIXME
     end
@@ -230,13 +333,10 @@ module Canis
     #  it will result in first letter being highlighted in indexcolor
     # indexcolor - color of mnemonic, default green
     def display_menu list, options={}  # --- {{{
-      $log.debug "XXX:  normal color = #{$normalcolor} "
-      $log.debug "XXX:  colormap = #{@@colors} "
       indexing = options[:indexing]
       #indexcolor = options[:indexcolor] || get_color($normalcolor, :yellow, :black)
       indexcolor = $datacolor || 7 # XXX above line crashing on choose()
       indexatt = Ncurses::A_BOLD
-      $log.debug "XXX:  after get_color, ll #{list.size} "
       #
       # the index to start from (used when scrolling a long menu such as file list)
       startindex = options[:startindex] || 0
@@ -461,9 +561,7 @@ module Canis
       while true
         rc.display_menu list1, :indexing => :number
         #ret = ask(prompt, Integer ) { |q| q.in = 1..list1.size }
-        # FIXME valid range won't work here since on_leave is not
-        # triggered.
-        # FIXME if class is specifited then update type in Field
+        # if class is specifited then update type in Field
         ret = rb_gets(prompt) {|f| f.datatype = 1.class ; f.type :integer; f.valid_range(1..list1.size)}
         val = list1[ret-1]
         if val.is_a? Array
@@ -548,7 +646,7 @@ module Canis
     _update_default_settings config
     default_layout = config[:layout]
     config[:close_key] = 1001
-    view(text, config) do |t, hash|
+    command_list(text, config) do |t, hash|
       t.suppress_borders true
       t.print_footer false
       #t.fixed_bounds config.delete(:fixed_bounds)
@@ -576,7 +674,12 @@ module Canis
   # All other config elements are passed to +view+. See viewer.rb.
   def display_text text, config={}
     _update_default_settings config
-    view(text, config) do |t|
+    if text.is_a? String
+      if File.exists? text
+        text = File.open(text, 'r').read.split("\n")
+      end
+    end
+    command_list(text, config) do |t|
       t.suppress_borders true
       t.print_footer false
     end
@@ -634,7 +737,7 @@ module Canis
     _update_default_settings config
     default_layout = config[:layout].dup
     command = config.delete(:command)
-    view(text, config) do |t, hash|
+    command_list(text, config) do |t, hash|
       t.suppress_borders true
       t.print_footer false
       #t.fixed_bounds config.delete(:fixed_bounds)
