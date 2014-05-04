@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-04 12:37
+  * Last update: 2014-05-04 17:41
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -571,8 +571,8 @@ module Canis
           # after a keypress. maybe we can revert to timeout and not worry about resize so much
           Ncurses::wtimeout(window.get_window, 500) # will wait a second on wgetch so we can get gg and qq
           ch = window.getch
+          # we should not reset here, resetting should happen in getch itself so it is consistent
           #Ncurses::nowtimeout(window.get_window, true)
-          Ncurses::nodelay(window.get_window, bf = true)
 
           $log.debug " process_key: got #{keycode} , #{ch} "
           # next line ignores function keys etc. C-x F1, thus commented 255 2012-01-11 
@@ -1939,7 +1939,7 @@ module Canis
       w = FFI::NCurses.COLS - 10
 
       require 'canis/core/util/viewer'
-      Canis::Viewer.view(arr, :layout => [2, 4, h, w],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
+      Canis::Viewer.view(arr, :layout => [h, w, 2, 4],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
         # you may configure textview further here.
         #t.suppress_borders true
         #t.color = :black
