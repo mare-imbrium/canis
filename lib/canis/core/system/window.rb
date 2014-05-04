@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-04 15:00
+#  Last update: 2014-05-04 17:07
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -366,6 +366,9 @@ module Canis
     # @return -1 if no char read
     # ORIGINALLY After esc there was a timeout, but after others there was notimeout, so it would wait
     # indefinitely for a key
+    # NOTE : caller may set a timeout prior to calling, but not change setting after since this method
+    # maintains the default state in +ensure+. e.g. +widget.rb+ does a blocking get in +_process_key+
+    #
     def getch
       #c = @window.getch
       #FFI::NCurses::nodelay(@window, true)
@@ -384,16 +387,15 @@ module Canis
         #Ncurses::nowtimeout(@window, true)
       end
       c
-      # 2011-12-20 - i am trying setting a timer on wgetch, see timeout
-      #c = FFI::NCurses.getch # this will keep waiting, nodelay won't be used on it, since 
-      # we've put nodelay on window
-      #if c == Ncurses::KEY_RESIZE
 
     rescue SystemExit, Interrupt 
       #FFI::NCurses.flushinp
       3 # is C-c
     rescue StandardError
       -1 # is C-c
+    ensure
+      # whatever the default is, is to be set here in case caller changed it.
+      FFI::NCurses::nodelay(@window, true)
     end
 
     # Earlier this was handled by window itself. Now we delegate to a reader
@@ -1500,7 +1502,7 @@ module Canis
         ## possibly a meta/alt char
         k = buff[-1]
         $key_int = 128 + k.ord
-        return "<M-BACKSPACE>" if $key_int = 255
+        return "<M-BACKSPACE>" if $key_int == 255
         return "<M-#{k.chr}>"
       end
       $key_int = 99999
