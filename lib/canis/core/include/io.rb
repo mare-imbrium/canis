@@ -107,7 +107,11 @@ module Canis
               field.on_leave
               break
             rescue FieldValidationException => err # added 2011-10-2 v1.3.1 so we can rollback
-              alert err.to_s
+              #alert err.to_s
+              # unable to use alert now, since closing alert repaints root window and clears the
+              # window this was on (command window in numbered menu).
+              print_this(win, err.to_s, $errorcolor, 1, 0)
+              form.setpos
             rescue => err
               Ncurses.beep
               break
