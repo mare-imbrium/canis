@@ -3,39 +3,6 @@ require "ffi-ncurses"
     # making minimal changes as per ffi-ncurses 0.4.0 which implements panels
     #module Canis # too many places call Ncurses::Panel
     class Panel #< Struct.new(:pointer)
-#      extend FFI::Library
-#
-#      # use RUBY_FFI_NCURSES_LIB to specify exactly which lib you want, e.g.
-#      # ncursesw, XCurses (from PDCurses)
-#      if ENV["RUBY_FFI_PANEL_LIB"].to_s != ""
-#        LIB_HANDLE = ffi_lib( ENV["RUBY_FFI_PANEL_LIB"] ).first
-#      else
-#        # next works but not when ENV, maybe since 'panel' not in code above 
-#        LIB_HANDLE = ffi_lib( 'panel', '/opt/local/lib/libpanelw.5.dylib' ).first
-#        #LIB_HANDLE = ffi_lib( 'panel', 'libpanel' ).first # this also works
-#      end
-#
-#      functions = [
-#        [:new_panel,         [:pointer],             :pointer],
-#        [:bottom_panel,      [:pointer],             :int],
-#        [:top_panel,         [:pointer],             :int],
-#        [:show_panel,        [:pointer],             :int],
-#        [:update_panels,     [],                     :void],
-#        [:hide_panel,        [:pointer],             :int],
-#        [:panel_window,      [:pointer],             :pointer],
-#        [:replace_panel,     [:pointer, :pointer],   :int],
-#        [:move_panel,        [:pointer, :int, :int], :int],
-#        [:panel_hidden,      [:pointer],             :int],
-#        [:panel_above,       [:pointer],             :pointer],
-#        [:panel_below,       [:pointer],             :pointer],
-#        [:set_panel_userptr, [:pointer, :pointer],   :int],
-#        [:panel_userptr,     [:pointer],             :pointer],
-#        [:del_panel,         [:pointer],             :int],
-#      ]
-#
-#      functions.each do |function|
-#        attach_function(*function)
-#      end
 
       def initialize(window)
         if window.respond_to?(:pointer)
