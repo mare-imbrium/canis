@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-04 21:11
+#  Last update: 2014-05-04 22:44
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -373,6 +373,7 @@ module Canis
     # maintains the default state in +ensure+. e.g. +widget.rb+ does a blocking get in +_process_key+
     #
     def getch
+      $escstart = Time.now.to_f
       #c = @window.getch
       #FFI::NCurses::nodelay(@window, true)
       #FFI::NCurses::wtimeout(@window, 0)
@@ -381,7 +382,7 @@ module Canis
       # the only reason i am doing this is so ESC can be returned if no key is pressed
       # after that, not sure how this effects everything. most likely I should just
       # go back to using a wtimeout, and not worry about resize requiring a keystroke
-      if c == 27
+      if c == 272999
         $escstart = Time.now.to_f
         # if ESC pressed don't wait too long.
         #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait n millisecond on wgetch so that we can return if no
@@ -1237,6 +1238,12 @@ module Canis
             if k == 27
               # seems like two Meta keys pressed in quick succession without chance for -1 to kick in
               # but this still does not catch meta char followed by single char. M-za , it does.
+              if $esc_esc
+                if buff == 27.chr
+                  $key_chr = "<ESC-ESC>"
+                  return 2727
+                end
+              end
               x = _evaluate_buff buff
               # return ESC so it can be interpreted again.
               @window.ungetch k
@@ -1338,6 +1345,7 @@ module Canis
     #     - M-C-m 41 same as M_S-ENTER
     #     - M-del gives 255 and M-^?
     #     31 C-/ now gives C-^?
+    #     137 M-C-i M-tab comes as M-    an actual tab, 160 M-space has a space
     # WARNING TODO the name needs to be fixed and standtardized and this is not accessible.
     # It should be accessible from Window class
     def key_tos ch # -- {{{
