@@ -56,8 +56,10 @@ if $0 == __FILE__
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != 999 )
         str = keycode_tos ch if ch.is_a? Fixnum
-        $log.debug  "#{ch} got (#{str})"
-        texta << "#{ch} got (#{str})"
+        #str1 = @window.key_tos ch if ch.is_a? Fixnum
+        str1 = $key_chr
+        $log.debug  "#{ch} got (#{str} #{str1})"
+        texta << "#{ch} got (#{str}) #{str1}"
         texta.goto_end
         texta.repaint
         @form.repaint
