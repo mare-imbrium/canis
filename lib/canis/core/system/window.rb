@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-04 17:07
+#  Last update: 2014-05-04 21:11
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -69,6 +69,8 @@ module Canis
       @window = FFI::NCurses.newwin(@height, @width, @top, @left) # added FFI 2011-09-6 
       # trying out refreshing underlying window.
       $global_windows ||= []
+      # this causes issues padrefresh failing when display_list does a resize.
+      #$global_windows << self
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
@@ -108,7 +110,8 @@ module Canis
       @window.name = "Window::ROOTW"
       @window.wrefresh
       Ncurses::Panel.update_panels
-      $global_windows << @window
+      # earlier we only put root window, now we may need to do all (bline - numbered menu - alert)
+      $global_windows << @window unless $global_windows.include? @window
       return @window
     end
 
