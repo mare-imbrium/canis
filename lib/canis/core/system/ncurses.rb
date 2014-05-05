@@ -102,6 +102,7 @@ module Canis
     # such as gg. Any routine that does a getch will just immediatelt return an ERR.
     Ncurses::nodelay(stdscr.pointer, bf = true)
 
+
     # added these 2 so we can do resizing based on original and current size when terminal resized
     #  2012-01-8 
     $orig_cols = FFI::NCurses.COLS
