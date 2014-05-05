@@ -7,3 +7,10 @@ in moving to chars, and how to go about.
 
 removed many dead methods from window and some from widget
 slight changes in button and label : when_form replaced by FORM_ATTACHED
+
+2014-05-05 - 20:12 
+
+- moved to new cleaner method of reading keys from keyboard
+- Added ButtonGroup for RadioButtons.
+- removed Bottomline and enhanced rcommandline instead
+
