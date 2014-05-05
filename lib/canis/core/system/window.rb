@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-05 01:13
+#  Last update: 2014-05-05 13:35
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -418,164 +418,6 @@ module Canis
       @key_reader.getchar
     end
 
-    #-- old getchar {{{
-    # This was getchar() earlier, now i am trying to put it in a class
-    # so user can install his own and experiment.
-    #
-    # This is directly called by the users program in a loop.
-    #
-    # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
-    # ALT combinations also send a 27 before the actual key
-    # Please test with above combinations before using on your terminal
-    # added by jkepler 2008-12-12 23:07 
-    #  2011-09-23 Redone Control-left, right, and Shift-F5..F10.
-    #  Checking for quick press of Alt-Sh-O followed by Alt or printable char
-    #  Checking for quick press of Alt-[ followed by Alt or printable char
-    #  I attempted keeping a hash of combination arrays but it fails in the above
-    #  2 cases, so abandoned.
-    def _getchar  
-      while 1 
-        ch = self.getch
-        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
-        sf = @stack.first
-        if ch == -1
-          # the returns escape 27 if no key followed it, so its SLOW if you want only esc
-          if @stack.first == 27
-            #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
-            case @stack.size
-            when 1
-              @stack.clear
-              return 27
-            when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
-              ch = 128 + @stack.last
-              $log.warn "XXX: WARN  #{ch} CLEARING stack #{@stack} "
-              @stack.clear
-              return ch
-            else
-              # check up a hash of special keys
-              ret = SPECIAL_KEYS(@stack)
-              return ret if ret
-              $log.warn "INVALID UNKNOWN KEY: SHOULD NOT COME HERE getchar():#{@stack}" 
-            end
-          end
-          # possibly a 49 left over from M3-1
-          unless @stack.empty?
-            if @stack.size == 1
-              @stack.clear
-              return sf
-            end
-            $log.warn "something on stack getchar(): #{@stack} "
-          end
-          # comemnt after testing keys since this will be called a lot, even stack.clear is called a lot
-          $log.warn "ERROR CLEARING STACK WITH STUFF ON IT getchar():#{@stack}"  if ($log.debug? && !@stack.empty?)
-          @stack.clear
-          next
-        end #  -1
-        # this is the ALT combination
-        if @stack.first == 27
-          # experimental. 2 escapes in quick succession to make exit faster
-          if @stack.size == 1 && ch == 27
-            @stack.clear
-            return 2727 if $esc_esc # this is double-esc if you wanna trap it, trying out
-            return 27
-          end
-          # possible F1..F3 on xterm-color
-          if ch == 79 || ch == 91
-            #$log.debug " got 27, #{ch}, waiting for one more"
-            @stack << ch
-            next
-          end
-          #$log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
-          if @stack == [27,79]
-            # xterm-color
-            case ch
-            when 80
-              ch = FFI::NCurses::KEY_F1
-            when 81
-              ch = FFI::NCurses::KEY_F2
-            when 82
-              ch = FFI::NCurses::KEY_F3
-            when 83
-              ch = FFI::NCurses::KEY_F4
-              #when 27 # another alt-char following Alt-Sh-O
-            else
-              ## iterm2 uses these for HOME END num keyboard keys
-              @stack.clear
-              #@stack << ch # earlier we pushed this but it could be of use
-              #return 128 + 79
-              return 128 + 79 + ch
-
-            end
-            @stack.clear
-            return ch
-          elsif @stack == [27, 91]
-            # XXX 27, 91 also is Alt-[
-            if ch == 90
-              @stack.clear
-              return KEY_BTAB # backtab
-            elsif ch == 53 || ch == 50 || ch == 51
-              # control left, right and shift function
-              @stack << ch
-              next
-            elsif ch == 27 # another alt-char immediately after Alt-[
-              $log.debug "getchar in 27, will return 128+91 " if $log.debug? 
-              @stack.clear
-              @stack << ch
-              return 128 + 91
-            else
-              $log.debug "getchar in other, will return 128+91: #{ch} " if $log.debug? 
-              # other cases Alt-[ followed by some char or key - merge with previous
-              @stack.clear
-              @stack << ch
-              return 128 + 91
-            end
-          elsif @stack == [27, 91, 53]
-            if ch == 68
-              @stack.clear
-              return C_LEFT  # control-left
-            elsif ch == 67
-              @stack.clear
-              return C_RIGHT  # -control-rt
-            end
-          elsif @stack == [27, 91, 51]
-            if ch == 49 && getch()== 126
-              @stack.clear
-              return 20009  # sh_f9
-            end
-          elsif @stack == [27, 91, 50]
-            if ch == 50 && getch()== 126
-              @stack.clear
-              return 20010  # sh-F10
-            end
-            if ch == 57 && getch()== 126
-              @stack.clear
-              return 20008  # sh-F8
-            elsif ch == 56 && getch()== 126
-              @stack.clear
-              return 20007  # sh-F7
-            elsif ch == 54 && getch()== 126
-              @stack.clear
-              return 20006  # sh-F6
-            elsif ch == 53 && getch()== 126
-              @stack.clear
-              return 20005  # sh-F5
-            end
-          end
-          # the usual Meta combos. (alt) - this is screwing it up, just return it in some way
-          ch = 128 + ch
-          @stack.clear
-          return ch
-        end # stack.first == 27
-        # append a 27 to stack, actually one can use a flag too
-        if ch == 27
-          @stack << 27
-          next
-        end
-        return ch
-      end # while
-    end # def
-    #++ }}}
-
 
     # setup and reset
 
@@ -945,6 +787,67 @@ module Canis
       @key_reader = DefaultKeyReader.new self
     end
 
+    # returns a string representation of a given int keycode
+    # @param [Fixnum] keycode read by window
+    #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
+    #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
+    # @return [String] a string representation which is what is to be used when binding a key to an
+    #     action or Proc. This is close to what vimrc recognizes such as <CR> <C-a> a-zA-z0-9 <SPACE>
+    #     Hopefully it should be identical to what vim recognizes in the map command.
+    #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
+    #     needs to take care of that combination. FIXME some numbers are missing in between.
+    def key_tos ch # -- {{{
+      chr = case ch
+            when 10,13 , KEY_ENTER
+              "<CR>"
+            when 9 
+              "<TAB>"
+            when 0 
+              "<C-@>"
+            when 27
+              "<ESC>"
+            when 2727
+              "<ESC-ESC>"
+            when 31
+              "<C-/>"
+            when 1..30
+              x= ch + 96
+              "<C-#{x.chr}>"
+            when 32 
+              "<SPACE>"
+            when 41
+              "<M-CR>"
+            when 33..126
+              ch.chr
+            when 127,263 
+              "<BACKSPACE>"
+            when 128..154
+              x = ch - 128
+              #"<M-C-#{x.chr}>"
+              xx = key_tos(x).gsub(/[<>]/,"")
+              "<M-#{xx}>"
+            when 160..255
+              x = ch - 128
+              xx = key_tos(x).gsub(/[<>]/,"")
+              "<M-#{xx}>"
+            when 255
+              "<M-BACKSPACE>"
+            else
+
+              $log.debug "  ELSE 1399 -#{ch}- "
+              ch =  FFI::NCurses::keyname(ch) 
+              # remove those ugly brackets around function keys
+              if ch && ch[-1]==')'
+                ch = ch.gsub(/[()]/,'')
+              end
+              if ch
+                ch
+              else
+                "UNKNOWN:#{ch}"
+              end
+            end
+    end # --- }}}
+
   end # window
 
   # created on 2014-04-20 - 00:19 so that user can install own handler
@@ -979,158 +882,6 @@ module Canis
       @window.getch
     end
 
-    # This is directly called by the users program in a loop.
-    #
-    # returns control, alt, alt+ctrl, alt+control+shift, F1 .. etc
-    # ALT combinations also send a 27 before the actual key
-    # Please test with above combinations before using on your terminal
-    # added by jkepler 2008-12-12 23:07 
-    #  2011-09-23 Redone Control-left, right, and Shift-F5..F10.
-    #  Checking for quick press of Alt-Sh-O followed by Alt or printable char
-    #  Checking for quick press of Alt-[ followed by Alt or printable char
-    #  I attempted keeping a hash of combination arrays but it fails in the above
-    #  2 cases, so abandoned.
-    def _getchar  # --- {{{
-      while 1 
-        ch = self.getch
-        #$log.debug "window getchar() GOT: #{ch}" if ch != -1
-        sf = @stack.first
-        if ch == -1
-          # the returns escape 27 if no key followed it, so its SLOW if you want only esc
-          if @stack.first == 27
-            #$log.debug " -1 stack sizze #{@stack.size}: #{@stack.inspect}, ch #{ch}"
-            case @stack.size
-            when 1
-              @stack.clear
-              return 27
-            when 2 # basically a ALT-O, or alt-[ (79 or 91) this will be really slow since it waits for -1
-              ch = 128 + @stack.last
-              $log.warn "XXX: WARN  #{ch} CLEARING stack #{@stack} "
-              @stack.clear
-              return ch
-            else
-              # check up a hash of special keys
-              ret = SPECIAL_KEYS(@stack)
-              return ret if ret
-              $log.warn "INVALID UNKNOWN KEY: SHOULD NOT COME HERE getchar():#{@stack}" 
-            end
-          end
-          # possibly a 49 left over from M3-1
-          unless @stack.empty?
-            if @stack.size == 1
-              @stack.clear
-              return sf
-            end
-            $log.warn "something on stack getchar(): #{@stack} "
-          end
-          # comemnt after testing keys since this will be called a lot, even stack.clear is called a lot
-          $log.warn "ERROR CLEARING STACK WITH STUFF ON IT getchar():#{@stack}"  if ($log.debug? && !@stack.empty?)
-          @stack.clear
-          next
-        end #  -1
-        # this is the ALT combination
-        if @stack.first == 27
-          # experimental. 2 escapes in quick succession to make exit faster
-          if @stack.size == 1 && ch == 27
-            @stack.clear
-            return 2727 if $esc_esc # this is double-esc if you wanna trap it, trying out
-            return 27
-          end
-          # possible F1..F3 on xterm-color
-          if ch == 79 || ch == 91
-            #$log.debug " got 27, #{ch}, waiting for one more"
-            @stack << ch
-            next
-          end
-          #$log.debug "stack SIZE  #{@stack.size}, #{@stack.inspect}, ch: #{ch}"
-          if @stack == [27,79]
-            # xterm-color
-            case ch
-            when 80
-              ch = FFI::NCurses::KEY_F1
-            when 81
-              ch = FFI::NCurses::KEY_F2
-            when 82
-              ch = FFI::NCurses::KEY_F3
-            when 83
-              ch = FFI::NCurses::KEY_F4
-              #when 27 # another alt-char following Alt-Sh-O
-            else
-              ## iterm2 uses these for HOME END num keyboard keys
-              @stack.clear
-              #@stack << ch # earlier we pushed this but it could be of use
-              #return 128 + 79
-              return 128 + 79 + ch
-
-            end
-            @stack.clear
-            return ch
-          elsif @stack == [27, 91]
-            # XXX 27, 91 also is Alt-[
-            if ch == 90
-              @stack.clear
-              return KEY_BTAB # backtab
-            elsif ch == 53 || ch == 50 || ch == 51
-              # control left, right and shift function
-              @stack << ch
-              next
-            elsif ch == 27 # another alt-char immediately after Alt-[
-              $log.debug "getchar in 27, will return 128+91 " if $log.debug? 
-              @stack.clear
-              @stack << ch
-              return 128 + 91
-            else
-              $log.debug "getchar in other, will return 128+91: #{ch} " if $log.debug? 
-              # other cases Alt-[ followed by some char or key - merge with previous
-              @stack.clear
-              @stack << ch
-              return 128 + 91
-            end
-          elsif @stack == [27, 91, 53]
-            if ch == 68
-              @stack.clear
-              return C_LEFT  # control-left
-            elsif ch == 67
-              @stack.clear
-              return C_RIGHT  # -control-rt
-            end
-          elsif @stack == [27, 91, 51]
-            if ch == 49 && getch()== 126
-              @stack.clear
-              return 20009  # sh_f9
-            end
-          elsif @stack == [27, 91, 50]
-            if ch == 50 && getch()== 126
-              @stack.clear
-              return 20010  # sh-F10
-            end
-            if ch == 57 && getch()== 126
-              @stack.clear
-              return 20008  # sh-F8
-            elsif ch == 56 && getch()== 126
-              @stack.clear
-              return 20007  # sh-F7
-            elsif ch == 54 && getch()== 126
-              @stack.clear
-              return 20006  # sh-F6
-            elsif ch == 53 && getch()== 126
-              @stack.clear
-              return 20005  # sh-F5
-            end
-          end
-          # the usual Meta combos. (alt) - this is screwing it up, just return it in some way
-          ch = 128 + ch
-          @stack.clear
-          return ch
-        end # stack.first == 27
-        # append a 27 to stack, actually one can use a flag too
-        if ch == 27
-          @stack << 27
-          next
-        end
-        return ch
-      end # while
-    end # def --- }}}
 
     # these should be read up from a file so program can update them for a user
     # These codes were required when we were using stdin outside of ncurses, but ncurses
@@ -1139,7 +890,6 @@ module Canis
     # This hash is meantf for cases where Ncurses does not give a key or decipher, such as shift function keys
     # and where possibly these differ across systems. In such cases, you may just enter the codes
     # that the system generates as the key, and the value you want returned as the value.
-    $kh=Hash.new
     # --- {{{
 =begin
     $kh["OP"]="F1"
@@ -1185,18 +935,24 @@ module Canis
 =end
 # --- }}}
     # testing out shift+Function. these are the codes my kb generates
-    KEY_S_F1='[1;2P'
-    $kh[KEY_S_F1]="S-F1"
-    $kh['[1;2Q']="S-F2"
-    $kh['[1;2R']="S-F3"
-    $kh['[1;2S']="S-F4"
-    $kh['[15;2~']="S-F5"
+    if File.exists? File.expand_path("~/ncurses-keys.yml")
+      # a sample of this file should be available with this 
+      # the file is a hash or mapping, but should not contrain control characters.
+      # Usually delete the control character and insert a "\e" in its place.
+      # "\e[1;3C": C-RIGHT
+      require 'yaml'
+      $kh = YAML::load( File.open( File.expand_path("~/ncurses-keys.yml" ) ))
+    else
+      # if we could not find any mappings then use some dummy ones that work on my laptop.
+      $kh=Hash.new
+      KEY_S_F1='[1;2P'
+      $kh[KEY_S_F1]="S-F1"
+      $kh['[1;2Q']="S-F2"
+      $kh['[1;2R']="S-F3"
+      $kh['[1;2S']="S-F4"
+      $kh['[15;2~']="S-F5"
 
-    def getchar
-      #_getchar
-      getchar_as_int
     end
-
     # NOTE: This is a reworked and much simpler version of the original getchar which was taken from manveru's 
     # codebase. This also currently returns the keycode as int while placing the char version in a 
     # global $key_chr. Until we are ready to return a char, we use this.
@@ -1208,7 +964,7 @@ module Canis
     # Read a char from the window (from user) and returns int code.
     # In some cases, such as codes entered in the $kh hash, we do not yet have a keycode defined
     # so we return 9999 and the user can access $key_chr.
-    def getchar_as_int
+    def getchar
         c = nil
         while true
           c = self.getch
@@ -1220,7 +976,7 @@ module Canis
         $key_int = c
         # handle control codes 0 to 127 but not escape
         if cn >= 0 && cn < 128 && cn != 27
-          $key_chr = key_tos(c)
+          $key_chr = @window.key_tos(c)
           return c
         end
         
@@ -1267,7 +1023,7 @@ module Canis
               if k > 255
                 $log.warn "getchar: window.rb 1247 Found no mapping for #{buff} #{k} "
                 # this contains ESc followed by a high number
-                ka = key_tos(k)
+                ka = @window.key_tos(k)
                 if ka
                   $key_chr = "<M-" + ka[1..-1]
                   $key_int = k + 128
@@ -1338,77 +1094,6 @@ module Canis
     }
 =end
 
-    # returns a string representation of a given int keycode
-    # @param [Fixnum] keycode read by window
-    #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
-    #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
-    # @return [String] a string representation which is what is to be used when binding a key to an
-    #     action or Proc. This is close to what vimrc recognizes such as <CR> <C-a> a-zA-z0-9 <SPACE>
-    #     Hopefully it should be identical to what vim recognizes in the map command.
-    #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
-    #     needs to take care of that combination. FIXME some numbers are missing in between.
-    #     - 31 ^- on C-/
-    #     - 28 ^\ on C\
-    #     - 99999 on ^[ C[
-    #     - 29 C]   31 C-
-    #     - 263 KEY_BACKSPACE on C-h
-    #     - M-C-m 41 same as M_S-ENTER
-    #     - M-del gives 255 and M-^?
-    #     31 C-/ now gives C-^?
-    #     137 M-C-i M-tab comes as M-    an actual tab, 160 M-space has a space
-    # WARNING TODO the name needs to be fixed and standtardized and this is not accessible.
-    # It should be accessible from Window class
-    def key_tos ch # -- {{{
-      chr = case ch
-            when 10,13 , KEY_ENTER
-              "<CR>"
-            when 9 
-              "<TAB>"
-            when 0 
-              "<C-@>"
-            when 27
-              "<-ESC>"
-            when 2727
-              "<ESC-ESC>"
-            when 31
-              "<C-/>"
-            when 1..30
-              x= ch + 96
-              "<C-#{x.chr}>"
-            when 32 
-              "<SPACE>"
-            when 41
-              "<M-CR>"
-            when 33..126
-              ch.chr
-            when 127,263 
-              "<BACKSPACE>"
-            when 128..154
-              x = ch - 128
-              "<M-C-#{x.chr}>"
-            when 160..255
-              x = ch - 128
-              $log.debug "  x is #{x} "
-              xx = key_tos(x).gsub(/<>/,"")
-              $log.debug "  xx is #{xx} "
-              "<M-#{xx}>"
-            when 255
-              "<M-BACKSPACE>"
-            else
-
-              $log.debug "  ELSE 1399 -#{ch}- "
-              ch =  FFI::NCurses::keyname(ch) 
-              # remove those ugly brackets around function keys
-              if ch && ch[-1]==')'
-                ch = ch.gsub(/[()]/,'')
-              end
-              if ch
-                ch
-              else
-                "UNKNOWN:#{ch}"
-              end
-            end
-    end # --- }}}
 
 
 
@@ -1441,7 +1126,7 @@ module Canis
         #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
         $key_int = c
         if cn >= 0 && cn < 128 && cn != 27
-          $key_chr = key_tos(c)
+          $key_chr = @window.key_tos(c)
           return $key_chr
         end
         
@@ -1528,7 +1213,7 @@ module Canis
         k = buff[-1]
         $key_int = 128 + k.ord
         return "<M-BACKSPACE>" if $key_int == 255
-        xx = key_tos(k.ord).gsub(/[<>]/,"")
+        xx = @window.key_tos(k.ord).gsub(/[<>]/,"")
         $log.debug "  xx is #{xx} "
         return "<M-#{xx}>"
         #return "<M-#{k.chr}>"
