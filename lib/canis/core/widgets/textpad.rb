@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-02 01:09
+#  Last update: 2014-05-05 20:38
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1138,7 +1138,7 @@ module Canis
     # convenience method to return byte -- is it used ???
     private
     def key x
-      x.window.getbyte(0)
+      x.getbyte(0)
     end
 
 # ----------- end internal stuff --------------- }}}
