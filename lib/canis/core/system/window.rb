@@ -4,10 +4,13 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-05 13:35
+#  Last update: 2014-05-06 23:48
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
+#     - replaced getchar with new simpler one - 2014-05-04
+#     - introduced key_tos to replace keycode_tos
+#     - reintroduced nedelay and reduced escdelay
 #
 # == TODO
 #    strip and remove cruft. Several methods marked as deprecated.
