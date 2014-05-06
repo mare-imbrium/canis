@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-04 17:41
+  * Last update: 2014-05-06 23:52
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -202,10 +202,21 @@ module Canis
         content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
         content
       end
+      # convenience func to get int value of a key
+      # added 2014-05-05
+      # instead of ?\C-a.getbyte(0)
+      # use key(?\C-a)
+      # or key(?a) or key(?\M-x)
+      def key ch
+        ch.getbyte(0)
+      end
       # needs to move to a keystroke class
       # please use these only for printing or debugging, not comparing
       # I could soon return symbols instead 2010-09-07 14:14 
+      # @deprecated
+      # Please move to window.key_tos
       def keycode_tos keycode # {{{
+        $log.warn "XXX:  keycode_tos please move to window.key_tos"
         case keycode
         when 33..126
           return keycode.chr
@@ -348,15 +359,9 @@ module Canis
         $multiplier = 0
         $inside_multiplier_action = false
       end
-
-      ##
-      # bind an action to a key, required if you create a button which has a hotkey
-      # or a field to be focussed on a key, or any other user defined action based on key
-      # e.g. bind_key ?\C-x, object, block 
-      # added 2009-01-06 19:13 since widgets need to handle keys properly
-      #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
-      #  TODO add symbol so easy to map from config file or mapping file
-      def bind_key keycode, *args, &blk
+      # this is the bindkey that has been working all along. now i am trying a new approach
+      # that does not use a hash inside but keeps on key. so it can be manip easily be user
+      def ORIGbind_key keycode, *args, &blk # -- {{{
         #$log.debug " #{@name} bind_key received #{keycode} "
         @_key_map ||= {}
         #
@@ -401,38 +406,187 @@ module Canis
         @_key_args ||= {}
         @_key_args[keycode] = args
 
+      end # --- }}}
+
+      ##
+      # A new attempt at a flat hash 2014-05-06 - 00:16 
+      # bind an action to a key, required if you create a button which has a hotkey
+      # or a field to be focussed on a key, or any other user defined action based on key
+      # e.g. bind_key ?\C-x, object, block 
+      # added 2009-01-06 19:13 since widgets need to handle keys properly
+      #  2010-02-24 12:43 trying to take in multiple key bindings, TODO unbind
+      #  TODO add symbol so easy to map from config file or mapping file
+      #
+      #  Ideally i want to also allow a regex and array/range to be used as a key 
+      #  However, then how do i do multiple assignments which use an array.
+      #
+      #  Currently the only difference is that there is no hash inside the value,
+      #  key can be an int, or array of ints (for multiple keycode like qq or gg).
+      def bind_key keycode, *args, &blk
+        #$log.debug " #{@name} bind_key received #{keycode} "
+        @_key_map ||= {}
+        #
+        # added on 2011-12-4 so we can pass a description for a key and print it
+        # The first argument may be a string, it will not be removed
+        # so existing programs will remain as is.
+        @key_label ||= {}
+        if args[0].is_a?(String) || args[0].is_a?(Symbol)
+          @key_label[keycode] = args[0] 
+        else
+          @key_label[keycode] = :unknown
+        end
+
+        if !block_given?
+          blk = args.pop
+          raise "If block not passed, last arg should be a method symbol" if !blk.is_a? Symbol
+          #$log.debug " #{@name} bind_key received a symbol #{blk} "
+        end
+        case keycode
+        when String
+          # single assignment
+          keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
+          #@_key_map[keycode] = blk
+        when Array
+          # double assignment
+          # this means that all these keys have to be pressed in succession for this block, like "gg" or "C-x C-c"
+          raise "A one key array will not work. Pass without array" if keycode.size == 1
+          ee = []
+          keycode.each do |e| 
+            e = e.getbyte(0) if e.is_a? String
+            ee << e
+          end
+          bind_composite_mapping ee, args, &blk
+          return
+          #@_key_map[a0] ||= OrderedHash.new
+          #@_key_map[a0][a1] = blk
+          #$log.debug " XX assigning #{keycode} to  _key_map " if $log.debug? 
+        else
+          #$log.debug " assigning #{keycode} to  _key_map " if $log.debug? 
+        end
+        @_key_map[keycode] = blk
+        @_key_args ||= {}
+        @_key_args[keycode] = args
+
+      end
+      class MapNode
+        attr_accessor :action
+        attr_accessor :map
+        def initialize arg=nil
+          @map = Hash.new {|hash, key| hash[key] = MapNode.new }
+        end
+        def put key, value
+          @map[key].action = value
+        end
+        # fetch / get returns a node, or nil. if node, then use node.action
+        def fetch key, deft=nil
+          @map.fetch(key, deft)
+        end
       end
 
-      # define a key with sub-keys to which commands are attached.
-      # e.g. to attach commands to C-x a , C-x b, C-x x etc.
-      #
-      # == Example
-      #
-      # We create a map named :csmap and attach various commands to it
-      # on different keys. At this point, there is no main key that triggers it.
-      # Any key can be made the prefix command later. In this case, C-s was bound
-      # to the map. This is more organized that creating separate maps for
-      # C-s r, C-s s etc which then cannot be changed or customized by user.
-      #
-      #    @form.define_prefix_command :csmap, :scope => self
-      #    @form.define_key(:csmap, "r", 'refresh', :refresh )
-      #    @form.define_key(:csmap, "s", 'specification') { specification }
-      #    @form.bind_key ?\C-s, :csmap
-      #
-      def define_prefix_command _name, config={} #_mapvar=nil, _prompt=nil
-        $rb_prefix_map ||= {}
-        _name = _name.to_sym unless _name.is_a? Symbol
-        $rb_prefix_map[_name] ||= {}
-        scope = config[:scope] || self
-        $rb_prefix_map[_name][:scope] = scope
+      def bind_composite_mapping key, *args, &action
+        @_key_composite_map ||= Hash.new {|hash, key| hash[key] = MapNode.new }
+        if key.is_a? String
+          n = @_key_composite_map[key]
+          n.action = action
+        else
+          mp = @_key_composite_map
+          n = nil
+          key.each do |e|
+            n = mp[e]
+            mp = n.map
+          end
+          n.action = action
+        end
+        val = @_key_composite_map.fetch(key[0], nil)
+        $log.debug " composite contains #{key} : #{val} "
+      end
+      def check_composite_mapping key, window
+        $log.debug  "inside check with #{key} "
+        return nil if !@_key_composite_map
+        return nil if !@_key_composite_map.key? key
+        $log.debug "  composite has #{key} "
+
+        # we have a match and need to loop
+        mp = @_key_composite_map
+        n = nil
+        actions = []
+        unconsumed = []
+        e = key
+        while true
+
+          # we traverse each key and get action of final.
+          # However, if at any level there is a failure, we need to go back to previous action
+          # and push the other keys back so they can be again processed.
+          if e.nil? or e == -1
+            #puts "e is nil TODO "
+            # TODO
+            $log.debug "  -1  push #{unconsumed} " 
+            return actions.last 
+          else
+            $log.debug  " in loop with #{e} "
+            unconsumed << e
+            n = mp.fetch(e, nil)
+            $log.debug  " got node #{n} with #{e} "
+            # instead of just nil, we need to go back up, but since not recursive ...
+            #return nil unless n
+            $log.debug  "push #{unconsumed} " unless n
+            return actions.last unless n
+            mp = n.map
+            # there are no more keys, only an action
+            if mp.nil? or mp.empty?
+              #puts "mp is nil or empty"
+              return n.action
+            end
+            # we could have consumed keys at this point
+            actions << n.action if n.action
+            unconsumed.clear if n.action
+            e = window.getchar
+            $log.debug "  getch got #{e}"
+          end
+        end
+      end
+
+        def xxxbind_composite_mapping keycode, *args, &blk
+          @_key_composite_map ||= {}
+          str = ""
+          keycode.each do |e| 
+            s = key_tos(e)
+            str << s
+          end
+          $log.debug "  composite map #{keycode} bound as #{str} "
+          @_key_composite_map[str] = blk
+        end
+
+        # define a key with sub-keys to which commands are attached.
+        # e.g. to attach commands to C-x a , C-x b, C-x x etc.
+        #
+        # == Example
+        #
+        # We create a map named :csmap and attach various commands to it
+        # on different keys. At this point, there is no main key that triggers it.
+        # Any key can be made the prefix command later. In this case, C-s was bound
+        # to the map. This is more organized that creating separate maps for
+        # C-s r, C-s s etc which then cannot be changed or customized by user.
+        #
+        #    @form.define_prefix_command :csmap, :scope => self
+        #    @form.define_key(:csmap, "r", 'refresh', :refresh )
+        #    @form.define_key(:csmap, "s", 'specification') { specification }
+        #    @form.bind_key ?\C-s, :csmap
+        #
+        def define_prefix_command _name, config={} #_mapvar=nil, _prompt=nil
+          $rb_prefix_map ||= {}
+          _name = _name.to_sym unless _name.is_a? Symbol
+          $rb_prefix_map[_name] ||= {}
+          scope = config[:scope] || self
+          $rb_prefix_map[_name][:scope] = scope
 
 
-        # create a variable by name _name
-        # create a method by same name to use
-        # Don;t let this happen more than once
-      instance_eval %{
+          # create a variable by name _name
+          # create a method by same name to use
+          # Don;t let this happen more than once
+          instance_eval %{
         def #{_name.to_s} *args
-           #$log.debug "XXX:  came inside #{_name} "
+          #$log.debug "XXX:  came inside #{_name} "
            h = $rb_prefix_map["#{_name}".to_sym]
            raise "No prefix_map named #{_name}, #{$rb_prefix_map.keys} " unless h
            ch = @window.getchar
@@ -454,98 +608,182 @@ module Canis
                  return :UNHANDLED
               end
            else
-                 #@window.ungetch(ch)
+          #@window.ungetch(ch)
                  :UNHANDLED
            end
         end
-      }
-        return _name
-      end
-
-      # Define a key for a prefix command.
-      # @see +define_prefix_command+
-      #
-      # == Example: 
-      #
-      #    @form.define_key(:csmap, "s", 'specification') { specification }
-      #    @form.define_key(:csmap, "r", 'refresh', :refresh )
-      #
-      # @param _symbol prefix command symbol (already created using +define_prefix_command+
-      # @param keycode key within the prefix command for given block or action
-      # @param args arguments to be passed to block. The first is a description.
-      #             The second may be a symbol for a method to be executed (if block not given).
-      # @param block action to be executed on pressing keycode
-    def define_key _symbol, _keycode, *args, &blk
-      #_symbol = @symbol
-      h = $rb_prefix_map[_symbol]
-      raise ArgumentError, "No such keymap #{_symbol} defined. Use define_prefix_command." unless h
-      _keycode = _keycode[0].getbyte(0) if _keycode[0].class == String
-      arg = args.shift
-      if arg.is_a? String
-        desc = arg
-        arg = args.shift
-      elsif arg.is_a? Symbol
-        # its a symbol
-        desc = arg.to_s
-      elsif arg.nil?
-        desc = "unknown"
-      else
-        raise ArgumentError, "Don't know how to handle #{arg.class} in PrefixManager"
-      end
-      # 2013-03-20 - 18:45 187compat gave error in 187 cannot convert string to int
-      #@descriptions ||= []
-      @descriptions ||= {}
-      @descriptions[_keycode] = desc
-
-      if !block_given?
-        blk = arg
-      end
-      h[_keycode] = blk
-    end
-      # Display key bindings for current widget and form in dialog
-      def print_key_bindings *args
-        f  = get_current_field
-        #labels = [@key_label, f.key_label]
-        #labels = [@key_label]
-        #labels << f.key_label if f.key_label
-        labels = []
-        labels << (f.key_label || {}) #if f.key_label
-        labels << @key_label
-        arr = []
-        if get_current_field.help_text 
-          arr << get_current_field.help_text 
-        end
-        labels.each_with_index { |h, i|  
-          case i
-          when 0
-            arr << "  ===  Current widget bindings ==="
-          when 1
-            arr << "  === Form bindings ==="
-          end
-
-          h.each_pair { |name, val| 
-            if name.is_a? Fixnum
-              name = keycode_tos name
-            elsif name.is_a? String
-              name = keycode_tos(name.getbyte(0))
-            elsif name.is_a? Array
-              s = []
-              name.each { |e|
-                s << keycode_tos(e.getbyte(0))
-              }
-              name = s
-            else
-              #$log.debug "XXX: KEY #{name} #{name.class} "
-            end
-            arr << " %-30s %s" % [name ,val]
-            $log.debug "KEY: #{name} : #{val} "
           }
-        }
-        textdialog arr, :title => "Key Bindings"
+          return _name
+        end
+
+        # Define a key for a prefix command.
+        # @see +define_prefix_command+
+        #
+        # == Example: 
+        #
+        #    @form.define_key(:csmap, "s", 'specification') { specification }
+        #    @form.define_key(:csmap, "r", 'refresh', :refresh )
+        #
+        # @param _symbol prefix command symbol (already created using +define_prefix_command+
+        # @param keycode key within the prefix command for given block or action
+        # @param args arguments to be passed to block. The first is a description.
+        #             The second may be a symbol for a method to be executed (if block not given).
+        # @param block action to be executed on pressing keycode
+        def define_key _symbol, _keycode, *args, &blk
+          #_symbol = @symbol
+          h = $rb_prefix_map[_symbol]
+          raise ArgumentError, "No such keymap #{_symbol} defined. Use define_prefix_command." unless h
+          _keycode = _keycode[0].getbyte(0) if _keycode[0].class == String
+          arg = args.shift
+          if arg.is_a? String
+            desc = arg
+            arg = args.shift
+          elsif arg.is_a? Symbol
+            # its a symbol
+            desc = arg.to_s
+          elsif arg.nil?
+            desc = "unknown"
+          else
+            raise ArgumentError, "Don't know how to handle #{arg.class} in PrefixManager"
+          end
+          # 2013-03-20 - 18:45 187compat gave error in 187 cannot convert string to int
+          #@descriptions ||= []
+          @descriptions ||= {}
+          @descriptions[_keycode] = desc
+
+          if !block_given?
+            blk = arg
+          end
+          h[_keycode] = blk
+        end
+        # Display key bindings for current widget and form in dialog
+        def print_key_bindings *args
+          f  = get_current_field
+          #labels = [@key_label, f.key_label]
+          #labels = [@key_label]
+          #labels << f.key_label if f.key_label
+          labels = []
+          labels << (f.key_label || {}) #if f.key_label
+          labels << @key_label
+          arr = []
+          if get_current_field.help_text 
+            arr << get_current_field.help_text 
+          end
+          labels.each_with_index { |h, i|  
+            case i
+            when 0
+              arr << "  ===  Current widget bindings ==="
+            when 1
+              arr << "  === Form bindings ==="
+            end
+
+            h.each_pair { |name, val| 
+              if name.is_a? Fixnum
+                name = keycode_tos name
+              elsif name.is_a? String
+                name = keycode_tos(name.getbyte(0))
+              elsif name.is_a? Array
+                s = []
+                name.each { |e|
+                  s << keycode_tos(e.getbyte(0))
+                }
+                name = s
+              else
+                #$log.debug "XXX: KEY #{name} #{name.class} "
+              end
+              arr << " %-30s %s" % [name ,val]
+              $log.debug "KEY: #{name} : #{val} "
+            }
+          }
+          textdialog arr, :title => "Key Bindings"
+        end
+        def bind_keys keycodes, *args, &blk
+          keycodes.each { |k| bind_key k, *args, &blk }
+        end
+
+
+
+        # This the new one which does not use orderedhash, it uses an array for multiple assignments
+        # and falls back to a single assignment if multiple fails.
+        # e.g. process_key ch, self
+        # returns UNHANDLED if no block for it
+        # after form handles basic keys, it gives unhandled key to current field, if current field returns
+        # unhandled, then it checks this map.
+        # added 2009-01-06 19:13 since widgets need to handle keys properly
+        # added 2009-01-18 12:58 returns ret val of blk.call
+        # so that if block does not handle, the key can still be handled
+        # e.g. table last row, last col does not handle, so it will auto go to next field
+        #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
+        #  except maybe for window pointer. TODO not tested
+        def _process_key keycode, object, window
+          return :UNHANDLED if @_key_map.nil?
+          chr = nil
+          ch = keycode
+          if ch > 0 and ch < 256
+            chr = ch.chr
+          end
+          blk = @_key_map[keycode]
+          # if blk then we found an exact match which supercedes any ranges, arrays and regexes
+          unless blk
+            @_key_map.each_pair do |k,p|
+              $log.debug "KKK:  processing key #{ch}  #{chr} "
+              if (k == ch || k == chr)
+                $log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
+                # compare both int key and chr
+                $log.debug "KKK:  found match 1 #{ch}  #{chr} "
+                #p.call(self, ch)
+                #return 0
+                blk = p
+                break
+              elsif k.respond_to? :include?
+                $log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
+                # this bombs if its a String and we check for include of a ch.
+                if !k.is_a?( String ) && (k.include?( ch ) || k.include?(chr))
+                  $log.debug "KKK:  found match include #{ch}  #{chr} "
+                  #p.call(self, ch)
+                  #return 0
+                  blk = p
+                  break
+                end
+              elsif k.is_a? Regexp
+                if k.match(chr)
+                  $log.debug "KKK:  found match regex #{ch}  #{chr} "
+                  #p.call(self, ch)
+                  #return 0
+                  blk = p
+                  break
+                end
+              end
+            end
+          end
+          # blk either has a proc or is nil
+          # we still need to check for a complex map.  if none, then execute simple map.
+          ret = check_composite_mapping(ch, window)
+          $log.debug "  composite returned #{ret} for #{ch} "
+          if !ret
+            return execute_mapping(blk, ch, object) if blk
+          end
+          return execute_mapping(ret, ch, object) if ret
+          return :UNHANDLED
+        end
+
+    def execute_mapping blk, keycode, object
+
+      if blk.is_a? Symbol
+        if respond_to? blk
+          return send(blk, *@_key_args[keycode])
+        else
+          ## 2013-03-05 - 19:50 why the hell is there an alert here, nowhere else
+          alert "This ( #{self.class} ) does not respond to #{blk.to_s} [PROCESS-KEY]"
+          # added 2013-03-05 - 19:50 so called can know
+          return :UNHANDLED 
+        end
+      else
+        $log.debug "rwidget BLOCK called _process_key #{keycode} " if $log.debug? 
+        return blk.call object,  *@_key_args[keycode]
       end
-      def bind_keys keycodes, *args, &blk
-        keycodes.each { |k| bind_key k, *args, &blk }
-      end
+    end
+
       # e.g. process_key ch, self
       # returns UNHANDLED if no block for it
       # after form handles basic keys, it gives unhandled key to current field, if current field returns
@@ -556,7 +794,7 @@ module Canis
       # e.g. table last row, last col does not handle, so it will auto go to next field
       #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
       #  except maybe for window pointer. TODO not tested
-      def _process_key keycode, object, window
+      def ORIG_process_key keycode, object, window
         return :UNHANDLED if @_key_map.nil?
         blk = @_key_map[keycode]
         $log.debug "XXX:  _process key keycode #{keycode} #{blk.class}, #{self.class} "
