@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-06 23:52
+  * Last update: 2014-05-07 12:55
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -210,12 +210,75 @@ module Canis
       def key ch
         ch.getbyte(0)
       end
+      # returns a string representation of a given int keycode
+      # @param [Fixnum] keycode read by window
+      #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
+      #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
+      # @return [String] a string representation which is what is to be used when binding a key to an
+      #     action or Proc. This is close to what vimrc recognizes such as <CR> <C-a> a-zA-z0-9 <SPACE>
+      #     Hopefully it should be identical to what vim recognizes in the map command.
+      #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
+      #     needs to take care of that combination. FIXME some numbers are missing in between.
+      def key_tos ch # -- {{{
+        chr = case ch
+              when 10,13 , KEY_ENTER
+                "<CR>"
+              when 9 
+                "<TAB>"
+              when 0 
+                "<C-@>"
+              when 27
+                "<ESC>"
+              when 2727
+                "<ESC-ESC>"
+              when 31
+                "<C-/>"
+              when 1..30
+                x= ch + 96
+                "<C-#{x.chr}>"
+              when 32 
+                "<SPACE>"
+              when 41
+                "<M-CR>"
+              when 33..126
+                ch.chr
+              when 127,263 
+                "<BACKSPACE>"
+              when 128..154
+                x = ch - 128
+                #"<M-C-#{x.chr}>"
+                xx = key_tos(x).gsub(/[<>]/,"")
+                "<M-#{xx}>"
+              when 160..255
+                x = ch - 128
+                xx = key_tos(x).gsub(/[<>]/,"")
+                "<M-#{xx}>"
+              when 255
+                "<M-BACKSPACE>"
+              else
+
+                $log.debug "  ELSE 1399 -#{ch}- "
+                ch =  FFI::NCurses::keyname(ch) 
+                # remove those ugly brackets around function keys
+                if ch && ch[-1]==')'
+                  ch = ch.gsub(/[()]/,'')
+                end
+                if ch
+                  ch = ch.gsub("KEY_","")
+                  "<#{ch}>"
+                else
+                  "UNKNOWN:#{ch}"
+                end
+              end
+      end # --- }}}
+      # only for a short while till we weed it out.
+      alias :keycode_tos :key_tos
       # needs to move to a keystroke class
       # please use these only for printing or debugging, not comparing
       # I could soon return symbols instead 2010-09-07 14:14 
       # @deprecated
       # Please move to window.key_tos
-      def keycode_tos keycode # {{{
+      def ORIGkeycode_tos keycode # {{{
         $log.warn "XXX:  keycode_tos please move to window.key_tos"
         case keycode
         when 33..126
@@ -521,6 +584,7 @@ module Canis
             #puts "e is nil TODO "
             # TODO
             $log.debug "  -1  push #{unconsumed} " 
+            unconsumed.each {|e| window.ungetch(e)}
             return actions.last 
           else
             $log.debug  " in loop with #{e} "
@@ -530,6 +594,7 @@ module Canis
             # instead of just nil, we need to go back up, but since not recursive ...
             #return nil unless n
             $log.debug  "push #{unconsumed} " unless n
+            unconsumed.each {|e| window.ungetch(e)} unless n
             return actions.last unless n
             mp = n.map
             # there are no more keys, only an action
@@ -723,6 +788,8 @@ module Canis
             chr = ch.chr
           end
           blk = @_key_map[keycode]
+          # i am scrappaing this since i am once again complicating too much
+=begin
           # if blk then we found an exact match which supercedes any ranges, arrays and regexes
           unless blk
             @_key_map.each_pair do |k,p|
@@ -756,6 +823,7 @@ module Canis
               end
             end
           end
+=end
           # blk either has a proc or is nil
           # we still need to check for a complex map.  if none, then execute simple map.
           ret = check_composite_mapping(ch, window)
@@ -1549,7 +1617,7 @@ module Canis
       $error_message ||= Variable.new ""
 
       # what kind of key-bindings do you want, :vim or :emacs
-      $key_map ||= :vim ## :emacs or :vim, keys to be defined accordingly. TODO
+      $key_map_type ||= :vim ## :emacs or :vim, keys to be defined accordingly. TODO
 
       bind_key(KEY_F1, 'help') { hm = help_manager(); hm.display_help }
     end
@@ -3198,16 +3266,18 @@ module Canis
       when FFI::NCurses::KEY_RIGHT, FFI::NCurses::KEY_DOWN
         return :UNHANDLED
         #  @form.select_next_field
-      when FFI::NCurses::KEY_ENTER, 10, 13, 32  # added space bar also
+      # 2014-05-07 - 12:26 removed ENTER on buttons
+        #  CANIS : button only responds to SPACE, ENTER will only work on default button.
+      #when FFI::NCurses::KEY_ENTER, 10, 13, 32  # added space bar also
         # I am really confused about this. Default button really confuses things in some 
         # situations, but is great if you are not on the buttons.
         # shall we keep ENTER for default button
-      #when 32  # added space bar also
+      when 32  # added space bar also
         if respond_to? :fire
           fire
         end
       else
-        if $key_map == :vim
+        if $key_map_type == :vim
           case ch
           when ?j.getbyte(0)
             @form.window.ungetch(KEY_DOWN)
