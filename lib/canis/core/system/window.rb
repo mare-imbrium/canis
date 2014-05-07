@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-07 12:53
+#  Last update: 2014-05-07 16:19
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -811,12 +811,6 @@ module Canis
       @window = win
       @stack = []
     end
-    #  2011-09-23 @since 1.3.1
-    # Added more combinations here. These 2 are just indicative
-    SPECIAL_KEYS = {
-      [27, 79, 50, 81]              => 20014, #  'F14',
-      [27, 79, 50, 82]              => 20015 # 'F15',
-    }
 
     # return an int for the key read. this is just a single int, and is not interpreted
     # for control or function keys. it also will return -1 when no action.
@@ -827,57 +821,6 @@ module Canis
     end
 
 
-    # these should be read up from a file so program can update them for a user
-    # These codes were required when we were using stdin outside of ncurses, but ncurses
-    # gives us integer codes for these, and also deciphers function keys and arrow keys
-    #
-    # This hash is meantf for cases where Ncurses does not give a key or decipher, such as shift function keys
-    # and where possibly these differ across systems. In such cases, you may just enter the codes
-    # that the system generates as the key, and the value you want returned as the value.
-    # --- {{{
-=begin
-    $kh["OP"]="F1"
-    $kh["[A"]="UP"
-    $kh["[5~"]="PGUP"
-    $kh['']="ESCAPE"
-    KEY_PGDN="[6~"
-    KEY_PGUP="[5~"
-    ## I needed to replace the O with a [ for this to work
-    #  in Vim Home comes as ^[OH whereas on the command line it is correct as ^[[H
-    KEY_HOME='[H'
-    KEY_END="[F"
-    KEY_F1="OP"
-    KEY_UP="[A"
-    KEY_DOWN="[B"
-
-    $kh[KEY_PGDN]="PgDn"
-    $kh[KEY_PGUP]="PgUp"
-    $kh[KEY_HOME]="Home"
-    $kh[KEY_END]="End"
-    $kh[KEY_F1]="F1"
-    $kh[KEY_UP]="UP"
-    $kh[KEY_DOWN]="DOWN"
-    KEY_LEFT='[D' 
-    KEY_RIGHT='[C' 
-    $kh["OQ"]="F2"
-    $kh["OR"]="F3"
-    $kh["OS"]="F4"
-    $kh[KEY_LEFT] = "LEFT"
-    $kh[KEY_RIGHT]= "RIGHT"
-    KEY_F5='[15~'
-    KEY_F6='[17~'
-    KEY_F7='[18~'
-    KEY_F8='[19~'
-    KEY_F9='[20~'
-    KEY_F10='[21~'
-    $kh[KEY_F5]="F5"
-    $kh[KEY_F6]="F6"
-    $kh[KEY_F7]="F7"
-    $kh[KEY_F8]="F8"
-    $kh[KEY_F9]="F9"
-    $kh[KEY_F10]="F10"
-=end
-# --- }}}
     # testing out shift+Function. these are the codes my kb generates
     if File.exists? File.expand_path("~/ncurses-keys.yml")
       # a sample of this file should be available with this 
@@ -1026,22 +969,11 @@ module Canis
         $key_chr =  c.chr if c
         return c if c
     end
+
+
+
+
 =begin
-    @@keycode_hash = {
-      10 => "<CR>",
-      13 => "<CR>",
-      KEY_ENTER => "<CR>",
-      127 => "<BS>",
-      0 => "<C-@>",
-      32 => "<SPACE>",
-      8 => "<TAB>"
-    }
-=end
-
-
-
-
-
     # NOTE I cannot use this since we are not ready to take a string, that is a big decision that
     # requries a lot of work, and some decisions. We may bind using "<CR>" or "<C-d>" so 
     # maybe that's how we may need to send back
@@ -1129,7 +1061,8 @@ module Canis
           return c
         end
         return c.chr if c
-    end # -- ???
+    end # -- }}}
+=end
 
     # check buffer if some key mapped in global kh for this
     # Otherwise if it is 2 keys then it is a Meta key
