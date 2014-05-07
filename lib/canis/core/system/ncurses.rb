@@ -107,6 +107,8 @@ module Canis
     #  2012-01-8 
     $orig_cols = FFI::NCurses.COLS
     $orig_rows = FFI::NCurses.LINES
+    # cache of keycode (int) and string result
+    $key_cache ||= {}
   end
 
   # this should happen only in outermost program that started ncurses
