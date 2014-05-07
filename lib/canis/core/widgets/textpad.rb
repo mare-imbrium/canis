@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-05 20:38
+#  Last update: 2014-05-07 12:46
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1116,7 +1116,7 @@ module Canis
       bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
       bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward } 
       # adding CTRL_SPACE as back scroll 2014-04-14 
-      bind_keys([0,?\C-b,339]){ scroll_backward } 
+      bind_keys([0,?\C-b,339], "Scroll Backward"){ scroll_backward } 
       # the next one invalidates the single-quote binding for bookmarks
       #bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
