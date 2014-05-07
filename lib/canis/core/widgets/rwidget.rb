@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-07 12:55
+  * Last update: 2014-05-07 16:13
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -257,7 +257,6 @@ module Canis
                 "<M-BACKSPACE>"
               else
 
-                $log.debug "  ELSE 1399 -#{ch}- "
                 ch =  FFI::NCurses::keyname(ch) 
                 # remove those ugly brackets around function keys
                 if ch && ch[-1]==')'
