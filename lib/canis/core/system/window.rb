@@ -4,12 +4,12 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-06 23:48
+#  Last update: 2014-05-07 12:53
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
 #     - replaced getchar with new simpler one - 2014-05-04
-#     - introduced key_tos to replace keycode_tos
+#     - introduced key_tos to replace keycode_tos, moved to Util in rwidget.rb
 #     - reintroduced nedelay and reduced escdelay
 #
 # == TODO
@@ -80,7 +80,8 @@ module Canis
       $error_message_col ||= 1 # ask (bottomline) uses 0 as default so you can have mismatch. XXX
       $status_message ||= Canis::Variable.new # in case not an App
 
-      $key_map ||= :vim
+      # 2014-05-07 - 12:29 CANIS earlier this was called $key_map but that suggests a map.
+      $key_map_type ||= :vim
       $esc_esc = true; # gove me double esc as 2727 so i can map it.
       init_vars
 
@@ -790,66 +791,6 @@ module Canis
       @key_reader = DefaultKeyReader.new self
     end
 
-    # returns a string representation of a given int keycode
-    # @param [Fixnum] keycode read by window
-    #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
-    #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
-    # @return [String] a string representation which is what is to be used when binding a key to an
-    #     action or Proc. This is close to what vimrc recognizes such as <CR> <C-a> a-zA-z0-9 <SPACE>
-    #     Hopefully it should be identical to what vim recognizes in the map command.
-    #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
-    #     needs to take care of that combination. FIXME some numbers are missing in between.
-    def key_tos ch # -- {{{
-      chr = case ch
-            when 10,13 , KEY_ENTER
-              "<CR>"
-            when 9 
-              "<TAB>"
-            when 0 
-              "<C-@>"
-            when 27
-              "<ESC>"
-            when 2727
-              "<ESC-ESC>"
-            when 31
-              "<C-/>"
-            when 1..30
-              x= ch + 96
-              "<C-#{x.chr}>"
-            when 32 
-              "<SPACE>"
-            when 41
-              "<M-CR>"
-            when 33..126
-              ch.chr
-            when 127,263 
-              "<BACKSPACE>"
-            when 128..154
-              x = ch - 128
-              #"<M-C-#{x.chr}>"
-              xx = key_tos(x).gsub(/[<>]/,"")
-              "<M-#{xx}>"
-            when 160..255
-              x = ch - 128
-              xx = key_tos(x).gsub(/[<>]/,"")
-              "<M-#{xx}>"
-            when 255
-              "<M-BACKSPACE>"
-            else
-
-              $log.debug "  ELSE 1399 -#{ch}- "
-              ch =  FFI::NCurses::keyname(ch) 
-              # remove those ugly brackets around function keys
-              if ch && ch[-1]==')'
-                ch = ch.gsub(/[()]/,'')
-              end
-              if ch
-                ch
-              else
-                "UNKNOWN:#{ch}"
-              end
-            end
-    end # --- }}}
 
   end # window
 
@@ -979,7 +920,7 @@ module Canis
         $key_int = c
         # handle control codes 0 to 127 but not escape
         if cn >= 0 && cn < 128 && cn != 27
-          $key_chr = @window.key_tos(c)
+          $key_chr = key_tos(c)
           return c
         end
         
@@ -1026,7 +967,7 @@ module Canis
               if k > 255
                 $log.warn "getchar: window.rb 1247 Found no mapping for #{buff} #{k} "
                 # this contains ESc followed by a high number
-                ka = @window.key_tos(k)
+                ka = key_tos(k)
                 if ka
                   $key_chr = "<M-" + ka[1..-1]
                   $key_int = k + 128
@@ -1129,7 +1070,7 @@ module Canis
         #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
         $key_int = c
         if cn >= 0 && cn < 128 && cn != 27
-          $key_chr = @window.key_tos(c)
+          $key_chr = key_tos(c)
           return $key_chr
         end
         
@@ -1216,7 +1157,7 @@ module Canis
         k = buff[-1]
         $key_int = 128 + k.ord
         return "<M-BACKSPACE>" if $key_int == 255
-        xx = @window.key_tos(k.ord).gsub(/[<>]/,"")
+        xx = key_tos(k.ord).gsub(/[<>]/,"")
         $log.debug "  xx is #{xx} "
         return "<M-#{xx}>"
         #return "<M-#{k.chr}>"
