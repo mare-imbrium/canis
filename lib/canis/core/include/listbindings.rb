@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-27 16:53
+#  Last update: 2014-05-07 12:33
 # ----------------------------------------------------------------------------- #
 #
 module Canis
@@ -25,7 +25,7 @@ module Canis
 
       # this allows us to set on a component basis, or global basis
       # Motivation was mainly for textarea which needs emacs keys
-      kmap = @key_map || $key_map || :both
+      kmap = $key_map_type || :both
       if kmap == :emacs || kmap == :both
         bind_key(?\C-v, 'scroll forward'){ scroll_forward }
         # clashes with M-v for toggle one key selection, i guess you can set it as you like
