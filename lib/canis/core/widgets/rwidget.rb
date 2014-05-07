@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-07 16:13
+  * Last update: 2014-05-07 20:15
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -219,7 +219,10 @@ module Canis
       #     Hopefully it should be identical to what vim recognizes in the map command.
       #     If the key is not known to this program it returns "UNKNOWN:key" which means this program
       #     needs to take care of that combination. FIXME some numbers are missing in between.
+      # NOTE do we really need to cache everything ? Only the computed ones should be cached ?
       def key_tos ch # -- {{{
+        x = $key_cache[ch]
+        return x if x
         chr = case ch
               when 10,13 , KEY_ENTER
                 "<CR>"
@@ -229,8 +232,6 @@ module Canis
                 "<C-@>"
               when 27
                 "<ESC>"
-              when 2727
-                "<ESC-ESC>"
               when 31
                 "<C-/>"
               when 1..30
@@ -255,20 +256,24 @@ module Canis
                 "<M-#{xx}>"
               when 255
                 "<M-BACKSPACE>"
+              when 2727
+                "<ESC-ESC>"
               else
 
-                ch =  FFI::NCurses::keyname(ch) 
+                chs =  FFI::NCurses::keyname(ch) 
                 # remove those ugly brackets around function keys
-                if ch && ch[-1]==')'
-                  ch = ch.gsub(/[()]/,'')
+                if chs && chs[-1]==')'
+                  chs = chs.gsub(/[()]/,'')
                 end
-                if ch
-                  ch = ch.gsub("KEY_","")
-                  "<#{ch}>"
+                if chs
+                  chs = chs.gsub("KEY_","")
+                  "<#{chs}>"
                 else
                   "UNKNOWN:#{ch}"
                 end
               end
+        $key_cache[ch] = chr
+        return chr
       end # --- }}}
       # only for a short while till we weed it out.
       alias :keycode_tos :key_tos
