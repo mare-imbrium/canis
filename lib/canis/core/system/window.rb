@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-07 16:19
+#  Last update: 2014-05-07 19:38
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -851,7 +851,11 @@ module Canis
     # Read a char from the window (from user) and returns int code.
     # In some cases, such as codes entered in the $kh hash, we do not yet have a keycode defined
     # so we return 9999 and the user can access $key_chr.
+    #
+    # NOTE: Do not convert to string, that is doing two things. Allow user to convert if required using 
+    # `key_tos`
     def getchar
+      $key_chr = nil
         c = nil
         while true
           c = self.getch
@@ -859,11 +863,10 @@ module Canis
         end
     
         cn = c
-        #return FFI::NCurses::keyname(c)  if [10,13,127,0,32,8].include? c
         $key_int = c
         # handle control codes 0 to 127 but not escape
         if cn >= 0 && cn < 128 && cn != 27
-          $key_chr = key_tos(c)
+          #$key_chr = key_tos(c)
           return c
         end
         
@@ -909,7 +912,10 @@ module Canis
               # FIXME next lne crashes if M-C-h pressed which gives 263
               if k > 255
                 $log.warn "getchar: window.rb 1247 Found no mapping for #{buff} #{k} "
+                $key_int = k + 128
+                return $key_int
                 # this contains ESc followed by a high number
+=begin
                 ka = key_tos(k)
                 if ka
                   $key_chr = "<M-" + ka[1..-1]
@@ -919,6 +925,7 @@ module Canis
                   $key_chr = "UNKNOWN: Meta + #{k}"
                   return 9999
                 end
+=end
               end
 
               buff += k.chr
@@ -935,7 +942,7 @@ module Canis
               end
               #$log.debug "XXX:  getchar adding #{k}, #{k.chr} to buff #{buff} "
             else
-              $log.debug "  GOT -1 in escape "
+              #$log.debug "  GOT -1 in escape "
               # it is -1 so evaluate
               x = _evaluate_buff buff
               $key_chr = x if x
@@ -950,6 +957,7 @@ module Canis
         # what if keyname does not return anything
         if c > 127
           #$log.info "xxxgetchar: window.rb sending #{c} "
+=begin
           ch =  FFI::NCurses::keyname(c) 
           # remove those ugly brackets around function keys
           if ch && ch[-1]==')'
@@ -963,14 +971,22 @@ module Canis
           $key_chr = ch if ch
           $key_chr = "UNKNOWN:#{c}" unless ch
           $log.warn "getchar: window.rb 1234 Found no mapping for #{c} " unless ch
+=end
+          #$key_chr = key_tos(ch)
           return c
         end
-        #return c.chr if c
-        $key_chr =  c.chr if c
-        return c if c
+        if c
+          #$key_chr =  c.chr 
+          return c 
+        end
     end
 
 
+    def getchar_as_char
+      $key_int = getchar
+      $key_chr = key_tos( $key_int )
+      return $key_chr
+    end
 
 
 =begin
@@ -1064,22 +1080,39 @@ module Canis
     end # -- }}}
 =end
 
+    # Generate and return an int for a newkey which user has specified in yml file.
+    # We use hash, which won't allow me to derive key string 
+    # in case loop user can do:
+    #    when KEY_ENTER
+    #    when 32
+    #    when $kh_int["S-F2"]
+    def _get_int_for_newkey x
+      # FIXME put the declaration somewhere else maybe in window cons ???
+      $kh_int ||= Hash.new {|hash, key| hash[key] = key.hash }
+      y = $kh_int[x]
+      # when i give user the hash, he can get the string back ???
+      $kh_int[y] = x unless $kh_int.key? y
+      return y
+    end
     # check buffer if some key mapped in global kh for this
     # Otherwise if it is 2 keys then it is a Meta key
     # Can return nil if no mapping
+    # @return [String] string code for key (since it is mostly from $kh. Also sets, $key_int
     private
     def _evaluate_buff buff
       if buff == 27.chr
         $key_int = 27
-        $escend = Time.now.to_f
-        elapsed = ($escend - $escstart)*1000
-        $log.debug " #{elapsed} evaluated to ESC"
+        #$escend = Time.now.to_f
+        #elapsed = ($escend - $escstart)*1000
+        #$log.debug " #{elapsed} evaluated to ESC"
         $key_chr = "<ESC>"
         return $key_chr
       end
       x=$kh[buff]
       if x
         $key_int = 9999
+        $key_int = _get_int_for_newkey(x)
+        $key_cache[$key_int] = x unless $key_cache.key? $key_int
         # FIXME currently 9999 signifies unknown key, but since this is derived from a user list
         #   we could have some dummy number being passed or set by user too.
         return "<#{x}>"
@@ -1089,11 +1122,7 @@ module Canis
         ## possibly a meta/alt char
         k = buff[-1]
         $key_int = 128 + k.ord
-        return "<M-BACKSPACE>" if $key_int == 255
-        xx = key_tos(k.ord).gsub(/[<>]/,"")
-        $log.debug "  xx is #{xx} "
-        return "<M-#{xx}>"
-        #return "<M-#{k.chr}>"
+        return key_tos( $key_int )
       end
       $key_int = 99999
       nil
