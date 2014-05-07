@@ -174,13 +174,13 @@ App.new do
   label({:text => "F1 Help, F10 Quit. : for menu. Press F4 and F5 to test popup, v to select", :row => Ncurses.LINES-1, :col => 0, :name => 'lab'})
 
   @form.bind(:RESIZE) { resize() }
-  @form.bind_key(FFI::NCurses::KEY_F4) { row = lb.visual_index+lb.row; col=lb.col+lb.current_value.length+1;  
+  @form.bind_key(FFI::NCurses::KEY_F4, "Popup") { row = lb.visual_index+lb.row; col=lb.col+lb.current_value.length+1;  
                                          
                                          row = [row, FFI::NCurses.LINES - 8].min
                                          ret = popuplist(%w[ chopin berlioz strauss tchaiko matz beethoven], :row => row, :col => col, :title => "Names", :bgcolor => :blue, :color => :white) ; alert "got #{ret} "}
 
-  @form.bind_key(FFI::NCurses::KEY_F5) {  list = %x[ls].split("\n");ret = popuplist(list, :title => "Files"); alert "Got #{ret} #{list[ret]} " }
+  @form.bind_key(FFI::NCurses::KEY_F5, "Popup") {  list = %x[ls].split("\n");ret = popuplist(list, :title => "Files"); alert "Got #{ret} #{list[ret]} " }
 
-  @form.bind_key(?:) { disp_menu; 
+  @form.bind_key(?:, "Menu") { disp_menu; 
   }
 end # app
