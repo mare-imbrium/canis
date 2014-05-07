@@ -13,6 +13,8 @@ if $0 == __FILE__
   include Canis
   include Canis::Utils
 
+  dumpfile = "dump.yml"
+
   begin
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
@@ -62,6 +64,20 @@ if $0 == __FILE__
         str1 = $key_chr
         $log.debug  "#{ch} got (#{str} #{str1})"
         texta << "#{ch} got (#{str}) #{str1}"
+        if ch == 99999
+          name = get_string "Add a name for #{$key_chr}?"
+          if name
+            texta << "setting #{name} for #{str1} "
+            $kh[str1] = name
+            _name = $kh[str1]
+            texta << "set #{_name} for #{str1} "
+            $kh.each_pair { |name, val| $log.debug " MMMAP #{name} : #{val}" }
+            File.open(dumpfile, 'w' ) do |f|
+              f << YAML::dump($kh)
+            end
+            texta << "Written new keys to #{dumpfile}. Pls copy over ~/ncurses-keys.yml"
+          end
+        end
         texta.goto_end
         texta.repaint
         @form.repaint
