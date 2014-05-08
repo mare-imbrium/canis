@@ -5,12 +5,14 @@
           This is not a form. Thus it can be safely placed as a widget
           without all the complicatinos of a form embedded inside another.
 NOTE: Still experimental
+
+TODO : make it only do layout, not behave like a container.
   * Description   
   * Author: rkumar (http://github.com/rkumar/rbcurse/)
   * Date:  23.10.11 - 19:55
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  2014-05-08 00:21
+  * Last update:  2014-05-08 01:01
 
   == CHANGES
      Have moved most things out to a module ModStack, so this is sort of just 
@@ -56,10 +58,8 @@ module RubyCurses
     attr_reader  :components
 
     def initialize form=nil, config={}, &block
-      @suppress_borders = false
       @row_offset = @col_offset = 1
-      @_events ||= []
-      @focusable = true
+      @focusable = false
       @editable = false
       @components = [] # all components
       @focusables = [] # focusable components, makes checks easier
@@ -70,14 +70,9 @@ module RubyCurses
     end
     def init_vars
       @repaint_required = true
-      @row_offset = @col_offset = 0 if @suppress_borders 
       @ctr = 0
 
-      @internal_width = 2
-      @internal_width = 1 if @suppress_borders
       @name ||= "a_stackflow"
-      bind_key(?\M-1, :increase_current)
-      bind_key(?\M-2, :decrease_current)
       #raise "NO components !" if @components.empty?
       calc_weightages2(@components, self) # FIXME this needs to move to basestack
 
@@ -96,23 +91,24 @@ module RubyCurses
       items.each do |c|  
         raise ArgumentError, "Nil component passed to add" unless c
         if c.is_a? Widget
+          c.set_form @form unless c.form
           if c.form && c.form != @form
-            $log.debug " removing widget VIMSPLIT #{c.class} wr:  #{c.row} row:#{@row} ht:#{@height} "
-            c.form.remove_widget c
-            c.form = nil
+            #$log.debug " removing widget VIMSPLIT #{c.class} wr:  #{c.row} row:#{@row} ht:#{@height} "
+            #c.form.remove_widget c
+            #c.form = nil
             # or should i just stack them myself and screw what you've asked for
           end
           # take it out of form's control. We will control it.
-          if c.form
-            c.form.remove_widget c
-          end
+          #if c.form
+            #c.form.remove_widget c
+          #end
           # shoot, what if at this point the container does not have a form
-          attach_form c if @form
+          #attach_form c if @form
         end
         # most likely if you have created both container and widgets
         # inside app, it would have given row after container
 
-        #@components << c
+        @components << c
         if c.focusable
           @focusables << c 
           @current_component ||= c # only the first else cursor falls on last on enter
@@ -207,6 +203,7 @@ module RubyCurses
     def check_coords e  # container
       r = e.row
       c = e.col
+      $log.debug "  check_coords for #{e}. r:#{e.row} , h:#{e.height} , c:#{e.col} , w:#{e.width} "
       if r >= @row + @height
         $log.warn "XXX: WARN #{e.class} is out of bounds row #{r} "
         e.visible = false
