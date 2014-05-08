@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-04-23 19:35
+#  Last update: 2014-05-08 13:10
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -28,7 +28,6 @@
 # Or is it positioning, such as in a stack. or just a method ?
 #require 'canis/core/widgets/rlist'
 ## trying out new list based on textpad 2014-04-07 - 00:02 CANIS
-require 'canis/core/widgets/listbox'
 module Canis
   module WidgetShortcuts
     class Ws
@@ -52,6 +51,7 @@ module Canis
       @_ws_components = []
       @variables = {}
     end
+    # --- shortcuts {{{
     def blank
       label :text => ""
     end
@@ -175,6 +175,7 @@ module Canis
     # deprecate and move textview soon TODO
     alias :textview :textpad
     def listbox config={}, &block
+      require 'canis/core/widgets/listbox'
       events = [ :PRESS, :ENTER_ROW, :LEAVE, :ENTER ]
       block_event = events[0]
       #_process_args args, config, block_event, events
@@ -304,6 +305,8 @@ module Canis
       end
       return w
     end
+
+    # --- }}}
     def _position w
       if @_ws_active.nil? || @_ws_active.empty?
         # no stack or flow, this is independent usage, or else we are outside stacks and flows
