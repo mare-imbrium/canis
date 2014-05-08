@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-07 20:15
+  * Last update: 2014-05-09 00:03
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1585,6 +1585,12 @@ module Canis
     # name given to form for debugging
     attr_accessor :name 
 
+    # signify that the layout manager must calculate each widgets dimensions again since 
+    # typically the window has been resized.
+    attr_accessor :resize_required
+    # class that lays out objects (calculates row, col, width and height)
+    attr_accessor :layout_manager
+
     def initialize win, &block
       @window = win
       # added 2014-05-01 - 20:43 so that a window can update its form, during overlapping forms.
@@ -1594,6 +1600,7 @@ module Canis
       @active_index = -1
       @row = @col = -1
       @modified = false
+      @resize_required = true
       @focusable = true
       # when widgets are added, add them here if focusable so traversal is easier. However,
       #  if user changes this during the app, we need to update this somehow. FIXME
@@ -1691,6 +1698,10 @@ module Canis
    # called after each keypress.
     def repaint
       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
+      if @resize_required && @layout_manager
+        @layout_manager.do_layout
+        @resize_required = false
+      end
       @widgets.each do |f|
         next if f.visible == false # added 2008-12-09 12:17 
         #$log.debug "XXX: FORM CALLING REPAINT OF WIDGET #{f} IN LOOP"
