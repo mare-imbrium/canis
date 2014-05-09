@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-07 12:46
+#  Last update: 2014-05-09 15:13
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -136,6 +136,14 @@ module Canis
     end
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
+    end
+    def height=(val)
+      super
+      fire_dimension_changed
+    end
+    def width=(val)
+      super
+      fire_dimension_changed
     end
 # ---- Section initialization end ----- }}}
 # ---- Section pad related start ----------- {{{
