@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-09 - 17:15
 #      License: MIT
-#  Last update: 2014-05-09 19:57
+#  Last update: 2014-05-09 20:38
 # ----------------------------------------------------------------------------- #
 #  abstractlayout.rb  Copyright (C) 2012-2014 j kepler
 
@@ -69,8 +69,20 @@ class AbstractLayout
     @item_config[item].merge( config )
     self
   end
-  def cfg item, key
+  # return the config value for a key for an item.
+  # The keys are decided by the layout manager itself, such as :weight.
+  # @param [Widget] item for which some attribute is required
+  # @param [Symbol, String] the key
+  def cget item, key
     return @item_config[item][key]
+  end
+
+  # set a value for an item and key
+  # This is similar to configure_item which takes multiple pairs ( a hash).
+  # I am seeing which will be more useful.
+  def cset item, key, val
+    @item_config[item][key] = val
+    self
   end
 
 
@@ -81,8 +93,7 @@ class AbstractLayout
   def add_with_weight item, weight
     @components ||= []
     @components << item
-    @wts ||= {}
-    @wts[item] = weight
+    cfg[item][:weight] = weight
   end
 
   # remove given item from components list
