@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 23:34
 #      License: MIT
-#  Last update: 2014-05-09 00:48
+#  Last update: 2014-05-09 12:48
 # ----------------------------------------------------------------------------- #
 
 if __FILE__ == $PROGRAM_NAME
@@ -32,6 +32,8 @@ if __FILE__ == $PROGRAM_NAME
     layout = StackLayout.new :height => -1, :top_margin => 1, :bottom_margin => 1, :left_margin => 1
     layout.form = @form
     @form.layout_manager = layout
+    layout.weightage lb, 7
+    #layout.weightage lb1, 9
     #$status_message.value =" Flow: #{@r.components[0].orientation} | Stack #{@r.components[1].orientation}. Use Ctrl-Space to change "
 
 
