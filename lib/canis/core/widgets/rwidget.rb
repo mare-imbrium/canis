@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-09 00:03
+  * Last update: 2014-05-09 15:35
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1699,6 +1699,7 @@ module Canis
     def repaint
       $log.debug " form repaint:#{self}, #{@name} , r #{@row} c #{@col} " if $log.debug? 
       if @resize_required && @layout_manager
+        @layout_manager.form = self unless @layout_manager.form
         @layout_manager.do_layout
         @resize_required = false
       end
@@ -2150,11 +2151,19 @@ module Canis
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
           y = Ncurses.stdscr.getmaxx
-          $log.debug " form RESIZE HK #{ch} #{self}, #{@name}, #{ch}, x #{x} y #{y}  "
+          $log.debug " form RESIZE HK #{ch} #{self}, #{@name}, #{ch}, x #{x} y #{y}  lines #{lines} , cols: #{cols} "
           #alert "SIGWINCH WE NEED TO RECALC AND REPAINT resize #{lines}, #{cols}: #{x}, #{y} "
+
+          # next line may be causing flicker, can we do without.
           Ncurses.endwin
           @window.wrefresh
-          @widgets.each { |e| e.repaint_all(true) } # trying out
+          @window.wclear
+          if @layout_manager
+            @layout_manager.do_layout
+            # we need to redo statusline and others that layout ignores
+          else
+            @widgets.each { |e| e.repaint_all(true) } # trying out
+          end
           ## added RESIZE on 2012-01-5 
           ## stuff that relies on last line such as statusline dock etc will need to be redrawn.
           fire_handler :RESIZE, self 
