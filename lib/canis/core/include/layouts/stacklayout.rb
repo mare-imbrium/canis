@@ -4,93 +4,41 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 18:33
 #      License: MIT
-#  Last update: 2014-05-09 14:11
+#  Last update: 2014-05-09 19:58
 # ----------------------------------------------------------------------------- #
 #  stacklayout.rb  Copyright (C) 2012-2014 j kepler
-#
-# TODO move some of this to a basic, abstract Layout class
+require 'canis/core/include/layouts/abstractlayout'
 #  ---- 
 #  This does a simple stacking of objects. Or all objects.
 #  Some simple layout managers may not require objects to be passed to
 #  it, others that are complex may require the same.
-class StackLayout
-  attr_accessor :form
-  # top and left are actually row and col in widgets
-  attr_accessor :top_margin, :left_margin, :right_margin, :bottom_margin
-  # if width percent is given, then it calculates and overwrites width. Same for height_pc
-  attr_accessor :width, :height, :width_pc, :height_pc
-  # gp between objects
-  attr_accessor :gap
-  attr_accessor :components
+class StackLayout < AbstractLayout
+
+  # @param [Form]  optional give a form      
+  # @param [Hash]  optional give settings/attributes which will be set into variables
   def initialize arg, config={}, &block
-    @width = @height = 0
-    @top_margin = @left_margin = @right_margin = @bottom_margin = 0
-    # weightages of each object
     @wts = {}
-    if arg.is_a? Hash
-      @config = arg
-    else
-      @arg = arg
-    end
-    @gap = 0
-    @config.each_pair { |k,v| instance_variable_set("@#{k}",v) }
-    #@ignore_list = [Canis::StatusLine, Canis::ApplicationHeader]
-    @ignore_list = ["canis::statusline", "canis::applicationheader"]
-    instance_eval &block if block_given?
+    super
   end
-  def add *items
-    @components ||= []
-    @components.push items
-  end
-  # if wt is >= 1 then it is absolute height, else if between 0 and 1 ,
-  # it is a percentage.
-  def add_with_weight item, weight
-    @components ||= []
-    @components << item
-    @wts ||= {}
-    @wts[item] = weight
-  end
+
+
   # in case user does not wish to add objects, but wishes to specify the weightage on one,
   # send in the widget and its weightage.
   #
+  # @param [Widget] widget whose weightage is to be specified
+  # @param [Float, Fixnum] weightage for the given widget (@see add_with_weight)
   def weightage item, wt
     @wts[item] = wt
   end
 
-  def remove item
-    @components.remeove item
-  end
-  def clear
-    @components.clear
-  end
 
+  # This program lays out the widgets deciding their row and columm and height and weight.
+  # This program is called once at start of application, and again whenever a RESIZE event happens.
   def do_layout
-    $log.debug "  inside do_layout"
+    _init_layout
     r = @top_margin
-    @saved_width ||= @width
-    @saved_height ||= @height
-
-    lines = Ncurses.LINES - 1
-    columns = Ncurses.COLS - 1
     c = @left_margin
-    if @height_pc
-      # FIXME calc the percentage
-      @height = lines - @top_margin - @bottom_margin
-    elsif @saved_height <= 0
-      @height = lines - @saved_height - @top_margin - @bottom_margin
-    end
-    $log.debug "  layout height = #{@height} "
-    if @width_pc
-      # FIXME calc the percentage
-      @width = columns - @left_margin - @right_margin
-    elsif @saved_width <= 0
-      # if width was -1 we have overwritten it so now we cannot recalc it. it remains the same
-      @width = columns - @saved_width - @left_margin - @right_margin
-    end
-    $log.debug "  layout wid = #{@width} "
-    # if user has not specified, then get all the objects
-    @components ||= @form.widgets.select do |w| w.visible != false && !@ignore_list.include?(w.class.to_s.downcase); end
-    $log.debug "  components #{@components.count} "
+    #
     # determine fixed widths and how much is left to share with others,
     # and how many variable width components there are.
     ht = 0   # accumulate fixed height
