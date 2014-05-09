@@ -4,23 +4,28 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 18:33
 #      License: MIT
-#  Last update: 2014-05-09 00:51
+#  Last update: 2014-05-09 14:11
 # ----------------------------------------------------------------------------- #
 #  stacklayout.rb  Copyright (C) 2012-2014 j kepler
 #
 # TODO move some of this to a basic, abstract Layout class
+#  ---- 
 #  This does a simple stacking of objects. Or all objects.
 #  Some simple layout managers may not require objects to be passed to
 #  it, others that are complex may require the same.
 class StackLayout
   attr_accessor :form
+  # top and left are actually row and col in widgets
   attr_accessor :top_margin, :left_margin, :right_margin, :bottom_margin
+  # if width percent is given, then it calculates and overwrites width. Same for height_pc
   attr_accessor :width, :height, :width_pc, :height_pc
+  # gp between objects
   attr_accessor :gap
   attr_accessor :components
   def initialize arg, config={}, &block
     @width = @height = 0
     @top_margin = @left_margin = @right_margin = @bottom_margin = 0
+    # weightages of each object
     @wts = {}
     if arg.is_a? Hash
       @config = arg
@@ -45,6 +50,12 @@ class StackLayout
     @wts ||= {}
     @wts[item] = weight
   end
+  # in case user does not wish to add objects, but wishes to specify the weightage on one,
+  # send in the widget and its weightage.
+  #
+  def weightage item, wt
+    @wts[item] = wt
+  end
 
   def remove item
     @components.remeove item
@@ -56,17 +67,25 @@ class StackLayout
   def do_layout
     $log.debug "  inside do_layout"
     r = @top_margin
+    @saved_width ||= @width
+    @saved_height ||= @height
+
+    lines = Ncurses.LINES - 1
+    columns = Ncurses.COLS - 1
     c = @left_margin
     if @height_pc
-      @height = Ncurses.LINES - @top_margin - @bottom_margin
-    elsif @height <= 0
-      @height = Ncurses.LINES - @height - @top_margin - @bottom_margin
+      # FIXME calc the percentage
+      @height = lines - @top_margin - @bottom_margin
+    elsif @saved_height <= 0
+      @height = lines - @saved_height - @top_margin - @bottom_margin
     end
     $log.debug "  layout height = #{@height} "
     if @width_pc
-      @width = Ncurses.COLS - @left_margin - @right_margin
-    elsif @width <= 0
-      @width = Ncurses.COLS - @height - @left_margin - @right_margin
+      # FIXME calc the percentage
+      @width = columns - @left_margin - @right_margin
+    elsif @saved_width <= 0
+      # if width was -1 we have overwritten it so now we cannot recalc it. it remains the same
+      @width = columns - @saved_width - @left_margin - @right_margin
     end
     $log.debug "  layout wid = #{@width} "
     # if user has not specified, then get all the objects
@@ -96,12 +115,14 @@ class StackLayout
       end
     end
     unaccounted = @components.count - (fixed_ctr + var_ctr)
-    $log.debug "  unacc #{unaccounted} , fixed #{fixed_ctr} , var : #{var_ctr} "
+    $log.debug "  unacc #{unaccounted} , fixed #{fixed_ctr} , var : #{var_ctr} , ht #{ht} height #{@height}  "
     balance_ht = @height - ht # use this for those who have specified a %
     balance_ht1 = balance_ht * (1 - var_wt )
     average_ht = (balance_ht1 / unaccounted).floor # give this to those who have not specified ht
+    average_ht = (balance_ht1 / unaccounted) # give this to those who have not specified ht
     $log.debug "  #{balance_ht} , #{balance_ht1} , #{average_ht} "
     # not accounted for gap in heights
+    rem = 0 # remainder to be carried over
     @components.each do |e|
       $log.debug "  looping 2 #{e.name} #{e.class.to_s.downcase} "
       next if @ignore_list.include? e.class.to_s.downcase
@@ -118,6 +139,15 @@ class StackLayout
       else
         # no wt specified, give average of balance wt
         e.height = average_ht
+        hround = e.height.floor
+
+        rem += e.height - hround
+        e.height = hround
+        # see comment in prev block regarding remaininder
+        if rem >= 1
+          e.height += 1
+          rem = 0
+        end
       end
       $log.debug "  layout #{e.name} , h: #{e.height} r: #{e.row} , c = #{e.col} "
 
