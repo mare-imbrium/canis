@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 23:34
 #      License: MIT
-#  Last update: 2014-05-09 12:48
+#  Last update: 2014-05-09 15:51
 # ----------------------------------------------------------------------------- #
 
 if __FILE__ == $PROGRAM_NAME
@@ -29,7 +29,8 @@ if __FILE__ == $PROGRAM_NAME
 
     w = Ncurses.COLS-1
     h = Ncurses.LINES-3
-    layout = StackLayout.new :height => -1, :top_margin => 1, :bottom_margin => 1, :left_margin => 1
+    #layout = StackLayout.new :height => -1, :top_margin => 1, :bottom_margin => 1, :left_margin => 1
+    layout = StackLayout.new :height_pc => 1.0, :top_margin => 1, :bottom_margin => 1, :left_margin => 1
     layout.form = @form
     @form.layout_manager = layout
     layout.weightage lb, 7
