@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-10 - 13:48
 #      License: MIT
-#  Last update: 2014-05-10 19:10
+#  Last update: 2014-05-10 20:19
 # ----------------------------------------------------------------------------- #
 #  SplitLayout.rb  Copyright (C) 2012-2014 j kepler
 #  ---- 
@@ -38,7 +38,8 @@
 #  
 class Split
 
-  attr_accessor :component
+  attr_reader :component
+  attr_accessor :name
   attr_reader :splits
   attr_accessor :height, :width, :top, :left
   # link to parent
@@ -53,27 +54,35 @@ class Split
     @weight = weight
     @parent = parent
   end
-  def _split type, args
+  def _split type, args, &block
     @split_wts = args
     @splits = []
     args.each do |e|
       @splits << Split.new(type, e, self)
     end
     if block_given?
-      yield @splits 
+      yield @splits.flatten
     else
       return @splits.flatten
     end
   end
-  def split *args
-    _split :h, args
+  def split *args, &block
+    _split :h, args, &block
   end
-  def vsplit *args
-    _split :v, args
+  def vsplit *args, &block
+    _split :v, args, &block
   end
 
+  # Set a component into a split.
+  # set name of component as name of split, more for debugging
+  def component=(c)
+    @component = c
+    @name = c.name || c.class.to_s
+  end
+
+  # shorthand to place a component in a split.
+  alias :<< :component=
 end
-
 
 
   
@@ -86,31 +95,27 @@ class SplitLayout < AbstractLayout
     super
     @splits = nil
   end
-  def _split type, args
+  def _split type, args, &block
     @splits = []
     @split_wts = args
-    $log.debug "  _SPLIT GOT #{args} "
     args.each do |e|
-      $log.debug "  creating with #{e} "
       @splits << Split.new(type, e, self)
-      $log.debug "  CURRENTLY COUNT is  #{@splits.count} "
     end
     if block_given?
-      yield @splits 
+      yield @splits.flatten
     else
-      $log.debug "  RETURNING #{@splits.count} "
       return @splits.flatten
     end
   end
 
-  def split *args
+  def split *args, &block
     raise "already split " if @splits
-    _split :h, args
+    _split :h, args, &block
   end
-  def vsplit *args
+  def vsplit *args, &block
     raise "already split " if @splits
     $log.debug "  SPLIT GOT #{args} "
-    _split :v, args
+    _split :v, args, &block
   end
   alias :top :top_margin
   alias :left :left_margin
@@ -125,7 +130,8 @@ class SplitLayout < AbstractLayout
     $log.debug "  layout finished "
   end
   def recalc splits, r, c
-    splits.each do |s|
+    splits.each_with_index do |s,i|
+      $log.debug "  recalc #{i}, #{s} "
       p = s.parent
       s.top = r
       s.left = c
@@ -147,7 +153,7 @@ class SplitLayout < AbstractLayout
       elsif s.splits
         recalc s.splits, s.top, s.left if s.splits
       else
-        raise "Neither splits nor a component placed in #{s} "
+        raise "Neither splits nor a component placed in #{s} #{s.type}, #{s.weight} #{s.name}"
       end
     end
 
