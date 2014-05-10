@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-09 15:13
+#  Last update: 2014-05-10 19:07
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -106,6 +106,7 @@ module Canis
       #@height = @height.ifzero(FFI::NCurses.LINES)
       #@width = @width.ifzero(FFI::NCurses.COLS)
       # FIXME rows calculated only once, so if height changes then row not calculated onless we call this again.
+      raise " CALC inside #{@name} h or w is nil #{@height} , #{@width} " if @height.nil? or @width.nil?
       @rows = @height
       @cols = @width
       # NOTE XXX if cols is > COLS then padrefresh can fail
