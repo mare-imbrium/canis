@@ -14,3 +14,7 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
 - Added ButtonGroup for RadioButtons.
 - removed Bottomline and enhanced rcommandline instead
 
+2014-05-09 - 22:23 
+
+- introduced layouts. Now a user can hardcode locations of widgets or use a layout
+  to do the same. A layout is able to handle a resize of the screen.
