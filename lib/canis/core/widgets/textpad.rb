@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 10:26
+#  Last update: 2014-05-12 20:45
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1067,6 +1067,8 @@ module Canis
       print_foot if @repaint_footer_required  # if still not done
 
       padrefresh
+      # in some cases next line prevents overlapped window from refreshing again, leaving black rows.
+      # removing it causes problems in other cases. (tasks.rb, confirm window. dbdemo, F2 closing)
       Ncurses::Panel.update_panels
       @repaint_required = false
       @repaint_all = false
