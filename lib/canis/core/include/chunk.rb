@@ -4,13 +4,16 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 10:21
+#  Last update: 2014-05-12 13:06
 # ------------------------------------------------------------ #
 #
 
 module Canis
   module Chunks
     extend self
+
+    # A chunk is a piece of text with associated color and attrib.
+    # Several such chunks make a ChunkLine.
     class Chunk
 
       # color_pair of associated text
