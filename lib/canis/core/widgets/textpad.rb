@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-10 19:07
+#  Last update: 2014-05-12 10:26
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -73,16 +73,9 @@ module Canis
       @prow = @pcol = 0
       @startrow = 0
       @startcol = 0
-      # @list is unused, think it can be removed
-      #@list = []
       register_events( [:ENTER_ROW, :PRESS])
       super
 
-      ## __calc_dimensions used to be here, but moved since flows do not set height immediately.
-      # Putting events after +super+ means if a person uses +bind+ in block then these 
-      # events are not found.
-      #@_events << :PRESS
-      #@_events << :ENTER_ROW
       init_vars
     end
     def init_vars
@@ -97,15 +90,19 @@ module Canis
       @repaint_required = true
       map_keys unless @mapped_keys
     end
+
+    # calculates the dimensions of the pad which will be used when the pad refreshes, taking into account
+    # whether borders are printed or not. This must be called whenever there is a change in height or width 
+    # otherwise @rows will not be recalculated.
+    # Internal.
     def __calc_dimensions
       ## NOTE 
       #  ---------------------------------------------------
       #  Since we are using pads, you need to get your height, width and rows correct
       #  Make sure the height factors in the row, else nothing may show
       #  ---------------------------------------------------
-      #@height = @height.ifzero(FFI::NCurses.LINES)
-      #@width = @width.ifzero(FFI::NCurses.COLS)
-      # FIXME rows calculated only once, so if height changes then row not calculated onless we call this again.
+      
+     
       raise " CALC inside #{@name} h or w is nil #{@height} , #{@width} " if @height.nil? or @width.nil?
       @rows = @height
       @cols = @width
@@ -135,13 +132,19 @@ module Canis
       @lastrow = @row + @row_offset
       @lastcol = @col + @col_offset
     end
+    # returns the row and col where the cursor is initially placed, and where printing starts from.
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
     end
+
+    # update the height
+    # This also calls fire_dimension_changed so that the dimensions can be recalculated
     def height=(val)
       super
       fire_dimension_changed
     end
+    # set the width
+    # This also calls fire_dimension_changed so that the dimensions can be recalculated
     def width=(val)
       super
       fire_dimension_changed
@@ -360,7 +363,7 @@ module Canis
     # default method for rendering a line
     #
     def render pad, lineno, text
-      if text.is_a? Chunks::ChunkLine
+      if text.is_a? AbstractChunkLine
         FFI::NCurses.wmove @pad, lineno, 0
         a = get_attrib @attrib
       
@@ -396,23 +399,11 @@ module Canis
 
     def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
       #return unless visible?
-      chunks.each do |chunk| #|color, chunk, attrib|
-        case chunk
-        when Chunks::Chunk
-          color = chunk.color
-          attrib = chunk.attrib
-          text = chunk.text
-        when Array
-          # for earlier demos that used an array
-          color = chunk[0]
-          attrib = chunk[2]
-          text = chunk[1]
-        end
+      chunks.each_with_color do |text, color, attrib|
 
         color ||= defcolor
         attrib ||= defattr || NORMAL
 
-        #cc, bg = ColorMap.get_colors_for_pair color
         #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} "
         FFI::NCurses.wcolor_set(@pad, color,nil) if color
         FFI::NCurses.wattron(@pad, attrib) if attrib
