@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 10:25
+#  Last update: 2014-05-12 17:36
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -103,7 +103,7 @@ module Canis
       # Added this so we can get Esc, and also C-c pressed in succession does not crash system
       #  2011-12-20 half-delay crashes system as does cbreak
       #This causes us to be unable to process gg qq since getch won't wait.
-      FFI::NCurses::nodelay(@window, bf = true)
+      #FFI::NCurses::nodelay(@window, bf = true)
       # wtimeout was causing RESIZE sigwinch to only happen after pressing a key
       #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
       #@stack = [] # since we have moved to handler 2014-04-20 - 11:15 
@@ -117,7 +117,7 @@ module Canis
       #Canis::start_ncurses
       @layout = layout
       @window = Window.new(@layout)
-      @window.name = "Window::ROOTW"
+      @window.name = "Window::ROOTW:#{$global_windows.count}"
       @window.wrefresh
       Ncurses::Panel.update_panels
       # earlier we only put root window, now we may need to do all (bline - numbered menu - alert)
@@ -138,8 +138,8 @@ module Canis
     def self.refresh_all
       #Ncurses.touchwin(FFI::NCurses.stdscr)
       # above blanks out entire screen
-      $global_windows.each do |w|
-        $log.debug " REFRESH_ALL on #{w.name} sending 1000"
+      $global_windows.each_with_index do |w,i|
+        $log.debug " REFRESH_ALL on #{w.name} (#{i}) sending 1000"
         # NOTE 2014-05-01 - 20:25 although we have reached the root window from any level
         #  however, this is sending the hack to whoever is trapping the key, which in our current
         #  case happends to be Viewer, *not* the root form. We need to send to root form.
@@ -397,12 +397,12 @@ module Canis
       # go back to using a wtimeout, and not worry about resize requiring a keystroke
       if c == 27
         $escstart = Time.now.to_f
-        # if ESC pressed don't wait too long.
-        #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait n millisecond on wgetch so that we can return if no
+        # if ESC pressed don't wait too long for next key
+        Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait n millisecond on wgetch so that we can return if no
       else
         FFI::NCurses.set_escdelay(100)
         # this means keep waiting for a key.
-        #Ncurses::nowtimeout(@window, true)
+        Ncurses::nowtimeout(@window, true)
       end
       c
 
@@ -413,7 +413,7 @@ module Canis
       -1 # is C-c
     ensure
       # whatever the default is, is to be set here in case caller changed it.
-      FFI::NCurses::nodelay(@window, true)
+      #FFI::NCurses::nodelay(@window, true)
     end
 
     # Earlier this was handled by window itself. Now we delegate to a reader
@@ -559,6 +559,7 @@ module Canis
     public
     def color_parser f
       $log.debug "XXX:  color_parser setting in window to #{f} "
+      require 'canis/core/include/chunk'
       if f == :tmux
         @color_parser = get_default_color_parser()
       else
@@ -574,6 +575,7 @@ module Canis
     public
     def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
       unless @color_parser
+        require 'canis/core/include/chunk'
         @color_parser = get_default_color_parser()
         @converter = Chunks::ColorParser.new @color_parser
       end
@@ -713,18 +715,18 @@ module Canis
             break
           end
         end
+
+        color ||= defcolor
+        attrib ||= defattr
+
+        cc, bg = ColorMap.get_colors_for_pair color
+        #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
+        color_set(color,nil) if color
+        wattron(attrib) if attrib
+        #print(text)
+        waddnstr(text.to_s, @width) # changed 2014-04-22 - 11:59  to reduce a function
+        wattroff(attrib) if attrib
       end
-
-      color ||= defcolor
-      attrib ||= defattr
-
-      cc, bg = ColorMap.get_colors_for_pair color
-      #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
-      color_set(color,nil) if color
-      wattron(attrib) if attrib
-      #print(text)
-      waddnstr(text.to_s, @width) # changed 2014-04-22 - 11:59  to reduce a function
-      wattroff(attrib) if attrib
     end
     # ----- }}}
 
