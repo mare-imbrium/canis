@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-09 15:35
+  * Last update: 2014-05-12 11:04
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -22,7 +22,7 @@
 =end
 require 'logger'
 require 'canis/core/system/colormap'
-require 'canis/core/include/orderedhash'
+#require 'canis/core/include/orderedhash'
 require 'canis/core/include/rinputdataevent' # for FIELD 2010-09-11 12:31 
 require 'canis/core/include/io'
 require 'canis/core/system/keydefs'
@@ -1064,6 +1064,7 @@ module Canis
         #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
       end
       def configure(*val , &block)
+        raise "configure: this is being used, remove the raise"
         case val.size
         when 1
           return @config[val[0]]
@@ -1076,6 +1077,7 @@ module Canis
       ## 
       # returns param from hash. Unused and untested. 
       def cget param
+        raise "cget: this is being used, remove the raise"
         @config[param]
       end
        # this bypasses our methods and sets directly !
