@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 17:36
+#  Last update: 2014-05-12 21:05
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -138,7 +138,10 @@ module Canis
     def self.refresh_all
       #Ncurses.touchwin(FFI::NCurses.stdscr)
       # above blanks out entire screen
-      $global_windows.each_with_index do |w,i|
+      # in case of multiple root windows lets just do last otherwise too much refreshing.
+      return unless $global_windows.last
+      wins = [ $global_windows.last ]
+      wins.each_with_index do |w,i|
         $log.debug " REFRESH_ALL on #{w.name} (#{i}) sending 1000"
         # NOTE 2014-05-01 - 20:25 although we have reached the root window from any level
         #  however, this is sending the hack to whoever is trapping the key, which in our current
