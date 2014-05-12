@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-07 19:38
+#  Last update: 2014-05-12 10:25
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -18,7 +18,7 @@
 #
 require 'canis/core/system/ncurses'
 require 'canis/core/system/panel'
-require 'canis/core/include/chunk'
+#require 'canis/core/include/chunk'
 # this is since often windows are declared with 0 height or width and this causes
 # crashes in the most unlikely places. This prevceents me from having to write ternary
 # e.g.
@@ -29,6 +29,12 @@ class Fixnum
     return v
   end
 end
+# This class is to be extended so that it can be called by anyone wanting to implement
+# chunks ot text with color and attributes. Chunkline consists of multiple chunks of colored text
+# and should implement a +each_with_color+.
+# The purpose of adding this is so that +chunk.rb+ does not need to be required if colored text
+# is not being used by an application.
+class AbstractChunkLine; end
 
 module Canis
   class Window 
@@ -496,7 +502,7 @@ module Canis
     def printstring_or_chunks(r,c,content, color, att = Ncurses::A_NORMAL)
       if content.is_a? String
         printstring(r,c,content, color, att)
-      elsif content.is_a? Chunks::ChunkLine
+      elsif content.is_a? AbstractChunkLine
         #$log.debug "XXX: using chunkline" # 2011-12-10 12:40:13
         wmove r, c
         a = get_attrib att
@@ -565,7 +571,6 @@ module Canis
     # @param [String] takes the entire line or string and breaks into an array of chunks
     # @yield chunk if block
     # @return [ChunkLine] # [Array] array of chunks
-    # @since 1.4.1   2011-11-3 experimental, can change
     public
     def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
       unless @color_parser
@@ -602,7 +607,7 @@ module Canis
     ##
     # prints the border for message boxes
     #
-    # NOTE : FOR MESSAGEBOXES ONLY !!!! 
+    # NOTE : FOR MESSAGEBOXES ONLY !!!!  Then why not move to messagebox FIXME
     def print_border_mb row, col, height, width, color, attr
       # the next is for xterm-256 
       att = get_attrib attr
@@ -632,6 +637,7 @@ module Canis
     ##
     # prints a border around a widget, CLEARING the area.
     #  If calling with a pad, you would typically use 0,0, h-1, w-1.
+    #  FIXME can this be moved to module Bordertitle ?
     def print_border row, col, height, width, color, att=Ncurses::A_NORMAL
       raise "height needs to be supplied." if height.nil?
       raise "width needs to be supplied." if width.nil?
@@ -654,6 +660,7 @@ module Canis
     #+ Earlier, we would clean up. Now in some cases, i'd like
     #+ to print border over what's been done. 
     # XXX this reduces 1 from width but not height !!! FIXME 
+    #  FIXME can this be moved to module Bordertitle ?
     def print_border_only row, col, height, width, color, att=Ncurses::A_NORMAL
       if att.nil? 
         att = Ncurses::A_NORMAL
@@ -676,58 +683,48 @@ module Canis
     #  Previously this printed a chunk as a full line, I've modified it to print on 
     #  one line. This can be used for running text. 
     #  NOTE 2013-03-08 - 17:02 added width so we don't overflow
+    #  NOTE 2014-05-11 - textpad has its own version, so does not call this.
     def show_colored_chunks(chunks, defcolor = nil, defattr = nil, wid = 999, pcol = 0)
       return unless visible?
       ww = 0
-      chunks.each do |chunk| #|color, chunk, attrib|
-        case chunk
-        when Chunks::Chunk
-          color = chunk.color
-          attrib = chunk.attrib
-          text = chunk.text
+      chunks.each_with_color do |text, color, attrib|
 
-          ## 2013-03-08 - 19:11 take care of scrolling by means of pcol
-          if pcol > 0
-            if pcol > text.length 
-              # ignore entire chunk and reduce pcol
-              pcol -= text.length
-              next
-            else
-              # print portion of chunk and zero pcol
-              text = text[pcol..-1]
-              pcol = 0
-            end
+        ## 2013-03-08 - 19:11 take care of scrolling by means of pcol
+        if pcol > 0
+          if pcol > text.length 
+            # ignore entire chunk and reduce pcol
+            pcol -= text.length
+            next
+          else
+            # print portion of chunk and zero pcol
+            text = text[pcol..-1]
+            pcol = 0
           end
-          oldw = ww
-          ww += text.length
-          if ww > wid
-            # if we are exceeding the width then by howmuch
-            rem = wid - oldw
-            if rem > 0
-              # take only as much as we are allowed
-              text = text[0,rem]
-            else
-              break
-            end
-          end
-        when Array
-          # for earlier demos that used an array
-          color = chunk[0]
-          attrib = chunk[2]
-          text = chunk[1]
         end
-
-        color ||= defcolor
-        attrib ||= defattr
-
-        cc, bg = ColorMap.get_colors_for_pair color
-        #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
-        color_set(color,nil) if color
-        wattron(attrib) if attrib
-        #print(text)
-        waddnstr(text.to_s, @width) # changed 2014-04-22 - 11:59  to reduce a function
-        wattroff(attrib) if attrib
+        oldw = ww
+        ww += text.length
+        if ww > wid
+          # if we are exceeding the width then by howmuch
+          rem = wid - oldw
+          if rem > 0
+            # take only as much as we are allowed
+            text = text[0,rem]
+          else
+            break
+          end
+        end
       end
+
+      color ||= defcolor
+      attrib ||= defattr
+
+      cc, bg = ColorMap.get_colors_for_pair color
+      #$log.debug "XXX: CHUNK window #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} " 
+      color_set(color,nil) if color
+      wattron(attrib) if attrib
+      #print(text)
+      waddnstr(text.to_s, @width) # changed 2014-04-22 - 11:59  to reduce a function
+      wattroff(attrib) if attrib
     end
     # ----- }}}
 
