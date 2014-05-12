@@ -690,6 +690,7 @@ module Canis
     def focusable
       false
     end
+    alias :focusable? focusable
     # add a precreated menu
     def add menu
       #$log.debug "YYYY inside MB: add #{menu.text}  "
@@ -888,7 +889,7 @@ module Canis
       return @window
     end
     def destroy
-      $log.debug "DESTRY menubar "
+      $log.debug "DESTRY menubar #{@keep_visible} "
 
       # when we close, but keep visible, we don't want menu to still be hightlighted
       # added on 2011-12-12 
@@ -898,12 +899,21 @@ module Canis
       @items.each do |item|
         item.destroy
       end
+      $log.debug "  DESTROY finished with items "
       # TODO the current menu should not be highlighted
-      return if @keep_visible
+      # FIXME even here i think underlying windows need to be repainted.
+      #return if @keep_visible
+      if @keep_visible
+        Window.refresh_all
+        return
+      end
       @visible = false
-      panel = @window.panel
-      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
-      @window.delwin if !@window.nil?
+      # replacing next 3 lines with destroy. 2014-05-12 - 17:07 CANIS
+      #panel = @window.panel
+      #Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      #@window.delwin if !@window.nil?
+      $log.debug "  CALLING WINDOW DESTROY from menubar"
+      @window.destroy
       @window = nil
     end
   end # menubar
