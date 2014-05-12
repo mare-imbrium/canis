@@ -546,9 +546,11 @@ module Canis
       $log.debug "DESTRY menu #{@text}"
       return if @window.nil?
       @visible = false
-      panel = @window.panel
-      Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
-      @window.delwin if !@window.nil?
+      #2014-05-12 - 20:53 next 3 replaced with destroy since destroy refreshes root window.
+      #panel = @window.panel
+      #Ncurses::Panel.del_panel(panel.pointer) if !panel.nil?   
+      #@window.delwin if !@window.nil?
+      @window.destroy
       @items.each do |item|
         #next if item == :SEPARATOR
         item.destroy
