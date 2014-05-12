@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2013-04-01 13:38
+#  Last update: 2014-05-12 10:21
 # ------------------------------------------------------------ #
 #
 
@@ -38,7 +38,7 @@ module Canis
 
     # consists of an array of chunks and corresponds to a line
     # to be printed.
-    class ChunkLine
+    class ChunkLine < AbstractChunkLine
 
       # an array of chunks
       attr_reader :chunks
@@ -53,6 +53,27 @@ module Canis
       alias :add :<<
       def each &block
         @chunks.each &block
+      end
+      #
+      # Splits a chunk line giving text, color and attrib
+      # The purpose of this is to free callers such as window or pad from having to know the internals
+      # of this implementation. Any substituing class should have a similar interface.
+      # @yield text, color and attrib to the block
+      def each_with_color &block
+        @chunks.each do |chunk| 
+          case chunk
+          when Chunks::Chunk
+            color = chunk.color
+            attrib = chunk.attrib
+            text = chunk.text
+          when Array
+            # for earlier demos that used an array
+            color = chunk[0]
+            attrib = chunk[2]
+            text = chunk[1]
+          end
+          yield text, color, attrib
+        end
       end
 
       # returns length of text in chunks
