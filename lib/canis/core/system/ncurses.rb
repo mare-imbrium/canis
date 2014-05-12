@@ -100,7 +100,7 @@ module Canis
     # wgetch(@window), For that do this with window.
     # I am disableing this 2011-12-20 since it does not work with combinations
     # such as gg. Any routine that does a getch will just immediatelt return an ERR.
-    Ncurses::nodelay(stdscr.pointer, bf = true)
+    #Ncurses::nodelay(stdscr.pointer, bf = true)
 
 
     # added these 2 so we can do resizing based on original and current size when terminal resized
