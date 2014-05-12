@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-12 11:04
+  * Last update: 2014-05-12 17:20
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -609,7 +609,11 @@ module Canis
             # we could have consumed keys at this point
             actions << n.action if n.action
             unconsumed.clear if n.action
-            e = window.getchar
+            #e = window.getchar
+            Ncurses::wtimeout(window.get_window, 500) # will wait a second on wgetch so we can get gg and qq
+            e = window.getch
+            Ncurses::nowtimeout(window.get_window, true)
+            # e can return -1 if timedout
             $log.debug "  getch got #{e}"
           end
         end
@@ -2104,13 +2108,15 @@ module Canis
   # windows, since a black rectangle is often left when a window is destroyed. This is internally
   # triggered whenever a window is destroyed, and currently only for root window.
   def repaint_all_widgets
-    $log.debug "  REPAINT ALL in WINDOW called "
+    $log.debug "  REPAINT ALL in FORM called "
     @widgets.each do |w|
       next if w.visible == false
+      next if w.is_a? Canis::MenuBar
       $log.debug "   ---- REPAINT ALL #{w.name} "
       w.repaint_required true
       w.repaint
     end
+    $log.debug "  REPAINT ALL in FORM complete "
     #  place cursor on current_widget 
     setpos
   end
