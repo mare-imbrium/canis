@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-12 17:20
+  * Last update: 2014-05-12 22:36
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -523,7 +523,7 @@ module Canis
             ee << e
           end
           bind_composite_mapping ee, args, &blk
-          return
+          return self
           #@_key_map[a0] ||= OrderedHash.new
           #@_key_map[a0][a1] = blk
           #$log.debug " XX assigning #{keycode} to  _key_map " if $log.debug? 
@@ -533,8 +533,19 @@ module Canis
         @_key_map[keycode] = blk
         @_key_args ||= {}
         @_key_args[keycode] = args
-
+        self
       end
+=begin
+# this allows us to play a bit with the map, and allocate one action to another key
+#      get_action_map()[KEY_ENTER] = get_action(32)
+#      But we will hold on this unless absolutely necessary. 2014-05-12 - 22:36 CANIS.
+      def get_action keycode
+        @_key_map[keycode]
+      end
+      def get_action_map 
+        @_key_map
+      end
+=end
       class MapNode
         attr_accessor :action
         attr_accessor :map
@@ -2111,7 +2122,7 @@ module Canis
     $log.debug "  REPAINT ALL in FORM called "
     @widgets.each do |w|
       next if w.visible == false
-      next if w.is_a? Canis::MenuBar
+      next if w.class.to_s == "Canis::MenuBar"
       $log.debug "   ---- REPAINT ALL #{w.name} "
       w.repaint_required true
       w.repaint
@@ -2658,7 +2669,9 @@ module Canis
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
       putc ch
     when 27 # cannot bind it
-      text @original_value 
+      #text @original_value 
+      # commented above and changed 2014-05-12 - 20:05 I think above creates positioning issues. TEST XXX
+      restore_original_value
     else
       ret = super
       return ret
@@ -3127,6 +3140,7 @@ module Canis
       @surround_chars ||= ['[ ', ' ]'] 
       @col_offset = @surround_chars[0].length 
       @text_offset = 0
+      map_keys
     end
     ##
     # set button based on Action
@@ -3289,8 +3303,20 @@ module Canis
     # for campatibility with all buttons, will apply to radio buttons mostly
     def selected?; false; end
 
+    def map_keys
+      return if @keys_mapped
+      bind_key(32, "fire") { fire } if respond_to? :fire
+      if $key_map_type == :vim
+        bind_key( key("j"), "down") { @form.window.ungetch(KEY_DOWN) }
+        bind_key( key("k"), "up") { @form.window.ungetch(KEY_UP) }
+      end
+    end
+
     # Button
     def handle_key ch
+      super
+    end
+=begin
       case ch
       when FFI::NCurses::KEY_LEFT, FFI::NCurses::KEY_UP
         return :UNHANDLED
@@ -3323,6 +3349,7 @@ module Canis
         return :UNHANDLED
       end
     end
+=end
 
     # temporary method, shoud be a proper class
     def self.button_layout buttons, row, startcol=0, cols=Ncurses.COLS-1, gap=5
