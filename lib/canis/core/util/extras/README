@@ -1,0 +1,5 @@
+I have discontinued using bottomline. Use at your own risk. Copy into your project
+if you wish to use it.
+
+Padreader is not to be used, use viewer.rb instead. Padreader does not display unless
+you press a key first.
