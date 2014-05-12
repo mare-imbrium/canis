@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-12 22:36
+  * Last update: 2014-05-12 23:22
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2504,9 +2504,7 @@ module Canis
       @buffer = @original_value.dup
       # earlier commented but trying again, since i am getting IndexError in insert 2188
       # Added next 3 lines to fix issue, now it comes back to beginning. FIX IN RBC
-      @curpos = 0 # this would require restting setformcol
-      @pcol = 0
-      @form.setrowcol @row, @col
+      cursor_home
 
       @repaint_required = true
     end
