@@ -14,6 +14,9 @@
           :!          - system command
           <C-x>c      - system command
 
+          ?           - Should display all the key bindings available
+                        for that widget. Alternatively, <M-?>
+
 ==============================================================================
 2. Form
 
@@ -27,12 +30,11 @@ following vim-bindings are applicable.
 
           j,k,l,h, gg, G, C-d, C-b
 
-          <space> scrolls in _textview_.
+          <space> scrolls 
+          <Ctrl-Space> scroll up (aka C-@)
 
-Some multiline widgets such as _list_ and _tree_ may move to first item
-starting with j or k or <char> on pressing char. To get vim-bindings use
-<Alt-v>. Now to go to first row with <char>, type f<char>. This behavior
-is modified using the flag one_key_selection.
+In multiline widgets such as _list_ and _tree_ to move to first item
+starting with a character, press "f" followed by that character.
 
 
 ==============================================================================
@@ -49,25 +51,34 @@ C-a, C-k (delete till end) are available.
 ==============================================================================
 5. Buttons
 
-_Button_ can be fired using <space> or <ENTER>. The default button, if
+_Button_ can be fired using <space>. The default button, if
 declared, is shown with as > Ok < as against other buttons, shown as [
 Cancel ]. This can be fired by hitting <ENTER> anywhere on the form
 (unless the current widget traps <ENTER>).
+
+Pressing <ENTER> will trigger the default button, even if you are on
+another button. 
 
 Hotkeys are available using Alt-<key>.
 
 ==============================================================================
 6. Selection in lists
 
-          <space>   -   toggle selection
-          <C-Space> -   range select
-          <a>       -   select all
-          <u>       -   unselect all (should be changed, as conflicts with
-                        vim undo)
-          <*>       -   invert selection
+Please note that in earlier versions, <SPACE> was used for selection.
+However, since this conflicts with the scrolling behavior in most
+multiline widgtes, <SPACE> and <C-SPACE> are now exclusively used for
+scrolling down and up. The characters "v" and "V" are used for
+selection. This may be altered by setting "$row_selector".
 
-          <->       -   ask unselect
-          <+>       -   ask select
+          v       -   toggle selection
+          V       -   range select
+          a       -   select all
+          u       -   unselect all (should be changed, as conflicts with
+                        vim undo)
+          *       -   invert selection
+
+          -       -   ask unselect
+          +       -   ask select
 
 -----------------------------------------------------------------------------
 q to quit, gg to goto top.
