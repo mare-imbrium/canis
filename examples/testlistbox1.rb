@@ -119,8 +119,10 @@ App.new do
     #name = w.text.split()[0]
     name = w.current_value.split()[0]
     cmd = cmd[0].to_s
+    $log.debug " executing #{m} #{cmd} #{name}"
     res = %x[ #{m} #{cmd} #{name}].split("\n")
     res ||= "Error in command [#{cmd}] [#{name}] "
+    $log.debug "  sending #{res} to textdialog"
     textdialog( res, :title => cmd ) if res
   end
   # handle resizing, sadly I am not sure flow and stack can do a resize, i am sure the xperimental one can.
