@@ -32,10 +32,10 @@ def alert text, config={}
     text = text.get_value
   end
   _title = config[:title] || "Alert"
-    tp = MessageBox.new config do
-      title _title
-      button_type :ok
-      message text
+    tp = MessageBox.new config do |t|
+      t.title = _title
+      t.button_type = :ok
+      t.message = text
       #text mess
     end
     tp.run
@@ -94,7 +94,7 @@ def get_string label, config={} # yield Field
   #$log.debug "XXX:  FIELD CONFIG #{field_config} "
   tp = MessageBox.new config do
     button_type :ok_cancel
-    default_button 0
+    default_button  0
     item Label.new nil, label_config
     fld = Field.new nil, field_config
     item fld
@@ -128,10 +128,10 @@ def confirm text, config={}, &block
   title = config['title'] || "Confirm"
   config[:default_button] ||= 0
 
-  mb = Canis::MessageBox.new config  do
-    title title
+  mb = Canis::MessageBox.new config  do |t|
+    t.title = title
     message text, &block 
-    button_type :yes_no
+    t.button_type = :yes_no
   end
   index = mb.run
   return index == 0
