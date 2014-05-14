@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 20:45
+#  Last update: 2014-05-13 20:15
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -59,6 +59,7 @@ module Canis
     # an array of 4 items for h w t and l which can be nil, padrefresh will check
     # its bounds against this to ensure no caller messes up.
     dsl_accessor :fixed_bounds
+
     # You may pass height, width, row and col for creating a window otherwise a fullscreen window
     # will be created. If you pass a window from caller then that window will be used.
     # Some keys are trapped, jkhl space, pgup, pgdown, end, home, t b
@@ -77,6 +78,17 @@ module Canis
       super
 
       init_vars
+      # 2014-05-13 - 17:23 trying out in case user calls list and we only set into list
+      # This is ridiculous, since we are not calling methods from config, so this is happeneing
+      # text and list are aliases.
+      if @text && !@list
+        @list = @text
+      end
+      if @list
+        @_populate_needed = true if @list
+        @repaint_all = true
+        @repaint_required = true
+      end
     end
     def init_vars
       $multiplier = 0
@@ -546,6 +558,9 @@ module Canis
       @repaint_required = true
       init_vars
       self
+    end
+    def list=(val)
+      text(val)
     end
     alias :list :text
     # for compat with textview, FIXME keep one consistent name for this
