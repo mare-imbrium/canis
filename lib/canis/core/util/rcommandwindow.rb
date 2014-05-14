@@ -647,8 +647,8 @@ module Canis
     default_layout = config[:layout]
     config[:close_key] = 1001
     command_list(text, config) do |t, hash|
-      t.suppress_borders true
-      t.print_footer false
+      t.suppress_borders  = true
+      t.print_footer = false
       #t.fixed_bounds config.delete(:fixed_bounds)
       t.key_handler = ControlPHandler.new(t)
       t.key_handler.maxht = maxh
