@@ -95,9 +95,6 @@ if $0 == __FILE__
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
       
-      v = "F10 quits. F1 Help.  Try j k gg G o O C dd f<char> w yy p P / . Press ENTER on Class or Method"
-      var = Canis::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
-        "col" => fc, "width" => 100}
 
       h = FFI::NCurses.LINES-3
       file = "./data/ports.txt"
@@ -150,6 +147,9 @@ if $0 == __FILE__
           end
         end
       }
+      v = "F10 quits. F1 Help.  Try j k gg G o O C dd f<char> w yy p P / . Press ENTER on Class or Method"
+      var = Canis::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
+        "col" => fc, "width" => Ncurses.COLS-1, :bgcolor => :blue}
 
 
     @form.repaint
