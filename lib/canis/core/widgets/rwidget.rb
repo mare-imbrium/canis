@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-12 23:22
+  * Last update: 2014-05-14 16:17
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -71,18 +71,9 @@ class Module  # dsl_accessor {{{
   def dsl_accessor(*symbols)
     symbols.each { |sym|
       class_eval %{
-        def #{sym}(*val)
-          if val.empty?
-            @#{sym}
-          else
-            @#{sym} = val.size == 1 ? val[0] : val
-            # i am itching to deprecate next line XXX
-            # @config["#{sym}"]=@#{sym} # commented out 2011-12-18 to simplify
-            self # 2011-10-2 
-          end
-        end
-      # can the next bypass validations
-    attr_writer sym #2011-10-2 
+        attr_writer sym 
+        # testing out removing dsl completely and making it dynamic
+        # This requires method_missing to take care of dsl access.
       }
     }
   end
@@ -100,7 +91,6 @@ class Module  # dsl_accessor {{{
             # @#{sym} = val.size == 1 ? val[0] : val
             tmp = val.size == 1 ? val[0] : val
             newvalue = tmp
-            # i am itching to deprecate config setting
             if oldvalue.nil? || @_object_created.nil?
                @#{sym} = tmp
                # @config["#{sym}"]=@#{sym} # 2011-12-18 
@@ -692,7 +682,6 @@ module Canis
                  return :UNHANDLED
               end
            else
-          #@window.ungetch(ch)
                  :UNHANDLED
            end
         end
@@ -1070,9 +1059,15 @@ module Canis
 
     module ConfigSetup # {{{
       # private
+      # 2014-05-13 - 16:14 config setup is run when an object is created, so we don't have to worry
+      #   about dsl_prop etc. We can just set instance var, however, the issue is only if user
+      #   has set some extra stuff in a method with it. 
       def variable_set var, val
-        #nvar = "@#{var}"
-        send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
+        # 2014-05-13 - 16:32 trying out instance variable set inplace of calling method MAJOR CHANGE CANIS CONFIG
+        # FIXME what if variable does not exist, such as text. we need to check for method = and dsl
+        #instance_variable_set("@#{var}",val)
+        send("#{var}=", val)    # 2014-05-13 - 20:07 BIG CHANGE CANIS CONFIG
+        #send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
         # 2011-11-20 NOTE i don;t know why i commented off rescue, but i am wondering
         # we should respect attr_accessor, to make it easy. if respond_to? :var=
         #  then set it, else call send. I'd ilke to phase out dsl_accessor.
@@ -1206,24 +1201,61 @@ module Canis
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
     end
+    # NOTE sadly there are place where we are using respond_to before calling a method
+    # such as add_widget. they fail.
+    def method_missing(name, *args)
+      name = name.to_s
+      # if you try to use = for assignment but i have a hardcoded DSL accessor, i use it.
+      if (name[-1] == "=")
+        test_name = name[0..-2]
+        if self.respond_to? test_name
+          return self.send(test_name, *args)
+        end
+      else
+        # you try to use DSL syntax for something that has a attr_writer
+        test_name = name + "="
+        if self.respond_to? test_name
+          # does the user want access or update
+          if args.nil? or args.empty?
+            # maybe check for defined, but there is a setter so its okay
+            return instance_variable_get "@#{name}"
+          else
+            return self.send(test_name, *args)
+          end
+        end
 
-    # modified
-    ##
-    # typically read will be overridden to check if value changed from what it was on enter.
-    # getter and setter for modified (added 2009-01-18 12:31 )
-    def modified?
-      @modified
+      end
+      raise "Method missing error #{self}, #{name} "
     end
-    def set_modified tf=true
-      @modified = tf
-      @form.modified = true if tf
+    # since we have ghost methods in the method_missing, code that checks for respond_to will
+    # not see them, so we must have our own respond_to
+    # What this does is check if the given symbol (usually attribute) has a attr_writer, if so
+    # it allows caller to get or set . In this case it returns a true.
+    #
+    def my_respond_to? name, *args
+      sname = name.to_s
+      test_name = sname + "="
+      return true if self.respond_to? test_name
+      self.respond_to? name, args
     end
-    alias :modified :set_modified
 
-    ## got left out by mistake 2008-11-26 20:20 
-    def on_enter
-      @state = :HIGHLIGHTED    # duplicating since often these are inside containers
-      @focussed = true
+      # modified
+      ##
+      # typically read will be overridden to check if value changed from what it was on enter.
+      # getter and setter for modified (added 2009-01-18 12:31 )
+      def modified?
+        @modified
+      end
+      def set_modified tf=true
+        @modified = tf
+        @form.modified = true if tf
+      end
+      alias :modified :set_modified
+
+      ## got left out by mistake 2008-11-26 20:20 
+      def on_enter
+        @state = :HIGHLIGHTED    # duplicating since often these are inside containers
+        @focussed = true
       if @handler && @handler.has_key?(:ENTER)
         fire_handler :ENTER, self
       end
@@ -1674,7 +1706,7 @@ module Canis
     # really using ID. But need to use an incremental int in future. (internal use)
     def add_widget widget
       # this help to access widget by a name
-      if widget.respond_to? :name and !widget.name.nil?
+      if widget.my_respond_to? :name and !widget.name.nil?
         @by_name[widget.name] = widget
       end
 
@@ -1688,7 +1720,7 @@ module Canis
     # remove a widget
     # (internal use)
    def remove_widget widget
-     if widget.respond_to? :name and !widget.name.nil?
+     if widget.my_respond_to? :name and !widget.name.nil?
        @by_name.delete(widget.name)
      end
      @focusable_modified = true
@@ -1811,7 +1843,7 @@ module Canis
       # 2014-04-24 - 17:42 NO MORE ENTER LEAVE at FORM LEVEL
       #fire_handler :LEAVE, f 
       ## to test XXX in combo boxes the box may not be editable by be modified by selection.
-      if f.respond_to? :editable and f.modified?
+      if f.my_respond_to? :editable and f.modified?
         $log.debug " Form about to fire CHANGED for #{f} "
         f.fire_handler(:CHANGED, f) 
       end
@@ -2336,8 +2368,8 @@ module Canis
   # Field introduces an event :CHANGE which is fired for each character deleted or inserted
   # TODO: some methods should return self, so chaining can be done. Not sure if the return value of the 
   #   fire_handler is being checked.
-  #   NOTE: i have just added repain_required check in Field before repaint
-  #   this may mean in some places field does not paint. repaint_require will have to be set
+  #   NOTE: i have just added repaint_required check in Field before repaint
+  #   this may mean in some places field does not paint. repaint_requires will have to be set
   #   to true in those cases. this was since field was overriding a popup window that was not modal.
   #  
   class Field < Widget # {{{
