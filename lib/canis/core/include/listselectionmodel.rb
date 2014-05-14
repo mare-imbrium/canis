@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-05-01 01:10
+#  Last update: 2014-05-13 20:26
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -41,13 +41,13 @@ module Canis
     def self.extended(obj)
       extend Forwardable
       # selection modes may be :multiple, :single or :none
-      dsl_accessor :selection_mode
+      attr_accessor :selection_mode
       # color of selected rows, and attribute of selected rows
-      dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+      attr_accessor :selected_color, :selected_bgcolor, :selected_attr
       # indices of selected rows
-      dsl_accessor :selected_indices
+      attr_accessor :selected_indices
       # model that takes care of selection operations
-      dsl_accessor :list_selection_model
+      attr_accessor :list_selection_model
       #
       # all operations of selection are delegated to the ListSelectionModel
       def_delegators :@list_selection_model, :is_row_selected?, :toggle_row_selection, :select, :unselect, :is_selection_empty?, :clear_selection, :selected_rows, :select_all, :selected_values, :selected_value
@@ -349,7 +349,7 @@ module Canis
         @obj.bind_key(?-, 'ask_unselect') { ask_unselect } 
         @obj.bind_key(?a, 'select_all') {select_all}
         @obj.bind_key(?*, 'invert_selection') { invert_selection }
-        @obj.bind_key(?u, :clear_selection)
+        @obj.bind_key(?u, 'clear_selection') { clear_selection }
         @obj.bind_key([?g,?n], 'goto next selection'){ goto_next_selection } # mapping double keys like vim
         @obj.bind_key([?g,?p], 'goto prev selection'){ goto_prev_selection } # mapping double keys like vim
       end
