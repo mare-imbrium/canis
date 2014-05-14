@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 23:35
+#  Last update: 2014-05-14 13:55
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -385,6 +385,40 @@ module Canis
       else
         return (@width-textlen)/2
       end
+    end
+    
+    def method_missing(name, *args)
+      name = name.to_s
+      # if you try to use = for assignment but i have a hardcoded DSL accessor, i use it.
+      if (name[-1] == "=")
+        test_name = name[0..-2]
+        if self.respond_to? test_name
+          $log.debug " XCONF using #{test_name}"
+          return self.send(test_name, *args)
+        end
+      else
+        # you try to use DSL syntax for something that has a attr_writer
+        test_name = name + "="
+        if self.respond_to? test_name
+          # does the user want access or update
+          if args.nil? or args.empty?
+            # maybe check for defined, but there is a setter so its okay
+            $log.debug " XCONF 3 using instance get #{name} "
+            return instance_variable_get "@#{name}"
+          else
+            $log.debug " XCONF 2 using #{test_name}"
+            return self.send(test_name, *args)
+          end
+        end
+
+      end
+      raise "Methos missing error #{self}, #{name} "
+    end
+    def my_respond_to? name, *args
+      name = name.to_s
+      test_name = name + "="
+      return true if self.respond_to? test_name
+      super name, args
     end
   end
 end
