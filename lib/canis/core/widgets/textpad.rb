@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-13 20:15
+#  Last update: 2014-05-14 17:48
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -242,7 +242,8 @@ module Canis
       sp = " "
       #if color == $datacolor
       $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attrib} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
-        (r+1).upto(r+@height-startcol) do |rr|
+      # it seems it is clearing one more row, adding -1 2014-05-14 - 17:48 testlistbox
+        (r+1).upto(r+@height-startcol-1) do |rr|
           @window.printstring( rr, @col+0,sp*ww , color, att)
         end
       #end
