@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-13 20:21
+#  Last update: 2014-05-14 21:30
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -118,7 +118,7 @@ module Canis
     # create a default selection model
     # Widgets inheriting this may override this
     def create_default_selection_model
-      list_selection_model=(Canis::DefaultListSelectionModel.new self)
+      @list_selection_model=Canis::DefaultListSelectionModel.new self
     end
 
 
