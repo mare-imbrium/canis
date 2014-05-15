@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-14 13:55
+#  Last update: 2014-05-14 20:05
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -407,7 +407,8 @@ module Canis
             return instance_variable_get "@#{name}"
           else
             $log.debug " XCONF 2 using #{test_name}"
-            return self.send(test_name, *args)
+            self.send(test_name, *args)
+            return self
           end
         end
 
