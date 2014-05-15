@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-14 16:17
+  * Last update: 2014-05-14 19:40
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -83,13 +83,11 @@ class Module  # dsl_accessor {{{
   def dsl_property(*symbols)
     symbols.each { |sym|
       class_eval %{
-        def #{sym}(*val)
-          if val.empty?
-            @#{sym}
-          else
+        def #{sym}=val
             oldvalue = @#{sym}
-            # @#{sym} = val.size == 1 ? val[0] : val
-            tmp = val.size == 1 ? val[0] : val
+            
+            #tmp = val.size == 1 ? val[0] : val
+            tmp = val
             newvalue = tmp
             if oldvalue.nil? || @_object_created.nil?
                @#{sym} = tmp
@@ -107,15 +105,14 @@ class Module  # dsl_accessor {{{
                rescue PropertyVetoException
                   $log.warn "PropertyVetoException for #{sym}:" + oldvalue.to_s + "->  "+ newvalue.to_s
                end
-            end # if old
+            end # old
             self
-          end # if val
         end # def
     #attr_writer sym
-        def #{sym}=val
+        #def #{sym}=val
            # TODO if Variable, take .value NEXT VERSION
-           #{sym}(val)
-        end
+        #  #{sym}(val)
+        #end
       }
     }
   end
@@ -1041,7 +1038,7 @@ module Canis
           @pce.set( self, text, oldvalue, newvalue)
         end
         fire_handler :PROPERTY_CHANGE, @pce
-        @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
+        @repaint_required = true 
         repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
       end
 
@@ -1220,7 +1217,8 @@ module Canis
             # maybe check for defined, but there is a setter so its okay
             return instance_variable_get "@#{name}"
           else
-            return self.send(test_name, *args)
+            self.send(test_name, *args)
+            return self
           end
         end
 
@@ -1352,9 +1350,10 @@ module Canis
     def hide
       @visible = false
     end
-    def show
-      @visible = true
-    end
+    # this clashes with dsl_property show !!!
+    #def show
+      #@visible = true
+    #end
     def remove
       @form.remove_widget(self)
     end
@@ -3197,6 +3196,8 @@ module Canis
       end
       return self 
     end
+    # next added otherwise dsl_property will just update text
+    alias :text= :text
 
     ## 
     # FIXME this will not work in messageboxes since no form available
