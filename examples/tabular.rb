@@ -120,6 +120,18 @@ def _edit h, row, title
   }
   row
 end
+# delete current row
+# ideally one should include listeditable to get events also
+def delete_row tw
+  @undo_buffer = tw.current_value
+  tw.delete_at tw.current_index
+end
+# very minimal undo, just for a demo
+# Keeps pasting undo buffer back. @see listeditable.rb
+def undo_delete tw
+  return unless @undo_buffer
+  tw.insert tw.current_index, @undo_buffer
+end
 def resize
   tab = @form.by_name["tab"]
   cols = Ncurses.COLS
@@ -169,8 +181,8 @@ lf.command_right(){ |comp|
     #tw.selection_mode :single
     # set_content goes to textpads text which overwrites @list
     #tw.set_content arr
-    tw.bind_key([?d,?d], 'delete row') { tw.delete_line }
-    tw.bind_key(?U, 'undo delete') { tw.undo_delete }
+    tw.bind_key([?d,?d], 'delete row') { delete_row tw }
+    tw.bind_key(?U, 'undo delete') { undo_delete tw }
     tw.bind_key(?e, 'edit row') {  edit_row tw }
     tw.bind_key(?o, 'insert row') {  insert_row tw }
     tw.create_default_sorter
