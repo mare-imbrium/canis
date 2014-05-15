@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-12 23:22
+  * Last update: 2014-05-15 11:07
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -692,7 +692,6 @@ module Canis
                  return :UNHANDLED
               end
            else
-          #@window.ungetch(ch)
                  :UNHANDLED
            end
         end
@@ -2362,7 +2361,8 @@ module Canis
     attr_accessor :below, :above
 
     dsl_accessor :chars_allowed           # regex, what characters to allow entry, will ignore all else
-    dsl_accessor :show                    # what charactr to show for each char entered (password field)
+    # character to show, earlier called +show+ which clashed with Widget method +show+
+    dsl_accessor :mask                    # what charactr to show for each char entered (password field)
     dsl_accessor :null_allowed            # allow nulls, don't validate if null # added , boolean
 
     # any new widget that has editable should have modified also
@@ -2602,7 +2602,7 @@ module Canis
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},pcol:#{@pcol},  #{focusable} st: #{@state} ")
     @width = 1 if width == 0
     printval = getvalue_for_paint().to_s # added 2009-01-06 23:27 
-    printval = show()*printval.length unless @show.nil?
+    printval = mask()*printval.length unless @mask.nil?
     if !printval.nil? 
       if printval.length > width # only show maxlen
         printval = printval[@pcol..@pcol+width-1] 
