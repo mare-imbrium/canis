@@ -248,7 +248,7 @@ if $0 == __FILE__
         if ret 
           throw(:close); 
         else
-          message_label = "Quit aborted"
+          message_label.text = "Quit aborted"
         end
       }
       #col += 22
