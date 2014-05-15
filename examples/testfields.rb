@@ -92,7 +92,7 @@ if $0 == __FILE__
         maxlen = 20
 
       @form.by_name["password"].text("").
-        show('*').
+        mask('*').
         color(:red).
         values(%w[scotty tiger secret pass qwerty]).
         null_allowed true
