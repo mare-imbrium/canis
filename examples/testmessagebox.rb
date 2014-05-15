@@ -31,6 +31,8 @@ if $0 == __FILE__
         l = Listbox.new  nil, :row => 2, :col => 5, :list => %w[john tim lee wong kepler edward why chad andy], 
           :selection_mode => :multiple, :height => 10, :width => 20 , :selected_color => :green, :selected_bgcolor => :white, :selected_indices => [2,6], :name => nn
        #default_values %w[ lee why ]
+
+        l.unbind_key(KEY_ENTER)
       @mb = MessageBox.new :width => 30, :height => 18 do
         title "Select a name"
         button_type :ok_cancel
@@ -112,6 +114,7 @@ if $0 == __FILE__
           #l.insert( 0, *flist) if flist
           listb.list flist
         end
+        listb.unbind_key(KEY_ENTER)
         mb = Canis::MessageBox.new :height => 20, :width => 60 do
           title "Sample File Selector"
           add label
@@ -126,6 +129,7 @@ if $0 == __FILE__
 
         end
         mb.run
+        $log.debug "MBOX :1selected #{listb}"
         $log.debug "MBOX :selected #{listb.selected_value}"
       end 
       

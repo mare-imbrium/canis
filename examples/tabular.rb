@@ -1,5 +1,6 @@
 require 'canis/core/util/app'
 require 'canis/core/widgets/listfooter'
+require 'canis/core/util/promptmenu'
 
 App.new do 
   # TODO: combine this with widget menu

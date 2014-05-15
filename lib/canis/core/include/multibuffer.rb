@@ -1,3 +1,4 @@
+require 'canis/core/util/promptmenu'
 module Canis
   # this module makes it possible for a textview to maintain multiple buffers
   # The first buffer has been placed using set_content(lines, config). 
