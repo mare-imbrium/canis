@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-05-08 13:10
+#  Last update: 2014-05-15 11:15
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -280,27 +280,6 @@ module Canis
       if block_given?
         #@current_object << w
         yield_or_eval &block
-        #@current_object.pop
-      end
-      return w
-    end
-    # NOTE UNTESTED
-    def vimsplit config={}, &block
-      require 'canis/extras/widgets/rvimsplit'
-      #TODO check these
-      events = [:PROPERTY_CHANGE, :LEAVE, :ENTER ]
-      block_event = nil
-      config[:height] ||= 10
-      # if no width given, expand to flows width
-      #config.delete :title
-      useform = nil
-
-      w = VimSplit.new useform, config # NO BLOCK GIVEN
-      _position(w)
-      if block_given?
-        #@current_object << w
-        #instance_eval &block if block_given?
-        yield w
         #@current_object.pop
       end
       return w
