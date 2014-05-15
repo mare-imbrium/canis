@@ -130,7 +130,7 @@ def confirm text, config={}, &block
 
   mb = Canis::MessageBox.new config  do |t|
     t.title = title
-    message text, &block 
+    t.message text, &block 
     t.button_type = :yes_no
   end
   index = mb.run
