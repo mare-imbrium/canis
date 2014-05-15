@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-05-01 01:10
+#  Last update: 2014-05-15 11:03
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -349,7 +349,7 @@ module Canis
         @obj.bind_key(?-, 'ask_unselect') { ask_unselect } 
         @obj.bind_key(?a, 'select_all') {select_all}
         @obj.bind_key(?*, 'invert_selection') { invert_selection }
-        @obj.bind_key(?u, :clear_selection)
+        @obj.bind_key(?u, 'clear_selection') { clear_selection }
         @obj.bind_key([?g,?n], 'goto next selection'){ goto_next_selection } # mapping double keys like vim
         @obj.bind_key([?g,?p], 'goto prev selection'){ goto_prev_selection } # mapping double keys like vim
       end
