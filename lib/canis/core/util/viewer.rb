@@ -84,7 +84,7 @@ module Canis
         #border_attrib :reverse
         border_color blue_white
       end
-      # why multibuffers ?
+      # why multibuffers  -- since used in help
       require 'canis/core/include/multibuffer'
       textview.extend(Canis::MultiBuffers)
 
