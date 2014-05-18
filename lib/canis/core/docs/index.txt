@@ -1,34 +1,36 @@
-                       G E N E R A L   H E L P
+G E N E R A L   H E L P
+=======================
               <q> to quit this window. <Space> to scroll. 
 
-==============================================================================
-1. General Help 
+_____________________________________________________________________
+## 1. General Help 
 
           F10         - exit application. Also, <C-q>
           F1          - Help
 
           In some applications, the following may have been provided:
 
+          ?           - Should display all the key bindings available
+                        for that widget. Alternatively, <M-?>
+
           Alt-x       - additional commands
           :           - additional commands
           :!          - system command
           <C-x>c      - system command
 
-          ?           - Should display all the key bindings available
-                        for that widget. Alternatively, <M-?>
 
-==============================================================================
-2. Form
+_____________________________________________________________________
+## 2. Form
 
   <Tab> and <backtab> navigate between widgets.
 
-==============================================================================
-3. Multiline widgets
+_____________________________________________________________________
+## 3. Multiline widgets
 
-In most widgets such as _list_, _textview_, _table_, and _tree_ the
+In most widgets such as [list], _textpad_, _table_, and _tree_ the
 following vim-bindings are applicable.
 
-          j,k,l,h, gg, G, C-d, C-b
+          j,k,l,h, gg, G, C-d, C-b, C-e, C-y, w, b, /
 
           <space> scrolls 
           <Ctrl-Space> scroll up (aka C-@)
@@ -37,8 +39,8 @@ In multiline widgets such as _list_ and _tree_ to move to first item
 starting with a character, press "f" followed by that character.
 
 
-==============================================================================
-4. Editable Widgets
+_____________________________________________________________________
+## 4. Editable Widgets
 
 In _field_ and editable _textarea_, some emacs/Pine keys such as C-e,
 C-a, C-k (delete till end) are available.
@@ -48,8 +50,8 @@ C-a, C-k (delete till end) are available.
         <C-k>   -  delete till end of line
         <M-i>   -  toggle overwrite mode
 
-==============================================================================
-5. Buttons
+_____________________________________________________________________
+## 5. Buttons
 
 _Button_ can be fired using <space>. The default button, if
 declared, is shown with as > Ok < as against other buttons, shown as [
@@ -59,10 +61,11 @@ Cancel ]. This can be fired by hitting <ENTER> anywhere on the form
 Pressing <ENTER> will trigger the default button, even if you are on
 another button. 
 
-Hotkeys are available using Alt-<key>.
+Hotkeys are available using Alt-<key> and will be displayed with an 
+underline if the TERM displays underlines.
 
-==============================================================================
-6. Selection in lists
+_____________________________________________________________________
+## 6. Selection in lists
 
 Please note that in earlier versions, <SPACE> was used for selection.
 However, since this conflicts with the scrolling behavior in most
@@ -80,5 +83,5 @@ selection. This may be altered by setting "$row_selector".
           -       -   ask unselect
           +       -   ask select
 
------------------------------------------------------------------------------
+_____________________________________________________________________
 q to quit, gg to goto top.
