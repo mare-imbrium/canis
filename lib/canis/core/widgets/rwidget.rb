@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-15 11:07
+  * Last update: 2014-05-15 13:19
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -76,13 +76,11 @@ class Module  # dsl_accessor {{{
             @#{sym}
           else
             @#{sym} = val.size == 1 ? val[0] : val
-            # i am itching to deprecate next line XXX
-            # @config["#{sym}"]=@#{sym} # commented out 2011-12-18 to simplify
             self # 2011-10-2 
           end
         end
       # can the next bypass validations
-    attr_writer sym #2011-10-2 
+    attr_writer sym 
       }
     }
   end
@@ -97,13 +95,10 @@ class Module  # dsl_accessor {{{
             @#{sym}
           else
             oldvalue = @#{sym}
-            # @#{sym} = val.size == 1 ? val[0] : val
             tmp = val.size == 1 ? val[0] : val
             newvalue = tmp
-            # i am itching to deprecate config setting
             if oldvalue.nil? || @_object_created.nil?
                @#{sym} = tmp
-               # @config["#{sym}"]=@#{sym} # 2011-12-18 
             end
             return(self) if oldvalue.nil? || @_object_created.nil?
 
@@ -123,7 +118,6 @@ class Module  # dsl_accessor {{{
         end # def
     #attr_writer sym
         def #{sym}=val
-           # TODO if Variable, take .value NEXT VERSION
            #{sym}(val)
         end
       }
@@ -1069,32 +1063,10 @@ module Canis
 
     module ConfigSetup # {{{
       # private
+      # options passed in the constructor call the relevant methods declared in dsl_accessor or dsl_property
       def variable_set var, val
-        #nvar = "@#{var}"
-        send("#{var}", val) #rescue send("#{var}=", val)    # 2009-01-08 01:30 BIG CHANGE calling methods too here.
-        # 2011-11-20 NOTE i don;t know why i commented off rescue, but i am wondering
-        # we should respect attr_accessor, to make it easy. if respond_to? :var=
-        #  then set it, else call send. I'd ilke to phase out dsl_accessor.
-        #instance_variable_set(nvar, val)   # we should not call this !!! bypassing 
+        send("#{var}", val) #rescue send("#{var}=", val) 
       end
-      def configure(*val , &block)
-        raise "configure: this is being used, remove the raise"
-        case val.size
-        when 1
-          return @config[val[0]]
-        when 2
-          @config[val[0]] = val[1]
-          variable_set(val[0], val[1]) 
-        end
-        instance_eval &block if block_given?
-      end
-      ## 
-      # returns param from hash. Unused and untested. 
-      def cget param
-        raise "cget: this is being used, remove the raise"
-        @config[param]
-      end
-       # this bypasses our methods and sets directly !
       def config_setup aconfig
         @config = aconfig
         # this creates a problem in 1.9.2 since variable_set sets @config 2010-08-22 19:05 RK
