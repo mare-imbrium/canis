@@ -137,6 +137,8 @@ if $0 == __FILE__
         "Press ENTER on method name to see details"]
       require 'canis/core/include/multibuffer'
       tv.extend(Canis::MultiBuffers)
+      tv.text_patterns[:section] = Regexp.new(/^= /)
+      tv.bind_key(?s, "goto section") { tv.next_regex(:section) }
 
       # pressing ENTER on a method name will popup details for that method
       tv.bind(:PRESS) { |ev|
