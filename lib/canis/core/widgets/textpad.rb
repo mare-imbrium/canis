@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-15 11:02
+#  Last update: 2014-05-16 14:40
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -64,6 +64,12 @@ module Canis
     # Some keys are trapped, jkhl space, pgup, pgdown, end, home, t b
     # This is currently very minimal and was created to get me started to integrating
     # pads into other classes such as textview.
+
+    # a map of symbols and patterns, used currently in jumping to next or prev occurence of that
+    #  pattern. Default contains :word. Callers may add patterns, or modify existing ones and
+    #  create key bindings for the same.
+    attr_reader :text_patterns
+
     def initialize form=nil, config={}, &block
 
       @editable = false
@@ -74,6 +80,8 @@ module Canis
       @startrow = 0
       @startcol = 0
       register_events( [:ENTER_ROW, :PRESS])
+      @text_patterns = {}
+      @text_patterns[:word] =  /[[:punct:][:space:]]\w/
       super
 
       init_vars
@@ -777,16 +785,27 @@ module Canis
       @pcol -= 1
     end
     #
-    # jumps cursor to next work, like vim's w key
+    # jumps cursor to next word, like vim's w key
     #
     def forward_word
+        #forward_regex(/[[:punct:][:space:]]\w/)
+        forward_regex(:word)
+    end
+    # jump to the next occurence of given regex in the current line.
+    # It only jumps to next line after exhausting current.
+    # @param [Regexp] passed to String.index
+    def forward_regex regex
+      if regex.is_a? Symbol
+        regex = @text_patterns[regex]
+        raise "Pattern specified #{regex} does not exist in text_patterns " unless regex
+      end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
       buff = @list[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
-        found = buff.index(/[[:punct:][:space:]]\w/, pos)
+        found = buff.index(regex, pos)
         if !found
           # if not found, we've lost a counter
           if line+1 < @list.length
@@ -806,14 +825,25 @@ module Canis
       ensure_visible
       @repaint_required = true
     end
+    # jump to previous word, like vim's "b"
     def backward_word
+        #backward_regex(/[[:punct:][:space:]]\w/)
+        backward_regex(:word)
+    end
+    # jump to previous occurence of given regexp
+    # @param [Regexp] pattern to go back to.
+    def backward_regex regex
+      if regex.is_a? Symbol
+        regex = @text_patterns[regex]
+        raise "Pattern specified #{regex} does not exist in text_patterns " unless regex
+      end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
       buff = @list[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
-        found = buff.rindex(/[[:punct:][:space:]]\w/, pos-2)
+        found = buff.rindex(regex, pos-2)
         if !found || found == 0
           # if not found, we've lost a counter
           if pos > 0
@@ -1203,6 +1233,14 @@ module Canis
         end
       end
       return first
+    end
+    def next_regex regex
+      if regex.is_a? Symbol
+        regex = @text_patterns[regex]
+        raise "Pattern specified #{regex} does not exist in text_patterns " unless regex
+      end
+      @last_regex = regex
+      find_more 
     end
     ## 
     # Ensure current row is visible, if not make it first row
