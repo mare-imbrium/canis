@@ -463,24 +463,24 @@ module Canis
       end
       return :UNHANDLED unless @key_map
       @key_map.each_pair do |k,p|
-        $log.debug "KKK:  processing key #{ch}  #{chr} "
+        #$log.debug "KKK:  processing key #{ch}  #{chr} "
         if (k == ch || k == chr)
-          $log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
+          #$log.debug "KKK:  checking match == #{k}: #{ch}  #{chr} "
           # compare both int key and chr
-          $log.debug "KKK:  found match 1 #{ch}  #{chr} "
+          #$log.debug "KKK:  found match 1 #{ch}  #{chr} "
           p.call(self, ch)
           return 0
         elsif k.respond_to? :include?
-            $log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
+            #$log.debug "KKK:  checking match include #{k}: #{ch}  #{chr} "
             # this bombs if its a String and we check for include of a ch.
           if !k.is_a?( String ) && (k.include?( ch ) || k.include?(chr))
-            $log.debug "KKK:  found match include #{ch}  #{chr} "
+            #$log.debug "KKK:  found match include #{ch}  #{chr} "
             p.call(self, ch)
             return 0
           end
         elsif k.is_a? Regexp
           if k.match(chr)
-            $log.debug "KKK:  found match regex #{ch}  #{chr} "
+            #$log.debug "KKK:  found match regex #{ch}  #{chr} "
             p.call(self, ch)
             return 0
           end
