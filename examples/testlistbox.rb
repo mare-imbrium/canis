@@ -27,6 +27,10 @@ class Canis::Listbox
   # also, f overrides list f mapping. TODO
   include ViEditable
 end
+def get_data str
+        #lines = `ri -f bs #{str}`.split("\n")
+  lines = `ri -f ansi #{str} 2>&1`.gsub('[m','[0m').split("\n")
+end
   def my_help_text
     <<-eos
 
@@ -124,7 +128,9 @@ if $0 == __FILE__
       listb.bind_key(?r, 'get file'){ get_file("Get a file:") }
       listb.bind(:PRESS) { 
         w = @form.by_name["tv"]; 
-        lines = `ri -f bs #{listb.current_value}`.split("\n")
+        #lines = `ri -f bs #{listb.current_value}`.split("\n")
+        #lines = `ri -f ansi #{listb.current_value} 2>&1`.gsub('[m','[0m').split("\n")
+        lines = get_data listb.current_value
         #w.set_content(lines, :ansi)
         w.add_content(lines, {:content_type => :ansi, :title => listb.current_value})
         w.buffer_last
@@ -145,8 +151,9 @@ if $0 == __FILE__
         w = ev.word_under_cursor.strip
         # check that user did not hit enter on empty area
         if w != ""
-          _text = `ri -f bs #{tv.title}.#{w} 2>&1` 
-          _text = _text.split("\n")
+          #_text = `ri -f bs #{tv.title}.#{w} 2>&1` 
+          #_text = _text.split("\n")
+          _text = get_data "#{tv.title}.#{w}"
           if _text && _text.size != 0
             view(_text, :content_type => :ansi)
           end
