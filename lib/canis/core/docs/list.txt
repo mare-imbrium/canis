@@ -1,0 +1,16 @@
+# Help for Lists
+
+Lists support selection, either single or multiple. 
+
+Single selecion is done using "v" which is the visual mark key in vim.
+In multiple selection, the "v" may be used to select multiple rows. 
+The "V" character may be used for range selection.
+
+Lists also provide for inversion of selection (*), select all (a) and clear selection  (u). 
+These bindings may have been modified by your individual application.
+
+*Ask_select* and *Ask_Unselect* may be mapped for certain applications
+allowing a user to give a pattern to select or unselect. 
+
+Lists support all other motion commands of [Textpad].
+
