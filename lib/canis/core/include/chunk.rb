@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 13:06
+#  Last update: 2014-05-20 23:55
 # ------------------------------------------------------------ #
 #
 
@@ -117,6 +117,9 @@ module Canis
       end
     end
     class ColorParser
+      # hash containing color, bgcolor and attrib for a given style
+      attr_reader :stylesheet
+      attr_writer :style_map
       def initialize cp
         color_parser cp
         @color_pair = $datacolor
@@ -127,6 +130,18 @@ module Canis
         @color_pair_array = [@color_pair]
         @color = :white
         @bgcolor = :black
+      end
+
+      # since 2014-05-19 - 13:14 
+      # converts a style name given in a document to color, bg, and attrib from a stylesheet
+      def resolve_style style
+        if @style_map
+          # style_map contains a map for each style
+          retval =  @style_map[style]
+          raise "Invalid style #{style} in document" unless retval
+          return retval
+        end
+        raise "Style given in document, but no stylesheet provided"
       end
       #
       # Takes a formatted string and converts the parsed parts to chunks.
@@ -154,8 +169,17 @@ module Canis
           when Array
             ## got color / attrib info, this starts a new span
 
-            #color, bgcolor, attrib = *p
-            lc, lb, la = *p
+            # added style 2014-05-19 - 12:57 maybe should be a hash
+            #color, bgcolor, attrib , style = *p
+            lc, lb, la, ls = *p
+            if ls
+              #sc, sb, sa = resolve_style ls
+              map = resolve_style ls
+              $log.debug "  STYLLE #{ls} : #{map} "
+              lc ||= map[:color]
+              lb ||= map[:bgcolor]
+              la ||= map[:attrib]
+            end
             if la
               @attrib = get_attrib la
             end
@@ -168,8 +192,8 @@ module Canis
             end
             @color_pair_array << @color_pair
             @attrib_array << @attrib
-            #$log.debug "XXX: CHUNK start #{color_pair} , #{attrib} :: c:#{lc} b:#{lb} "
-            #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} "
+            $log.debug "XXX: CHUNK start cp=#{@color_pair} , a=#{@attrib} :: c:#{lc} b:#{lb} : @c:#{@color} @bg: #{@bgcolor} "
+            $log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} ::#{@color_array} ::: #{@bgcolor_array} "
 
           when :endcolor
 
@@ -178,8 +202,11 @@ module Canis
             @color_pair = @color_pair_array.last
             @attrib_array.pop
             @attrib = @attrib_array.last
-            #$log.debug "XXX: CHUNK end #{color_pair} , #{attrib} "
-            #$log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
+            # why are we nt popping the color and bgcolor array dts
+            @color_array.pop unless @color_array.count == 1
+            @bgcolor_array.pop unless @bgcolor_array.count == 1
+            $log.debug "XXX: CHUNK end #{color_pair} , #{attrib} "
+            $log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
           when :reset   # ansi has this
             # end all previous colors
             @color_pair = $datacolor # @color_pair_array.first
@@ -192,7 +219,7 @@ module Canis
           when String
 
             ## create the chunk
-            #$log.debug "XXX:  CHUNK     using on #{p}  : #{@color_pair} , #{@attrib} " # 2011-12-10 12:38:51
+            $log.debug "XXX:  CHUNK     using on #{p}  : #{@color_pair} , #{@attrib} " # 2011-12-10 12:38:51
 
             #chunk =  [color_pair, p, attrib] 
             chunk = Chunk.new @color_pair, p, @attrib
@@ -209,13 +236,31 @@ module Canis
         require 'canis/core/util/colorparser'
         @color_parser || DefaultColorParser.new
       end
-      # supply with a color parser, if you supplied formatted text
       public
+      # set a stylesheet -- this is a file path containing yaml
+      # a style_map is loaded from the stylesheet
+      def stylesheet=(s)
+        return unless s
+        @stylesheet = s
+        if File.exist? s
+          require 'yaml'
+          @style_map = YAML::load( File.open( File.expand_path(s) ))
+        else
+          raise "Could not open stylesheet file #{s}"
+        end
+      end
+      # supply with a color parser, if you supplied formatted text
       def color_parser f
+        if f.is_a? Hash
+          self.stylesheet = f[:stylesheet]
+          content_type = f[:content_type]
+        else
+          content_type = f
+        end
         $log.debug "XXX:  color_parser setting in CP to #{f} "
-        if f == :tmux
+        if content_type == :tmux
           @color_parser = get_default_color_parser()
-        elsif f == :ansi
+        elsif content_type == :ansi
           require 'canis/core/util/ansiparser'
           @color_parser = AnsiParser.new
         else
