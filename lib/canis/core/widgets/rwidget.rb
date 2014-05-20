@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-15 13:19
+  * Last update: 2014-05-21 00:09
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -155,29 +155,6 @@ module Canis
       # e.g. a single call of foo() may set a var, a repeated call of foo() may append to var
       $inside_multiplier_action = true
 
-      # This has been put here since the API is not yet stable, and i
-      # don't want to have to change in many places. 2011-11-10 
-      #
-      # Converts formatted text into chunkline objects.
-      #
-      # To print chunklines you may for each row:
-      #       window.wmove row+height, col
-      #       a = get_attrib @attrib
-      #       window.show_colored_chunks content, color, a
-      #
-      # @param [color_parser] object or symbol :tmux, :ansi
-      #       the color_parser implements parse_format, the symbols
-      #       relate to default parsers provided.
-      # @param [String] string containing formatted text
-      def parse_formatted_text(color_parser, formatted_text)
-        require 'canis/core/include/chunk'
-        cp = Chunks::ColorParser.new color_parser
-        l = []
-        formatted_text.each { |e| 
-          l << cp.convert_to_chunk(e) 
-        }
-        return l
-      end
 
       ## 
       # wraps text given max length, puts newlines in it.
@@ -2224,12 +2201,35 @@ module Canis
       end
       return @help_text
     end
+    # this and the help thing needs to be moved away.
+    def help2tmux arr
+      #arr = str.split "\n"
+      arr.each do |e|
+      e.gsub! /\[\[(\S+)\]\]/, '#[style=link]\1#[/end]'
+      e.gsub! /\*\*(\w+)\*\*/, '#[style=strong]\1#[/end]'
+      #e.gsub! /__(\w+)__/, '#[style=em]\1#[/end]'
+      #e.gsub! /_(\w+)_/, '#[style=em]\1#[/end]'
+      e.gsub! /__([a-zA-Z]+)__/, '#[style=em]\1#[/end]'
+      e.gsub! /_([a-zA-Z]+)_/, '#[style=em]\1#[/end]'
+      #e.gsub! /\`(\w[\w\d_]\w)\`/, '#[style=code]\1#[/end]'
+      e.gsub! /`(\w+)`/, '#[style=code]\1#[/end]'
+      e.gsub! /(\<\S+\>)/, '#[style=key]\1#[/end]'
+        e.sub! /^###\s*(.*)$/, '#[style=h3]\1#[/end]'
+        e.sub! /^## (.*)$/, '#[style=h2]\1#[/end]'
+        e.sub! /^# (.*)$/, '#[style=h1]\1#[/end]'
+      end
+      return arr
+    end
     def help_text=(text); help_text(text); end
     def display_help
       filename = File.dirname(__FILE__) + "/../docs/index.txt"
+      stylesheet = File.dirname(__FILE__) + "/../docs/stylesheet.yml"
       # defarr contains default help
       if File.exists?(filename)
-        defarr = File.open(filename,'r').readlines
+        defarr = File.open(filename,'r').read.split("\n")
+        # convert help file into styles for use by tmux
+        # quick dirty converter for the moment
+        defarr = help2tmux defarr
       else
         arr = []
         arr << "    NO HELP SPECIFIED FOR APP "
@@ -2260,6 +2260,9 @@ module Canis
 
       require 'canis/core/util/viewer'
       Canis::Viewer.view(arr, :layout => [h, w, 2, 4],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
+        # would have liked it to be 'md' or :help
+        t.content_type = :tmux
+        t.stylesheet   = stylesheet
         # you may configure textview further here.
         #t.suppress_borders true
         #t.color = :black
@@ -2269,7 +2272,7 @@ module Canis
 
         # help was provided, so default help is provided in second buffer
         unless defhelp
-          t.add_content defarr, :title => ' General Help '
+          t.add_content defarr, :title => ' General Help ', :stylesheet => stylesheet, :content_type => :tmux
         end
       end
     end
