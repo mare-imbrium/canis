@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-16 14:40
+#  Last update: 2014-05-20 17:24
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -69,6 +69,10 @@ module Canis
     #  pattern. Default contains :word. Callers may add patterns, or modify existing ones and
     #  create key bindings for the same.
     attr_reader :text_patterns
+    # type of content in case parsing is required. Values :tmux, :ansi, :none
+    attr_accessor :content_type
+    # path of yaml file which contains conversion of style names to color, bgcolor and attrib
+    attr_accessor :stylesheet
 
     def initialize form=nil, config={}, &block
 
@@ -356,7 +360,9 @@ module Canis
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
     # override this for better control
     def render_all
-      @list.each_with_index { |line, ix|
+      @native_text ||= @list
+      #@list.each_with_index { |line, ix|
+      @native_text.each_with_index { |line, ix|
         #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
         render @pad, ix, line
       }
@@ -370,6 +376,9 @@ module Canis
     end
     #
     # default method for rendering a line
+    # If it is a chunkline, then we take care of it.
+    # Only if it is a String do we pass to renderer.
+    # Should a renderer be allowed to handle chunks. Or be yielded chunks?
     #
     def render pad, lineno, text
       if text.is_a? AbstractChunkLine
@@ -421,20 +430,6 @@ module Canis
       end
     end
 
-    # 
-    # pass in formatted text along with parser (:tmux or :ansi)
-    # NOTE this does not call init_vars, i think it should, text() does
-    def formatted_text text, fmt
-
-      require 'canis/core/include/chunk'
-      @formatted_text = text
-      @color_parser = fmt
-      @repaint_required = true
-      _convert_formatted
-      # don't know if start is always required. so putting in caller
-      #goto_start
-      #remove_all
-    end
     # before updating a single row in a table 
     # we need to clear the row otherwise previous contents can show through
     def clear_row pad, lineno
@@ -534,6 +529,8 @@ module Canis
         c = fmt[:content_type] 
         t = fmt[:title]
         @title = t if t
+        @content_type = c if c
+        @stylesheet = fmt[:stylesheet] if fmt.key? :stylesheet
         fmt = c
         #raise "textpad.text expected content_type in Hash : #{fmt}" unless fmt
       when Symbol
@@ -546,7 +543,13 @@ module Canis
 
 
       # added so callers can have one interface and avoid an if condition
-      return formatted_text(lines, fmt) unless fmt == :none
+      #return formatted_text(lines, fmt) unless @content_type == :none
+      # 2014-05-20 - 13:21 change and simplication of conversion process
+      # We maintain original text in @list
+      # but use another variable for native format (chunks).
+      if @content_type
+        parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
+      end
 
       return @list if lines.empty?
       @list = lines
@@ -564,6 +567,61 @@ module Canis
       return @list
     end
     alias :get_content :content
+    # 
+    # pass in formatted text along with parser (:tmux or :ansi)
+    # This text contains markup such as ansi, or tmux
+    # NOTE this does not call init_vars, i think it should, text() does
+    def formatted_text text, fmt
+
+      #require 'canis/core/include/chunk'
+      @formatted_text = text
+      @color_parser = fmt
+      @repaint_required = true
+      _convert_formatted
+      # don't know if start is always required. so putting in caller
+      #goto_start
+      #remove_all
+    end
+    def _convert_formatted
+      if @formatted_text
+        l = parse_formatted_text(@color_parser, @formatted_text)
+        text(l)
+        @formatted_text = nil
+      end
+    end
+      # This has been moved from rwidget since only used here.
+      #
+      # Converts formatted text into chunkline objects.
+      #
+      # To print chunklines you may for each row:
+      #       window.wmove row+height, col
+      #       a = get_attrib @attrib
+      #       window.show_colored_chunks content, color, a
+      #
+      # @param [color_parser] object or symbol :tmux, :ansi
+      #       the color_parser implements parse_format, the symbols
+      #       relate to default parsers provided.
+      # @param [String] string containing formatted text
+      #def parse_formatted_text(color_parser, formatted_text)
+
+    # This is now to be called at start when text is set,
+    # and whenever there is a data modification.
+    # @param [Array<String>] original content sent in by user
+    #     which may contain markup
+    # @param [Hash] config containing
+    #    content_type
+    #    stylesheet
+    # @return [Chunklines] content in array of chunks.
+      def parse_formatted_text(formatted_text, config)
+        require 'canis/core/include/chunk'
+        cp = Chunks::ColorParser.new config
+        l = []
+        formatted_text.each { |e| 
+          l << cp.convert_to_chunk(e) 
+        }
+        #return l
+        @native_text = l
+      end
     #
     # returns focussed value (what cursor is on)
     # This may not be a string. A tree may return a node, a table an array or row
@@ -1087,7 +1145,10 @@ module Canis
       
       # I can't recall why we are doing this late. Is the rreason relevant any longer
       # Some methods that expect data are crashing like tablewidgets model_row
-      _convert_formatted
+      #_convert_formatted
+      if @content_type
+        parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
+      end
 
       # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
 
@@ -1121,16 +1182,6 @@ module Canis
 
           @window.wrefresh
         end
-      end
-    end
-    def _convert_formatted
-      if @formatted_text
-
-        l = Canis::Utils.parse_formatted_text(@color_parser,
-                                               @formatted_text)
-
-        text(l)
-        @formatted_text = nil
       end
     end
 
