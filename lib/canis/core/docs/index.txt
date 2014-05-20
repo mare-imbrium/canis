@@ -1,4 +1,4 @@
-G E N E R A L   H E L P
+# G E N E R A L   H E L P
 =======================
               <q> to quit this window. <Space> to scroll. 
 
@@ -27,7 +27,7 @@ _____________________________________________________________________
 _____________________________________________________________________
 ## 3. Multiline widgets
 
-In most widgets such as [list], _textpad_, _table_, and _tree_ the
+In most widgets such as [[list]], _textpad_, _table_, and _tree_ the
 following vim-bindings are applicable.
 
           j,k,l,h, gg, G, C-d, C-b, C-e, C-y, w, b, /
@@ -65,7 +65,7 @@ Hotkeys are available using Alt-<key> and will be displayed with an
 underline if the TERM displays underlines.
 
 _____________________________________________________________________
-## 6. Selection in lists
+### 6. Selection in lists
 
 Please note that in earlier versions, <SPACE> was used for selection.
 However, since this conflicts with the scrolling behavior in most
@@ -80,8 +80,8 @@ selection. This may be altered by setting "$row_selector".
                         vim undo)
           *       -   invert selection
 
-          -       -   ask unselect
-          +       -   ask select
+          -       -   `ask_unselect`
+          +       -   `ask_select`
 
 _____________________________________________________________________
 q to quit, gg to goto top.
