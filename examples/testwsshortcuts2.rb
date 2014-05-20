@@ -88,11 +88,13 @@ class SetupMessagebox
       #textview :text => formatted
         #textview do |t| t.formatted_text(text, :tmux) end
         t = textview :title => 'tmux format'
-        t.formatted_text(text, :tmux)
+        #t.formatted_text(text, :tmux)
+        t.text(text, :content_type => :tmux)
         t1 = textview :title => 'ansi formatted document'
         text = File.open("data/color.2","r").readlines
         #text = `ri -f bs String`.split("\n")
-        t1.formatted_text(text, :ansi)
+        #t1.formatted_text(text, :ansi)
+        t1.text(text, :content_type => :ansi)
 
       flow do
         #box do
