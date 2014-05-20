@@ -12,5 +12,5 @@ These bindings may have been modified by your individual application.
 *Ask_select* and *Ask_Unselect* may be mapped for certain applications
 allowing a user to give a pattern to select or unselect. 
 
-Lists support all other motion commands of [Textpad].
+Lists support all other motion commands of [[Textpad]].
 
