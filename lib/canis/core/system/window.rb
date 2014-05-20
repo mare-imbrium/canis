@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-12 21:05
+#  Last update: 2014-05-20 20:53
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -823,6 +823,13 @@ module Canis
     end
 
 
+    # A map of int keycodes associated with a string name which is defined in $kh
+    $kh_int ||= Hash.new {|hash, key| hash[key] = key.hash }
+    # these 4 for xterm-color which does not send 265 on F1
+    $kh_int["F1"] = 265
+    $kh_int["F2"] = 266
+    $kh_int["F3"] = 267
+    $kh_int["F4"] = 268
     # testing out shift+Function. these are the codes my kb generates
     if File.exists? File.expand_path("~/ncurses-keys.yml")
       # a sample of this file should be available with this 
@@ -842,6 +849,12 @@ module Canis
       $kh['[15;2~']="S-F5"
 
     end
+    # this is for xterm-color which does not send 265 on F1
+      $kh['OP']="F1"
+      $kh['OQ']="F2"
+      $kh['OR']="F3"
+      $kh['OS']="F4"
+    
     # NOTE: This is a reworked and much simpler version of the original getchar which was taken from manveru's 
     # codebase. This also currently returns the keycode as int while placing the char version in a 
     # global $key_chr. Until we are ready to return a char, we use this.
@@ -936,7 +949,9 @@ module Canis
               # NOTE this still means that user can press Alt-[ and some letter in quick succession
               # and it will accumulate rather than be interpreted as M-[.
               #
-              if buff.length == 2 and k.chr != '['
+              if buff.length == 2 and k == 79
+                # this is Alt-O and can be a F key in some terms like xterm-color
+              elsif buff.length == 2 and k.chr != '['
                 x = _evaluate_buff buff
         
                 $key_chr = x
@@ -1090,7 +1105,6 @@ module Canis
     #    when $kh_int["S-F2"]
     def _get_int_for_newkey x
       # FIXME put the declaration somewhere else maybe in window cons ???
-      $kh_int ||= Hash.new {|hash, key| hash[key] = key.hash }
       y = $kh_int[x]
       # when i give user the hash, he can get the string back ???
       $kh_int[y] = x unless $kh_int.key? y
