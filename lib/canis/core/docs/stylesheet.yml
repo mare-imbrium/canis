@@ -1,0 +1,26 @@
+---
+link:
+    :color: :yellow
+    :bgcolor: :blue
+    :attrib: :underline
+bold:
+    :attrib: :bold
+em: 
+    :color: :blue
+    :attrib: :bold
+strong: 
+    :color: :yellow
+    :attrib: :bold
+code: 
+    :color: :cyan
+    :bgcolor: :blue
+h1: 
+    :attrib: :reverse
+h2: 
+    :color: :green
+    :attrib: :bold
+h3: 
+    :color: :yellow
+key: 
+    :color: :red
+    :attrib: :bold
