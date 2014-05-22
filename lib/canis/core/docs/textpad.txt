@@ -1,0 +1,25 @@
+# Help for Textpads 
+
+(These were earlier called _TextViews_ )
+
+Textpads allow display of multiline textual information and provide for 
+basic search, and vim-like navigation keys.
+
+Some textpads are extended to display multiple buffers such as the help
+screens. Textpads may display text that has ANSI escape codes such as 
+unix `man` pages, or the output of commands such as `ri` or `dooby` or 
+any other unix command that outputs colored output.
+
+There is a second format that provides a lot more control than ANSI,
+which is a `tmux` like format. This is used in the `status_line`.
+
+Finally, there is a (new) help format, much like markdown (very
+restricted, though). This page is formatted using the help format.
+
+Textpads do not provide row selection, but do allow mapping of the <ENTER>
+key and provide the `word_under_cursor` to the calling block as part of
+the action event. For instance, on this (or other) help pages, pressing 
+the <TAB> key will take the cursor to the next link (if there is one).
+Pressing <ENTER> on the link will open the linked help file. This is the
+link to the [[index]] or main help page.
+
