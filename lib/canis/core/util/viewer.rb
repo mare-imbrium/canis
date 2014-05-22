@@ -58,6 +58,8 @@ module Canis
       v_window = Canis::Window.new(layout)
       v_form = Canis::Form.new v_window
       v_window.name = "Viewer"
+      # I am placing this in globals since an alert on top will refresh the lower windows and this is quite large.
+      $global_windows << v_window
       colors = Ncurses.COLORS
       back = :blue
       back = 235 if colors >= 256
@@ -109,10 +111,6 @@ module Canis
       items = {:header => ah}
       close_keys = [ config[:close_key] , 3 , ?q.getbyte(0), 27 , 2727 ]
       begin
-        # multibuffer requires add_Co after set_co
-        # We are using in help, therefore we need multibuffers.
-        textview.set_content content, :content_type => type
-        textview.add_content content, :content_type => type
         # the next can also be used to use formatted_text(text, :ansi)
         # yielding textview so you may further configure or bind keys or events
         if block_given?
@@ -122,6 +120,10 @@ module Canis
             textview.instance_eval(&block)
           end
         end
+        # multibuffer requires add_Co after set_co
+        # We are using in help, therefore we need multibuffers.
+        textview.set_content content, :content_type => type #, :stylesheet => t.stylesheet
+        textview.add_content content, :content_type => type #, :stylesheet => t.stylesheet
       #yield textview if block_given? 
       v_form.repaint
       v_window.wrefresh
