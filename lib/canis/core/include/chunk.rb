@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-20 23:55
+#  Last update: 2014-05-22 13:41
 # ------------------------------------------------------------ #
 #
 
@@ -239,14 +239,19 @@ module Canis
       public
       # set a stylesheet -- this is a file path containing yaml
       # a style_map is loaded from the stylesheet
+      # Sending a symbol such as :help will load style_help.yml
+      # @param [String, Symbol] s is a pathname for stylesheet or symbol pointing to a stylesheet
       def stylesheet=(s)
         return unless s
+        if s.is_a? Symbol
+          s = CANIS_DOCPATH + "style_#{s}.yml"
+        end
         @stylesheet = s
         if File.exist? s
           require 'yaml'
           @style_map = YAML::load( File.open( File.expand_path(s) ))
         else
-          raise "Could not open stylesheet file #{s}"
+          raise "Could not find stylesheet file #{s}"
         end
       end
       # supply with a color parser, if you supplied formatted text
