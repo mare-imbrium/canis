@@ -422,7 +422,11 @@ module Canis
     def quit
       throw(:close)
     end
-    def help; display_app_help; end
+    #def help; display_app_help; end
+    # i am removing above from rdialog. 2014-05-21 - 12:42 hope next
+    # line works UNTESTED
+    def help; @form.help_manager.display_help; end
+
     # Initialize curses
     def init_ncurses
       Canis::start_ncurses  # this is initializing colors via ColorMap.setup
