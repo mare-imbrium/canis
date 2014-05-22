@@ -34,41 +34,44 @@ end
   def my_help_text
     <<-eos
 
-    =========================================================================
-    Basic Usage
+=========================================================================
+## Basic Usage
 
-    Press <ENTER> on a class name on the first list, to view ri information
-    for it on the right.
-    
-    Tab to right area, and press <ENTER> on a method name, to see its details
-    Press / <slash> in any box to search. e.g /String will take you to the
-    first occurrence of String. <n> will take you to next.
-    
-    To go quickly to first class starting with 'S', type <f> followed by <S>.
-    Then press <n> to go to next match.
-    
-    =========================================================================
-    Vim Edit Keys
+Press <ENTER> on a class name on the first list, to view `ri` information
+for it on the right.
 
-    The list on left has some extra vim keys enabled such as :
+Tab to right box, navigate to a method name, and press <ENTER> on a method 
+name, to see its details in a popup screen.
+Press */* <slash> in any box to search. e.g "/String" will take you to the
+first occurrence of "String". <n> will take you to the next match.
+
+To go quickly to the first Class starting with 'S', type <f> followed by <S>.
+Then press <n> to go to next match.
+    
+=========================================================================
+## Vim Edit Keys
+
+The list on left has some extra vim keys enabled such as :
+>
     yy     - yank/copy current line/s
     P, p   - paste after or before
     dd     - delete current line
     o      - insert a line after this one
     C      - change content of current line
-    These are not of use here, but are demonstrative of list capabilities.
+<
+These are not of use here, but are demonstrative of list capabilities.
 
-    =========================================================================
-    Buffers
+=========================================================================
+## Buffers
 
-    Ordinary a textview contains only one buffer. However, the one on the right
-    is extended for multiple buffers. Pressing ENTER on the left on several 
-    rows opens multiple buffers on the right. Use M-n (Alt-N) and M-p to navigate.
-    ALternatively, : maps to a menu, so :n and :p may also be used.
-    <BACKSPACE> will also go to previous buffer, like a browser.
+Ordinary a textview contains only one buffer. However, the one on the right
+is extended for multiple buffers. Pressing <ENTER> on the left on several 
+rows opens multiple buffers on the right. Use <M-n> (Alt-N) and <M-p> to navigate.
+ALternatively, <:> maps to a menu, so :n and :p may also be used.
+<BACKSPACE> will also go to previous buffer, like a browser.
 
-    =========================================================================
-           Press <M-n> for next help screen, or try :n 
+=========================================================================
+       Press <M-n> for next help screen, or try ":n" 
 
     eos
   end
@@ -78,19 +81,21 @@ if $0 == __FILE__
   begin
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"canis14.log")))
+    path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
+    logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    $log = Logger.new(logfilename)
     $log.level = Logger::DEBUG
 
     @window = Canis::Window.root_window
     $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
-    install_help_text my_help_text
     # Initialize few color pairs 
     # Create the window to be associated with the form 
     # Un post form and free the memory
 
     catch(:close) do
       @form = Form.new @window
-      @form.bind_key(KEY_F1, 'help'){ display_app_help }
+      @form.help_manager.help_text = my_help_text
+      #@form.bind_key(KEY_F1, 'help'){ display_app_help }
 
       # this is the old style of printing something directly on the window.
       # The new style is to use a header
@@ -143,6 +148,7 @@ if $0 == __FILE__
         "Press ENTER on method name to see details"]
       require 'canis/core/include/multibuffer'
       tv.extend(Canis::MultiBuffers)
+      # with format 'bs' we had a '=' but now it is colored so we've lost section.
       tv.text_patterns[:section] = Regexp.new(/^= /)
       tv.bind_key(?s, "goto section") { tv.next_regex(:section) }
 
