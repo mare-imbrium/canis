@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-20 17:24
+#  Last update: 2014-05-23 01:21
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -100,6 +100,7 @@ module Canis
         @lastcol = @col + @col_offset
       end
       @repaint_required = true
+      @parse_required = true
       map_keys unless @mapped_keys
     end
 
@@ -343,6 +344,7 @@ module Canis
       @_populate_needed = true
       @repaint_required = true
       @repaint_all = true
+      @parse_required = true
       @__first_time = nil
     end
     # repaint only one row since content of that row has changed. 
@@ -350,7 +352,8 @@ module Canis
     def fire_row_changed ix
       return if ix >= @list.length
       clear_row @pad, ix
-      render @pad, ix, @list[ix]
+      #render @pad, ix, @list[ix]
+      render @pad, ix, @native_text[ix]
     
     end
 # ---- end pad related ----- }}}
@@ -522,6 +525,7 @@ module Canis
         return @list
       end
       lines = val[0]
+      raise "Textpad: text() received nil" unless lines
       fmt = val.size == 2 ? val[1] : :none
       case fmt
       when Hash
@@ -531,6 +535,7 @@ module Canis
         @title = t if t
         @content_type = c if c
         @stylesheet = fmt[:stylesheet] if fmt.key? :stylesheet
+        $log.debug "  TEXTPAD text() got  #{@content_type} and #{@stylesheet} "
         fmt = c
         #raise "textpad.text expected content_type in Hash : #{fmt}" unless fmt
       when Symbol
@@ -547,6 +552,7 @@ module Canis
       # 2014-05-20 - 13:21 change and simplication of conversion process
       # We maintain original text in @list
       # but use another variable for native format (chunks).
+      @parse_required = true
       if @content_type
         parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
       end
@@ -572,6 +578,7 @@ module Canis
     # This text contains markup such as ansi, or tmux
     # NOTE this does not call init_vars, i think it should, text() does
     def formatted_text text, fmt
+      raise "deprecated formatted_text"
 
       #require 'canis/core/include/chunk'
       @formatted_text = text
@@ -583,6 +590,7 @@ module Canis
       #remove_all
     end
     def _convert_formatted
+      raise "deprecated _convert_formatted"
       if @formatted_text
         l = parse_formatted_text(@color_parser, @formatted_text)
         text(l)
@@ -606,27 +614,34 @@ module Canis
 
     # This is now to be called at start when text is set,
     # and whenever there is a data modification.
+    # This updates @native_text, so how do we parse just a line or remainder of a document
+    #    from a line onwards. FIXME
     # @param [Array<String>] original content sent in by user
     #     which may contain markup
     # @param [Hash] config containing
     #    content_type
     #    stylesheet
     # @return [Chunklines] content in array of chunks.
-      def parse_formatted_text(formatted_text, config)
+      def parse_formatted_text(formatted_text, config=nil)
+        return unless @parse_required
+
+        config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
+
         require 'canis/core/include/chunk'
         cp = Chunks::ColorParser.new config
         l = []
         formatted_text.each { |e| 
           l << cp.convert_to_chunk(e) 
         }
-        #return l
+        cp = nil
+        @parse_required = false
         @native_text = l
       end
     #
     # returns focussed value (what cursor is on)
     # This may not be a string. A tree may return a node, a table an array or row
     def current_value
-      @list[@current_index]
+      @native_text[@current_index]
     end
     ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
     #    formatting of data
@@ -664,6 +679,7 @@ module Canis
       def #{e}(*args)
         @list ||= []
         fire_dimension_changed
+        @parse_required = true
         @list.send(:#{e}, *args)
         self
       end
@@ -675,10 +691,12 @@ module Canis
     def clear
       return unless @list
       @list.clear
+      @native_text.clear
       fire_dimension_changed
       init_vars
     end
     # update the value at index with given value, returning self
+    # FIXME the native row has to be recalculated.
     def []=(index, val)
       @list[index]=val
       fire_row_changed index
@@ -798,7 +816,7 @@ module Canis
       $multiplier = 0
     end
 
-    # scrolls lines a window full at a time, on pressing ENTER or C-d or pagedown
+    # scrolls lines a window full at a time, on pressing SPACE or C-d or pagedown
     def scroll_forward
       #@oldindex = @current_index
       @current_index += @scrollatrows
@@ -859,14 +877,14 @@ module Canis
       end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @list[line].to_s
+      buff = @native_text[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
         found = buff.index(regex, pos)
         if !found
           # if not found, we've lost a counter
-          if line+1 < @list.length
+          if line+1 < @native_text.length
             line += 1
           else
             return
@@ -897,7 +915,7 @@ module Canis
       end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @list[line].to_s
+      buff = @native_text[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
@@ -908,7 +926,7 @@ module Canis
             pos = 0
           elsif line > 0
             line -= 1
-            pos = @list[line].to_s.size
+            pos = @native_text[line].to_s.size
           else
             return
           end
@@ -954,7 +972,7 @@ module Canis
     def cursor_eol
       # pcol is based on max length not current line's length
       @pcol = @content_cols - @cols - 1
-      @curpos = @list[@current_index].size
+      @curpos = @native_text[@current_index].size
       @repaint_required = true
     end
     # 
@@ -1143,9 +1161,8 @@ module Canis
       # if repaint is required, print_foot not called. unless repaint_all is set, and that 
       # is rarely set.
       
-      # I can't recall why we are doing this late. Is the rreason relevant any longer
-      # Some methods that expect data are crashing like tablewidgets model_row
       #_convert_formatted
+      # Now this is being called every time a repaint happens, it should only be called if data has changed.
       if @content_type
         parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
       end
@@ -1274,7 +1291,7 @@ module Canis
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       ## =~ does not give an error, but it does not work.
-      @list.each_with_index do |line, ix|
+      @native_text.each_with_index do |line, ix|
         _col = line.index str
         if _col
           first ||= [ ix, _col ]
