@@ -55,7 +55,9 @@ module Canis
     def buffer_last
       @_buffer_ctr = @_buffers.count - 1
       l = @_buffers.last
-      set_content l, @_buffers_conf.last
+      if l
+        set_content l, @_buffers_conf.last
+      end
     end
     # close window, a bit clever
     def close
