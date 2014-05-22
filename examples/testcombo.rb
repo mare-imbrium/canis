@@ -4,21 +4,21 @@ require 'canis/core/widgets/rcombo'
 require 'canis/core/include/appmethods.rb'
 def help_text
       <<-eos
-               COMBO  HELP 
+# COMBO  HELP 
 
-      This is some help text for Combos
+This is some help text for |Combos|
 
-      You may press SPACE to invoke the popup and then use arrow keys to traverse. (j and k may also work)
-      'v' on the popup to select (or whatever has been set as $row_selector (#{keycode_tos($row_selector)}) )
+You may press <SPACE> to invoke the popup and then use arrow keys to traverse. (j and k may also work)
+'v' on the popup to select (or whatever has been set as $row_selector (#{keycode_tos($row_selector)}) )
 
-      You may press the first character of the desired item to see all those items starting with that char.
-      e.g. pressing "v" will cycle through vt100 and vt102
+You may press the first character of the desired item to see all those items starting with that char.
+e.g. pressing "v" will cycle through vt100 and vt102
 
 
-      If the arrow_key_policy is set to :popup then a down arrow will also invoke popup. However, if you
-      prefer the down arrow to go to the next field, use :ignore. In that case, only SPACE can trigger POPUP.
+If the `arrow_key_policy` is set to `:popup` then a down arrow will also invoke popup. However, if you
+prefer the down arrow to go to the next field, use `:ignore`. In that case, only <SPACE> can trigger POPUP.
 
-      -----------------------------------------------------------------------
+-----------------------------------------------------------------------
       eos
 end
 if $0 == __FILE__
@@ -60,7 +60,7 @@ if $0 == __FILE__
 
       @form.help_manager.help_text = help_text
       #@form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help help_text() }
-      @form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help }
+      #@form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help }
       @form.repaint
       @window.wrefresh
       Ncurses::Panel.update_panels
