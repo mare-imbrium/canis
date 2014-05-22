@@ -3,39 +3,39 @@ require 'canis'
 require 'canis/core/include/appmethods.rb'
 def help_text
       <<-eos
-               FIELD  HELP 
+# FIELD  HELP 
 
-      This is some help text for Fields
+This is some help text for |Fields|
 
-      Name is non-focusable
-      Line takes numbers from 1 to 200
-      Regex takes only alpha
-      Password takes only scotty or tiger or pass or qwerty, and maybe left blank
+*Name* is non-focusable
+*Line* takes numbers from 1 to 200
+*Regex* takes only alpha
+*Password* takes only scotty or tiger or pass or qwerty, and can be left blank
 
-      Use Alt (meta) with the highlighted character to jump to that field.
-      Alt-m goes to line, Alt-p to password.
+Use Alt (meta) with the highlighted character to jump to that field.
+<Alt-m> goes to line, <Alt-p> to password.
 
-      Notice how the field label becomes red when focused (as in Pine/Alpine). This uses
-      the event :ENTER and :LEAVE
+Notice how the field label becomes red when focused (as in Pine/Alpine). This uses
+the event `:ENTER` and `:LEAVE`
 
 
-
-      F10 -   Exit application  (also C-q)
+>
+      F10      -   Exit application  (also C-q)
       Alt-!    -   Drop to shell
       C-x c    -   Drop to shell
       C-x l    -   list of files
       C-x p    -   process list
       C-x d    -   disk usage list
-      C-x s  -   Git status
-      C-x w  -   Git whatchanged
+      C-x s    -   Git status
+      C-x w    -   Git whatchanged
       Alt-x    -   Command mode (<tab> to see commands and select)
 
-      F3      - View log
-      F4      - prompt for unix command and display in viewer
-      F5      - Drop to shell
+      F3       -   View log
+      F4       -   prompt for unix command and display in viewer
+      F5       -   Drop to shell
+<
 
-
-      -----------------------------------------------------------------------
+-----------------------------------------------------------------------
       eos
 end
 if $0 == __FILE__
@@ -137,8 +137,6 @@ if $0 == __FILE__
       @form.bind_key([?\C-x,?w], 'git whatchanged') {  run_command "git whatchanged" }
 
       @form.help_manager.help_text = help_text
-      #@form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help help_text() }
-      @form.bind_key(FFI::NCurses::KEY_F1, 'help') {  display_app_help }
       @form.repaint
       @form.widgets.each { |ff|
         if ff.focusable?
