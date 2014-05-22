@@ -463,15 +463,6 @@ def longest_in_list list  #:nodoc:
   end    
   longest
 end    
-# would like to deprecate this and use 
-# @form.help_manager.help_text = text
-def install_help_text text
-  @_help_text = text
-  if @form
-    hm = @form.help_manager
-    hm.help_text = text
-  end
-end
 # this routine prints help_text for an application
 # If help_text has been set using install_help_text
 # it will be displayed. Else, general help will be
@@ -480,6 +471,7 @@ end
 #
 # earlier in app.rb
 def display_app_help form=@form
+  raise "This is now deprecated, pls use @form.help_manager.display_help "
   if form
     hm = form.help_manager
     if !hm.help_text 
@@ -487,8 +479,6 @@ def display_app_help form=@form
       # these 2 only made sense from app.rb and should be removed, too implicit
       if respond_to? :help_text
         arr = help_text
-      elsif @_help_text
-        arr = @_help_text
       end
       hm.help_text(arr) if arr
     end
@@ -496,57 +486,6 @@ def display_app_help form=@form
   else
     raise "Form needed by display_app_help. Use form.help_manager instead"
   end
-end
-def ORIGdisplay_app_help
-  filename = File.dirname(__FILE__) + "/../docs/index.txt"
-  # defarr contains default help
-  if File.exists?(filename)
-    defarr = File.open(filename,'r').readlines
-  else
-    arr = []
-    arr << "    NO HELP SPECIFIED FOR APP "
-    arr << "    "
-    arr << "     --- General help ---          "
-    arr << "    F10         -  exit application "
-    arr << "    Alt-x       -  select commands  "
-    arr << "    : (or M-:)  -  select commands  "
-    arr << "    ? (or M-?)  -  current widget key bindings  "
-    arr << "    "
-    defarr = arr
-  end
-  defhelp = true
-  if respond_to? :help_text
-    arr = help_text()
-    defhelp = false
-  elsif @_help_text
-    arr = @_help_text
-    defhelp = false
-  else
-    arr = defarr
-  end
-  case arr
-  when String
-    arr = arr.split("\n")
-  when Array
-  end
-  #w = arr.max_by(&:length).length
-  h = FFI::NCurses.LINES - 4
-  w = FFI::NCurses.COLS - 10
-
-    require 'canis/core/util/viewer'
-    Canis::Viewer.view(arr, :layout => [h, w, 2 , 4],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
-      # you may configure textview further here.
-      #t.suppress_borders true
-      #t.color = :black
-      #t.bgcolor = :white
-      # or
-      #t.attr = :reverse
-
-      # help was provided, so default help is provided in second buffer
-      unless defhelp
-        t.add_content defarr, :title => ' General Help '
-      end
-    end
 end
 #
 =begin  
