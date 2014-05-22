@@ -39,42 +39,6 @@ module Canis
     end
 
     #
-    # Displays application help using either array provided
-    # or checking for :help_text method
-    # @param [Array] help text
-    def display_app_help help_array= nil
-      if help_array
-        arr = help_array
-      elsif respond_to? :help_text
-        arr = help_text
-      else
-        arr = []
-        arr << "    NO HELP SPECIFIED FOR APP #{self}  "
-        arr << "    "
-        arr << "     --- General help ---          "
-        arr << "    F10         -  exit application "
-        arr << "    Alt-x       -  select commands  "
-        arr << "    :           -  select commands  "
-        arr << "    "
-      end
-      case arr
-      when String
-        arr = arr.split("\n")
-      when Array
-      end
-      w = arr.max_by(&:length).length
-
-      require 'canis/core/util/viewer'
-      Canis::Viewer.view(arr, :layout => [[4+arr.size, 24].min, w+2, 2, 10],:close_key => KEY_ENTER, :title => "<Enter> to close", :print_footer => true) do |t|
-      # you may configure textview further here.
-      #t.suppress_borders true
-      #t.color = :black
-      #t.bgcolor = :white
-      # or
-      t.attr = :reverse
-      end
-    end
-    #
     # prompts user for unix command and displays output in viewer
     # 
     def shell_output
