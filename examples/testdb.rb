@@ -68,7 +68,7 @@ end
 begin
   # Initialize curses
   Canis::start_ncurses  # this is initializing colors via ColorMap.setup
-  path = File.join(ENV["LOGDIR"] || "./" ,"canis.log")
+  path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
   logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
   $log = Logger.new(logfilename)
   $log.level = Logger::DEBUG
@@ -83,7 +83,6 @@ begin
   catch(:close) do
     @window = Canis::Window.root_window
     @form = Form.new @window
-    @form.bind_key(KEY_F1, 'help'){ display_app_help }
 
     header = app_header "0.0.1", :text_center => "Movie Database", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold 
 
