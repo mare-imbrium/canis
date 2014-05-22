@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-21 00:09
+  * Last update: 2014-05-22 20:59
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -32,6 +32,7 @@ BOLD = FFI::NCurses::A_BOLD
 REVERSE = FFI::NCurses::A_REVERSE
 UNDERLINE = FFI::NCurses::A_UNDERLINE
 NORMAL = FFI::NCurses::A_NORMAL
+CANIS_DOCPATH = File.dirname(File.dirname(__FILE__)) + "/docs/"
 
 class Object # yeild eval {{{
 # thanks to terminal-table for this method
@@ -156,23 +157,6 @@ module Canis
       $inside_multiplier_action = true
 
 
-      ## 
-      # wraps text given max length, puts newlines in it.
-      # it does not take into account existing newlines
-      # Some classes have @maxlen or display_length which may be passed as the second parameter
-      def wrap_text(txt, max )
-        txt.gsub(/(.{1,#{max}})( +|$\n?)|(.{1,#{max}})/,
-                 "\\1\\3\n") 
-      end
-
-      # remove tabs, newlines and non-print chars from a string since these
-      # can mess display
-      def clean_string! content
-        content.chomp! # don't display newline
-        content.gsub!(/[\t\n]/, '  ') # don't display tab
-        content.gsub!(/[^[:print:]]/, '')  # don't display non print characters
-        content
-      end
       # convenience func to get int value of a key
       # added 2014-05-05
       # instead of ?\C-a.getbyte(0)
@@ -2201,44 +2185,36 @@ module Canis
       end
       return @help_text
     end
-    # this and the help thing needs to be moved away.
-    def help2tmux arr
-      #arr = str.split "\n"
-      arr.each do |e|
-      e.gsub! /\[\[(\S+)\]\]/, '#[style=link]\1#[/end]'
-      e.gsub! /\*\*(\w+)\*\*/, '#[style=strong]\1#[/end]'
-      #e.gsub! /__(\w+)__/, '#[style=em]\1#[/end]'
-      #e.gsub! /_(\w+)_/, '#[style=em]\1#[/end]'
-      e.gsub! /__([a-zA-Z]+)__/, '#[style=em]\1#[/end]'
-      e.gsub! /_([a-zA-Z]+)_/, '#[style=em]\1#[/end]'
-      #e.gsub! /\`(\w[\w\d_]\w)\`/, '#[style=code]\1#[/end]'
-      e.gsub! /`(\w+)`/, '#[style=code]\1#[/end]'
-      e.gsub! /(\<\S+\>)/, '#[style=key]\1#[/end]'
-        e.sub! /^###\s*(.*)$/, '#[style=h3]\1#[/end]'
-        e.sub! /^## (.*)$/, '#[style=h2]\1#[/end]'
-        e.sub! /^# (.*)$/, '#[style=h1]\1#[/end]'
-      end
-      return arr
-    end
+    # Assign help text to variable
+    # @param [String] help text is a string with newlines, or an Array. Will be split if String.
+    #     May use markup for help files which is a very limited subset of markdown.
     def help_text=(text); help_text(text); end
+
+    # Displays help provided by program. If no program is specified, then default help
+    # is displayed. If help was provided, then default help is also displayed on next page
+    # after program's help
     def display_help
-      filename = File.dirname(__FILE__) + "/../docs/index.txt"
-      stylesheet = File.dirname(__FILE__) + "/../docs/stylesheet.yml"
+      require 'canis/core/util/textutils'
+      filename = CANIS_DOCPATH + "index.txt"
+      stylesheet = CANIS_DOCPATH + "style_help.yml"
       # defarr contains default help
       if File.exists?(filename)
         defarr = File.open(filename,'r').read.split("\n")
         # convert help file into styles for use by tmux
         # quick dirty converter for the moment
-        defarr = help2tmux defarr
+        defarr = Canis::TextUtils::help2tmux defarr
       else
         arr = []
-        arr << "    NO HELP SPECIFIED FOR APP "
+        arr << "  Could not find help file for application "
         arr << "    "
-        arr << "     --- General help ---          "
+        arr << "Most applications provide the following keys, unless overriden:"
+        arr << "    "
         arr << "    F10         -  exit application "
+        arr << "    C-q         -  exit application "
+        arr << "    ? (or M-?)  -  current widget key bindings  "
+        arr << "    "
         arr << "    Alt-x       -  select commands  "
         arr << "    : (or M-:)  -  select commands  "
-        arr << "    ? (or M-?)  -  current widget key bindings  "
         arr << "    "
         defarr = arr
       end
@@ -2246,34 +2222,63 @@ module Canis
       if @help_text
         defhelp = false
         arr = @help_text
+        arr = arr.split("\n") if arr.is_a? String
+        arr = Canis::TextUtils::help2tmux arr # FIXME can this happen automatically if it is help format
       else
         arr = defarr
-      end
-      case arr
-      when String
-        arr = arr.split("\n")
-      when Array
       end
       #w = arr.max_by(&:length).length
       h = FFI::NCurses.LINES - 4
       w = FFI::NCurses.COLS - 10
 
       require 'canis/core/util/viewer'
-      Canis::Viewer.view(arr, :layout => [h, w, 2, 4],:close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
+      Canis::Viewer.view(arr, :layout => [h, w, 2, 4], :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true) do |t|
         # would have liked it to be 'md' or :help
         t.content_type = :tmux
         t.stylesheet   = stylesheet
-        # you may configure textview further here.
-        #t.suppress_borders true
-        #t.color = :black
-        #t.bgcolor = :white
-        # or
-        #t.attr = :reverse
+        #t.text_patterns[:link] = Regexp.new(/\[[^\]]\]/)
+        t.text_patterns[:link] = Regexp.new(/\[\w+\]/)
+        t.bind_key(KEY_TAB, "goto link") { t.next_regex(:link) }
+        t.bind(:PRESS){|eve| 
+          link = nil
+          s = eve.word_under_cursor
+          if is_link?(t, s)
+            link = get_link(t, s)
+          end
+          #alert "word under cursor is #{eve.word_under_cursor}, link is #{link}"
+          if link
+            arr = read_help_file link
+            if arr
+              t.add_content arr, :title => link
+              t.buffer_last
+            else
+              alert "No help file for #{link}"
+            end
+          else
+          end
+        }
 
         # help was provided, so default help is provided in second buffer
         unless defhelp
           t.add_content defarr, :title => ' General Help ', :stylesheet => stylesheet, :content_type => :tmux
         end
+      end
+    end
+    def is_link? t, s
+      s.index(t.text_patterns[:link]) >= 0
+    end
+    def get_link t, s
+      s.match(t.text_patterns[:link])[0].gsub!(/[\[\]]/,"")
+    end
+    def read_help_file link
+      filename = CANIS_DOCPATH + "#{link}.txt"
+      defarr = nil
+      # defarr contains default help
+      if File.exists?(filename)
+        defarr = File.open(filename,'r').read.split("\n")
+        # convert help file into styles for use by tmux
+        # quick dirty converter for the moment
+        defarr = Canis::TextUtils::help2tmux defarr
       end
     end
   end # class }}}
