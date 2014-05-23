@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-22 - 11:11
 #      License: MIT
-#  Last update: 2014-05-22 16:30
+#  Last update: 2014-05-23 12:43
 # ----------------------------------------------------------------------------- #
 #  textutils.rb  Copyright (C) 2012-2014 j kepler
 
@@ -27,8 +27,7 @@ module Canis
         #e.gsub! /_(\w+)_/, '#[style=em]\1#[/end]'
         e.gsub! /__([a-zA-Z]+)__/, '#[style=strong]\1#[/end]'
         e.gsub! /_([^_]+)_/, '#[style=em]\1#[/end]'
-        #e.gsub! /\`(\w[\w\d_]\w)\`/, '#[style=code]\1#[/end]'
-        e.gsub! /`(\w+)`/, '#[style=code]\1#[/end]'
+        e.gsub! /`([^`]+)`/, '#[style=code]\1#[/end]'
         # keys are mentioned with "<" and ">" surrounding
         e.gsub! /(\<\S+\>)/, '#[style=key]\1#[/end]'
         # headers start with "#"
