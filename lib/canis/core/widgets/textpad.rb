@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-23 01:21
+#  Last update: 2014-05-23 14:09
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -199,12 +199,6 @@ module Canis
         #@clearstring ||= " " * @width
         @clearstring = " " * @width
       #end
-      # clear pad was needed in some places, or else previous data was still showing (bline.rb)
-      # However, it is creating problems in other places, esp if the bg is white, as in messageboxes
-      # textdialog etc.
-      # Removing on 2014-05-01 - 01:49 till we fix messagebox issue FIXME
-      
-      # once again trying but only for datacolor.
       clear_pad
 
       Ncurses::Panel.update_panels
@@ -352,6 +346,7 @@ module Canis
     def fire_row_changed ix
       return if ix >= @list.length
       clear_row @pad, ix
+      parse_formatted_line ix
       #render @pad, ix, @list[ix]
       render @pad, ix, @native_text[ix]
     
@@ -577,10 +572,10 @@ module Canis
     # pass in formatted text along with parser (:tmux or :ansi)
     # This text contains markup such as ansi, or tmux
     # NOTE this does not call init_vars, i think it should, text() does
+    # @deprecated
     def formatted_text text, fmt
       raise "deprecated formatted_text"
 
-      #require 'canis/core/include/chunk'
       @formatted_text = text
       @color_parser = fmt
       @repaint_required = true
@@ -589,6 +584,7 @@ module Canis
       #goto_start
       #remove_all
     end
+    # @deprecated
     def _convert_formatted
       raise "deprecated _convert_formatted"
       if @formatted_text
@@ -610,12 +606,11 @@ module Canis
       #       the color_parser implements parse_format, the symbols
       #       relate to default parsers provided.
       # @param [String] string containing formatted text
-      #def parse_formatted_text(color_parser, formatted_text)
+      #def OLDparse_formatted_text(color_parser, formatted_text)
 
     # This is now to be called at start when text is set,
     # and whenever there is a data modification.
-    # This updates @native_text, so how do we parse just a line or remainder of a document
-    #    from a line onwards. FIXME
+    # This updates @native_text
     # @param [Array<String>] original content sent in by user
     #     which may contain markup
     # @param [Hash] config containing
@@ -627,7 +622,7 @@ module Canis
 
         config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
 
-        require 'canis/core/include/chunk'
+        require 'canis/core/include/colorparser'
         cp = Chunks::ColorParser.new config
         l = []
         formatted_text.each { |e| 
@@ -636,6 +631,20 @@ module Canis
         cp = nil
         @parse_required = false
         @native_text = l
+      end
+      # An individual line has changed, so we need to generate the chunkline for that again.
+      # Updates the native_text array, does not return anything.
+      # @param [Fixnum] linenumber that has changed.
+      def parse_formatted_line(lineno)
+        if @content_type
+          config = { :content_type => @content_type, :stylesheet => @stylesheet }
+
+          @color_parser ||= Chunks::ColorParser.new config
+          @native_text[lineno] = @color_parser.convert_to_chunk( @list[lineno]) 
+        else
+          @native_text[lineno] = @list[lineno]
+        end
+
       end
     #
     # returns focussed value (what cursor is on)
@@ -696,7 +705,6 @@ module Canis
       init_vars
     end
     # update the value at index with given value, returning self
-    # FIXME the native row has to be recalculated.
     def []=(index, val)
       @list[index]=val
       fire_row_changed index
