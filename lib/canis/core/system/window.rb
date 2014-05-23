@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-20 20:53
+#  Last update: 2014-05-23 12:37
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -18,7 +18,6 @@
 #
 require 'canis/core/system/ncurses'
 require 'canis/core/system/panel'
-#require 'canis/core/include/chunk'
 # this is since often windows are declared with 0 height or width and this causes
 # crashes in the most unlikely places. This prevceents me from having to write ternary
 # e.g.
@@ -555,14 +554,14 @@ module Canis
 
     private
     def get_default_color_parser
-      require 'canis/core/util/colorparser'
+      require 'canis/core/util/defaultcolorparser'
       @color_parser || DefaultColorParser.new
     end
     # supply with a color parser, if you supplied formatted text
     public
     def color_parser f
       $log.debug "XXX:  color_parser setting in window to #{f} "
-      require 'canis/core/include/chunk'
+      require 'canis/core/include/colorparser'
       if f == :tmux
         @color_parser = get_default_color_parser()
       else
@@ -578,7 +577,7 @@ module Canis
     public
     def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
       unless @color_parser
-        require 'canis/core/include/chunk'
+        require 'canis/core/include/colorparser'
         @color_parser = get_default_color_parser()
         @converter = Chunks::ColorParser.new @color_parser
       end
