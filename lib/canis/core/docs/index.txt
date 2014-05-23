@@ -71,7 +71,7 @@ Please note that in earlier versions, <SPACE> was used for selection.
 However, since this conflicts with the scrolling behavior in most
 multiline widgtes, <SPACE> and <C-SPACE> are now exclusively used for
 scrolling down and up. The characters "v" and "V" are used for
-selection. This may be altered by setting "$row_selector".
+selection. This may be altered by setting "`$row_selector`".
 
           v       -   toggle selection
           V       -   range select
