@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-23 21:04
+  * Last update: 2014-05-24 20:37
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2238,12 +2238,14 @@ module Canis
         # would have liked it to be 'md' or :help
         t.content_type = :tmux
         t.stylesheet   = stylesheet
-        t.bgcolor = 242
-        t.color = :black
+        t.bgcolor = :black
+        t.bgcolor = 0
+        t.color = :white
         #t.text_patterns[:link] = Regexp.new(/\[[^\]]\]/)
         t.text_patterns[:link] = Regexp.new(/\[\w+\]/)
         t.bind_key(KEY_TAB, "goto link") { t.next_regex(:link) }
-        t.bind_key(?a, "goto link") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; t.render_all }
+        # FIXME bgcolor add only works if numberm not symbol
+        t.bind_key(?a, "goto link") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; t.clear_pad; t.render_all }
         t.bind(:PRESS){|eve| 
           link = nil
           s = eve.word_under_cursor
