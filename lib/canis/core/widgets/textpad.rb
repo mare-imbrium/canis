@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-23 14:09
+#  Last update: 2014-05-23 21:11
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -233,10 +233,10 @@ module Canis
       ww=@width-0 if @suppress_borders
       color = @cp || $datacolor # check this out XXX @cp is already converted to COLOR_PAIR !!
       color = get_color($datacolor, @color, @bgcolor)
-      att = @attrib || NORMAL
+      att = @attr || NORMAL
       sp = " "
       #if color == $datacolor
-      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attrib} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
+      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attr} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
       # 2014-05-15 - 11:01 seems we were clearing an extra row at bottom. 
         (r+1).upto(r+@height-startcol-1) do |rr|
           @window.printstring( rr, @col+0,sp*ww , color, att)
@@ -358,6 +358,8 @@ module Canis
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
     # override this for better control
     def render_all
+      # can't this be in one place, it pops up everywhere
+      @color_pair = get_color($datacolor, @color, @bgcolor)
       @native_text ||= @list
       #@list.each_with_index { |line, ix|
       @native_text.each_with_index { |line, ix|
@@ -381,9 +383,9 @@ module Canis
     def render pad, lineno, text
       if text.is_a? AbstractChunkLine
         FFI::NCurses.wmove @pad, lineno, 0
-        a = get_attrib @attrib
+        a = get_attrib @attr
       
-        show_colored_chunks text, nil, a
+        show_colored_chunks text, @color_pair, a
         return
       end
       if @renderer
@@ -441,7 +443,7 @@ module Canis
         # what about bg color ??? XXX, left_margin and internal width
         #cp = get_color($datacolor, @color, @bgcolor)
         cp = @cp || FFI::NCurses.COLOR_PAIR($datacolor)
-        att = @attrib || NORMAL
+        att = @attr || NORMAL
         FFI::NCurses.wattron(pad,cp | att)
         FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
         FFI::NCurses.wattroff(pad,cp | att)
@@ -599,7 +601,7 @@ module Canis
       #
       # To print chunklines you may for each row:
       #       window.wmove row+height, col
-      #       a = get_attrib @attrib
+      #       a = get_attrib @attr
       #       window.show_colored_chunks content, color, a
       #
       # @param [color_parser] object or symbol :tmux, :ansi
@@ -621,6 +623,9 @@ module Canis
         return unless @parse_required
 
         config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
+        config[:bgcolor] = @bgcolor || :black
+        config[:color] = @color || :white
+        #config[:color_pair] = @color_pair
 
         require 'canis/core/include/colorparser'
         cp = Chunks::ColorParser.new config
@@ -638,6 +643,9 @@ module Canis
       def parse_formatted_line(lineno)
         if @content_type
           config = { :content_type => @content_type, :stylesheet => @stylesheet }
+          config[:bgcolor] = @bgcolor || :black
+          config[:color] = @color || :white
+          config[:attr] = @attr
 
           @color_parser ||= Chunks::ColorParser.new config
           @native_text[lineno] = @color_parser.convert_to_chunk( @list[lineno]) 
@@ -1159,7 +1167,7 @@ module Canis
       # However, form does call repaint for all objects, so we can do a padref here. Otherwise,
       # it would get rejected. UNfortunately this may happen more often we want, but we never know
       # when something pops up on the screen.
-      $log.debug "  repaint textpad RR #{@repaint_required} #{@window.top} "
+      #$log.debug "  repaint textpad RR #{@repaint_required} #{@window.top} "
       unless @repaint_required
         print_foot if @repaint_footer_required  # set in on_enter_row
         # trying out removing this, since too many refreshes 2014-05-01 - 12:45 
