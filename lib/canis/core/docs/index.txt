@@ -65,7 +65,9 @@ Hotkeys are available using Alt-<key> and will be displayed with an
 underline if the TERM displays underlines.
 
 _____________________________________________________________________
-### 6. Selection in lists
+## 6. Others
+
+### 6.1 Selection in lists
 
 Please note that in earlier versions, <SPACE> was used for selection.
 However, since this conflicts with the scrolling behavior in most
@@ -83,5 +85,14 @@ selection. This may be altered by setting "`$row_selector`".
           -       -   `ask_unselect`
           +       -   `ask_select`
 
+### 6.2 Terminal (TERM) settings
+
+Some terminals (such as xterm) show underlines , however the 256color ones
+do not. 
+
+Some terminals mess the screen output such as `xterm-256color`. At least
+while working under `tmux` in `iTerm` (with solarized), this terminal was 
+messing the output. 
+Things are fine with `screen-256color`.
 _____________________________________________________________________
 q to quit, gg to goto top.
