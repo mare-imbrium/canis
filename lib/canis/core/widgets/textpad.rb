@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-24 20:32
+#  Last update: 2014-05-25 00:31
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -427,7 +427,7 @@ module Canis
         color ||= defcolor
         attrib ||= defattr || NORMAL
 
-        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. #{cc}, #{bg} "
+        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. "
         FFI::NCurses.wcolor_set(@pad, color,nil) if color
         FFI::NCurses.wattron(@pad, attrib) if attrib
         print(text)
