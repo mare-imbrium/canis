@@ -52,12 +52,16 @@ module Canis
       pf = config.fetch(:print_footer, true)
       ta = config.fetch(:title_attrib, 'bold')
       fa = config.fetch(:footer_attrib, 'bold')
+      wbg = config.fetch(:window_bgcolor, nil)
       b_ah = config[:app_header]
       type = config[:content_type]
 
       v_window = Canis::Window.new(layout)
       v_form = Canis::Form.new v_window
       v_window.name = "Viewer"
+      if wbg
+        v_window.wbkgd(Ncurses.COLOR_PAIR(wbg)); #  does not work on xterm-256color
+      end
       # I am placing this in globals since an alert on top will refresh the lower windows and this is quite large.
       $global_windows << v_window
       colors = Ncurses.COLORS
