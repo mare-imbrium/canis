@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-23 21:11
+#  Last update: 2014-05-24 20:32
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -213,11 +213,16 @@ module Canis
     # As of 2014-05-01 - 16:07 this is no longer called since it messes with messagboxes.
     # If you make this operational, pls test testmessageboxes.rb and look for black areas
     # and see if the left-most column is missing.
+    public
     def clear_pad
       # this still doesn't work since somehow content_rows is less than height.
       # this is ineffectual if the rest of the code is functioning.
       # But REQUIRED for listbox which has its own clear_row needed in cases of white background.
       # as in testmessagebox.rb 5
+
+      # if called directly then cp does not reflect changes to bgcolor
+      cp = get_color($datacolor, @color, @bgcolor)
+      @cp = FFI::NCurses.COLOR_PAIR(cp)
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
@@ -629,6 +634,7 @@ module Canis
 
         require 'canis/core/include/colorparser'
         cp = Chunks::ColorParser.new config
+        cp.form = self
         l = []
         formatted_text.each { |e| 
           l << cp.convert_to_chunk(e) 
@@ -648,6 +654,7 @@ module Canis
           config[:attr] = @attr
 
           @color_parser ||= Chunks::ColorParser.new config
+          @color_parser.form = self
           @native_text[lineno] = @color_parser.convert_to_chunk( @list[lineno]) 
         else
           @native_text[lineno] = @list[lineno]
