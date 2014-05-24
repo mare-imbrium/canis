@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-24 20:19
+#  Last update: 2014-05-25 00:30
 # ------------------------------------------------------------ #
 #
 
@@ -65,11 +65,23 @@ module Canis
       def attrib
         @chunk[2] || @parent.attrib
       end
+
+      # this returns the color of this chunk, else goes up the parents, and finally
+      # if none, then returns the default fg color
+      # NOTE: this is used at the time of rendering, not parsing
+      #   This is to ensure that any changes in widgets colors are reflected in renderings
+      #   without requiring the parse to be done again.
+      #   Idiealy, the widget would return the form's color if its own was not set, however,
+      #   i see that color has been removed from form. It should be there, so it reflects
+      #   in all widgets.
       def color
-        @color || @parent.color
+        @color || @parent.color || $def_fg_color
       end
+      # this returns the bgcolor of this chunk, else goes up the parents, and finally
+      # if none, then returns the default bg color (global) set in colormap.rb
+      # NOTE: this is used at the time of rendering, not parsing
       def bgcolor
-        @bgcolor || @parent.bgcolor
+        @bgcolor || @parent.bgcolor || $def_bg_color
       end
     end
 
@@ -207,12 +219,12 @@ module Canis
 
         @color_parser ||= get_default_color_parser()
         ## defaults
-        color_pair = @color_pair
-        attrib = @attrib
+        #color_pair = @color_pair
+        #attrib = @attrib
         #res = []
         res = ChunkLine.new
-        color = @color
-        bgcolor = @bgcolor
+        #color = @color
+        #bgcolor = @bgcolor
         # stack the values, so when user issues "/end" we can pop earlier ones
 
         newblockflag = false
@@ -244,17 +256,8 @@ module Canis
               @_color_pair = get_color(nil, lc, lb)
             end
 
-=begin
-            if lc || lb
-              @color = lc ? lc : @color_array.last
-              @bgcolor = lb ? lb : @bgcolor_array.last
-              @color_array << @color
-              @bgcolor_array << @bgcolor
-              @color_pair = get_color($datacolor, @color, @bgcolor)
-            end
-=end
-            @color_pair_array << @color_pair
-            @attrib_array << @attrib
+            #@color_pair_array << @color_pair
+            #@attrib_array << @attrib
             #$log.debug "XXX: CHUNK start cp=#{@color_pair} , a=#{@attrib} :: c:#{lc} b:#{lb} : @c:#{@color} @bg: #{@bgcolor} "
             #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} ::#{@color_array} ::: #{@bgcolor_array} "
 
@@ -266,25 +269,14 @@ module Canis
             @_color_pair = nil
 
             $log.debug "XXX: CHUNK end parents:#{@parents.count}, last: #{@parents.last} "
-            #$log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
-            #
-            @color_pair_array.pop
-            @color_pair = @color_pair_array.last
-            @attrib_array.pop
-            @attrib = @attrib_array.last
-            # why are we nt popping the color and bgcolor array dts
-            @color_array.pop unless @color_array.count == 1
-            @bgcolor_array.pop unless @bgcolor_array.count == 1
-            #$log.debug "XXX: CHUNK end #{color_pair} , #{attrib} "
-            #$log.debug "XXX: CHUNK end arr #{@color_pair_array} :: #{@attrib_array} "
           when :reset   # ansi has this
             # end all previous colors
-            @color_pair = $datacolor # @color_pair_array.first
-            @color_pair_array = [@color_pair]
-            @attrib = FFI::NCurses::A_NORMAL #@attrib_array.first
-            @attrib_array = [@attrib]
-            @bgcolor_array = [@bgcolor_array.first]
-            @color_array = [@color_array.first]
+            # end the current (last) span
+            # maybe we need to remove all parents except for first
+            @parents.pop unless @parents.count == 1
+            @_bgcolor = @_color = nil
+            @_color_pair = nil
+
 
           when String
 
