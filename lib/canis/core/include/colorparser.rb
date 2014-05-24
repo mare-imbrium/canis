@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-23 12:35
+#  Last update: 2014-05-23 19:44
 # ------------------------------------------------------------ #
 #
 
@@ -117,19 +117,25 @@ module Canis
       end
     end
     class ColorParser
-      # hash containing color, bgcolor and attrib for a given style
       attr_reader :stylesheet
+      # hash containing color, bgcolor and attrib for a given style
       attr_writer :style_map
       def initialize cp
         color_parser cp
-        @color_pair = $datacolor
-        @attrib     = FFI::NCurses::A_NORMAL
-        @color_array = [:white]
-        @bgcolor_array = [:black]
+
+        if cp.is_a? Hash
+          @color = cp[:color]
+          @bgcolor = cp[:bgcolor]
+          @attrib = cp[:attr]
+        end
+        @attrib     ||= FFI::NCurses::A_NORMAL
+        @color      ||= :white
+        @bgcolor    ||= :black
+        @color_pair = get_color($datacolor, @color, @bgcolor)
+        @color_array = [@color]
+        @bgcolor_array = [@bgcolor]
         @attrib_array = [@attrib]
         @color_pair_array = [@color_pair]
-        @color = :white
-        @bgcolor = :black
       end
 
       # since 2014-05-19 - 13:14 
