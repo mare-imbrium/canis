@@ -30,5 +30,5 @@ ul:
     :attrib: :underline
 wb:
     :color: :white
-    :bgcolor: :black
+    :_bgcolor: :black
     :attrib: :bold
