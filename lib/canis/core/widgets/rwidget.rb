@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-24 20:37
+  * Last update: 2014-05-25 15:51
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -119,6 +119,18 @@ class Module  # dsl_accessor {{{
         end # def
     #attr_writer sym
         def #{sym}=val
+           #{sym}(val)
+        end
+      }
+    }
+  end
+  # divert an = call to the dsl_property or accessor call.
+  #  This is required if I am bypassing dsl_property for some extra processing as in color and bgcolor
+  #  but need the rest of it.
+  def dsl_writer(*symbols)
+    symbols.each { |sym|
+      class_eval %{
+        def #{sym}=(val)
            #{sym}(val)
         end
       }
@@ -1063,7 +1075,8 @@ module Canis
     #dsl_accessor :focusable, :enabled # boolean
     # This means someone can change label to focusable ! there should be someting like CAN_TAKE_FOCUS
     dsl_property :row, :col            # location of object
-    dsl_property :color, :bgcolor      # normal foreground and background
+    #dsl_property :color, :bgcolor      # normal foreground and background
+    dsl_writer :color, :bgcolor      # normal foreground and background
     # moved to a method which calculates color 2011-11-12 
     #dsl_property :color_pair           # instead of colors give just color_pair
     dsl_property :attr                 # attribute bold, normal, reverse
@@ -1138,6 +1151,52 @@ module Canis
       # just in case anyone does a super. Not putting anything here
       # since i don't want anyone accidentally overriding
     end
+    # this is supposed to be a duplicate of what dsl_property generates for cases when
+    #  we need to customise the get portion but not copy the set part. just call this.
+    def property_set sym, val
+      oldvalue = instance_variable_get "@#{sym}"
+      tmp = val.size == 1 ? val[0] : val
+      newvalue = tmp
+      if oldvalue.nil? || @_object_created.nil?
+        #@#{sym} = tmp
+        instance_variable_set "@#{sym}", tmp
+      end
+      return(self) if oldvalue.nil? || @_object_created.nil?
+
+      if oldvalue != newvalue
+        # trying to reduce calls to fire, when object is being created
+        begin
+          @property_changed = true
+          fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
+          #@#{sym} = tmp
+          instance_variable_set "@#{sym}", tmp
+          #@config["#{sym}"]=@#{sym}
+        rescue PropertyVetoException
+          $log.warn "PropertyVetoException for #{sym}:" + oldvalue.to_s + "->  "+ newvalue.to_s
+        end
+      end # if old
+      self
+    end 
+    # returns widgets color, or if not set then app default
+    # Ideally would have returned form's color, but it seems that form does not have color any longer.
+    def color( *val )
+      if val.empty?
+        @color || $def_fg_color
+      else
+        @color_pair = nil
+        return property_set :color, val
+      end
+    end
+    # returns widgets bgcolor, or global default.
+    def bgcolor( *val )
+      if val.empty?
+        @bgcolor || $def_bg_color
+      else
+        @color_pair = nil
+        return property_set :bgcolor, val
+      end
+    end
+
 
     # modified
     ##
@@ -1313,68 +1372,6 @@ module Canis
 
 
 
-     ## DELETE XXX moved to dsl_property
-     # getter and setter for width - 2009-10-29 22:45 
-     # Using dsl_property style
-     #
-     # @param [val, nil] value to set
-     # @return [val] earlier value if nil param
-     # @since 0.1.3
-     #
-     def OLDwidth(*val)
-       #$log.debug " inside  width() #{val}"
-       if val.empty?
-         return @width
-       else
-         #$log.debug " inside  width()"
-         oldvalue = @width || 0 # is this default okay, else later nil cries
-         #@width = val.size == 1 ? val[0] : val
-         @width = val[0]
-         newvalue = @width
-         @config["width"]=@width
-         if oldvalue != newvalue
-           @property_changed = true
-           fire_property_change(:width, oldvalue, newvalue)
-           repaint_all(true)  # added 2010-01-08 18:51 so widgets can redraw everything.
-         end
-         #if is_double_buffered? and newvalue != oldvalue # removed on 2011-09-29 
-           #$log.debug " #{@name} w calling resize of screen buffer with #{newvalue}. WARNING: does not change buffering_params"
-           #@screen_buffer.resize(0, newvalue)
-         #end
-       end
-     end
-     def OLDwidth=val
-       width(val)
-     end
-     ## DELETE XXX moved to dsl_property
-     ##
-     # getter and setter for height - 2009-10-30 12:25 
-     # Using dsl_property style
-     # SO WE've finally succumbed and added height to widget
-     # @param [val, nil] height to set
-     # @return [val] earlier height if nil param
-     # @since 0.1.3
-     #
-     def OLDheight(*val)
-       #$log.debug " inside  height() #{val[0]}"
-       if val.empty?
-         return @height
-       else
-         #$log.debug " inside #{@name} height()"
-         oldvalue = @height || 0 # is this default okay, else later nil cries
-         @height = val.size == 1 ? val[0] : val
-         newvalue = @height
-         @config[:height]=@height
-         if oldvalue != newvalue
-           @property_changed = true
-           fire_property_change(:height, oldvalue, newvalue)
-           repaint_all true
-         end
-       end
-     end
-     def OLDheight=val
-       height(val)
-     end
     # to give simple access to other components, (eg, parent) to tell a comp to either
     # paint its data, or to paint all - borders, headers, footers due to a big change (ht/width)
     def repaint_required(tf=true)
