@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-25 00:30
+#  Last update: 2014-05-25 15:55
 # ------------------------------------------------------------ #
 #
 
@@ -12,7 +12,7 @@ module Canis
   module Chunks
     extend self
 
-    # A chunk is a piece of text with associated color and attrib.
+    # A chunk is a piece of text with associated color and attr.
     # Several such chunks make a ChunkLine.
     # 2014-05-24 - 11:52 adding parent, and trying to resolve at time of render
     #   so changes in form;s color can take effect without parsing the tree again.
@@ -25,7 +25,7 @@ module Canis
       # color_pair of associated text
       # text to print
       # attribute of associated text
-      #attr_accessor :color, :text, :attrib
+      #attr_accessor :color, :text, :attr
       # hope no one is accessing chunk since format can change to a hash
       attr_reader :chunk
       attr_accessor :parent
@@ -34,11 +34,11 @@ module Canis
       # earlier color was being resolved at parse time. Now with chunk change 2014-05-24 - 12:41 
       #  color should be nil if not specified. Do not use parent's color.
       #  Please set fgcolor and bgcolor if present, so we can resolve later.
-      def initialize color_pair, text, attrib
-        @chunk = [ color_pair, text, attrib ]
+      def initialize color_pair, text, attr
+        @chunk = [ color_pair, text, attr ]
         #@color = color
         #@text  = text
-        #@attrib = attrib
+        #@attr = attr
       end
       #
       # This is to be called at runtime by render_all or render to resolve
@@ -62,8 +62,8 @@ module Canis
       def text
         @chunk[1]
       end
-      def attrib
-        @chunk[2] || @parent.attrib
+      def attr
+        @chunk[2] || @parent.attr
       end
 
       # this returns the color of this chunk, else goes up the parents, and finally
@@ -104,24 +104,24 @@ module Canis
         @chunks.each &block
       end
       #
-      # Splits a chunk line giving text, color and attrib
+      # Splits a chunk line giving text, color and attr
       # The purpose of this is to free callers such as window or pad from having to know the internals
       # of this implementation. Any substituing class should have a similar interface.
-      # @yield text, color and attrib to the block
+      # @yield text, color and attr to the block
       def each_with_color &block
         @chunks.each do |chunk| 
           case chunk
           when Chunks::Chunk
             color = chunk.color_pair
-            attrib = chunk.attrib
+            attr = chunk.attr
             text = chunk.text
           when Array
             # for earlier demos that used an array
             color = chunk[0]
-            attrib = chunk[2]
+            attr = chunk[2]
             text = chunk[1]
           end
-          yield text, color, attrib
+          yield text, color, attr
         end
       end
 
@@ -164,7 +164,7 @@ module Canis
     end
     class ColorParser
       attr_reader :stylesheet
-      # hash containing color, bgcolor and attrib for a given style
+      # hash containing color, bgcolor and attr for a given style
       attr_writer :style_map
       def initialize cp
         color_parser cp
@@ -172,15 +172,15 @@ module Canis
         if cp.is_a? Hash
           @color = cp[:color]
           @bgcolor = cp[:bgcolor]
-          @attrib = cp[:attr]
+          @attr = cp[:attr]
         end
-        @attrib     ||= FFI::NCurses::A_NORMAL
+        @attr     ||= FFI::NCurses::A_NORMAL
         @color      ||= :white
         @bgcolor    ||= :black
         @color_pair = get_color($datacolor, @color, @bgcolor)
         @color_array = [@color]
         @bgcolor_array = [@bgcolor]
-        @attrib_array = [@attrib]
+        @attrib_array = [@attr]
         @color_pair_array = [@color_pair]
         @parents = nil
       end
@@ -194,7 +194,7 @@ module Canis
       end
 
       # since 2014-05-19 - 13:14 
-      # converts a style name given in a document to color, bg, and attrib from a stylesheet
+      # converts a style name given in a document to color, bg, and attr from a stylesheet
       def resolve_style style
         if @style_map
           # style_map contains a map for each style
@@ -220,7 +220,7 @@ module Canis
         @color_parser ||= get_default_color_parser()
         ## defaults
         #color_pair = @color_pair
-        #attrib = @attrib
+        #attr = @attr
         #res = []
         res = ChunkLine.new
         #color = @color
@@ -232,10 +232,10 @@ module Canis
           case p
           when Array
             newblockflag = true
-            ## got color / attrib info, this starts a new span
+            ## got color / attr info, this starts a new span
 
             # added style 2014-05-19 - 12:57 maybe should be a hash
-            #color, bgcolor, attrib , style = *p
+            #color, bgcolor, attr , style = *p
             lc, lb, la, ls = *p
             if ls
               #sc, sb, sa = resolve_style ls
@@ -243,12 +243,12 @@ module Canis
               $log.debug "  STYLLE #{ls} : #{map} "
               lc ||= map[:color]
               lb ||= map[:bgcolor]
-              la ||= map[:attrib]
+              la ||= map[:attr]
             end
             @_bgcolor = lb
             @_color = lc
             if la
-              @attrib = get_attrib la
+              @attr = get_attrib la
             end
             @_color_pair = nil
             if lc && lb
@@ -257,8 +257,8 @@ module Canis
             end
 
             #@color_pair_array << @color_pair
-            #@attrib_array << @attrib
-            #$log.debug "XXX: CHUNK start cp=#{@color_pair} , a=#{@attrib} :: c:#{lc} b:#{lb} : @c:#{@color} @bg: #{@bgcolor} "
+            #@attrib_array << @attr
+            #$log.debug "XXX: CHUNK start cp=#{@color_pair} , a=#{@attr} :: c:#{lc} b:#{lb} : @c:#{@color} @bg: #{@bgcolor} "
             #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} ::#{@color_array} ::: #{@bgcolor_array} "
 
           when :endcolor
@@ -267,6 +267,7 @@ module Canis
             @parents.pop unless @parents.count == 1
             @_bgcolor = @_color = nil
             @_color_pair = nil
+            @attr = nil
 
             $log.debug "XXX: CHUNK end parents:#{@parents.count}, last: #{@parents.last} "
           when :reset   # ansi has this
@@ -276,16 +277,17 @@ module Canis
             @parents.pop unless @parents.count == 1
             @_bgcolor = @_color = nil
             @_color_pair = nil
+            @attr = nil
 
 
           when String
 
             ## create the chunk
-            #$log.debug "XXX:  CHUNK     using on #{p}  : #{@color_pair} , #{@attrib} " # 2011-12-10 12:38:51
-            $log.debug "XXX:  CHUNK     using on #{p}  : #{@_color_pair} , #{@attrib}, fg: #{@_color}, #{@_bgcolor}, parent: #{@parents.last} " # 2011-12-10 12:38:51
+            #$log.debug "XXX:  CHUNK     using on #{p}  : #{@color_pair} , #{@attr} " # 2011-12-10 12:38:51
+            $log.debug "XXX:  CHUNK     using on #{p}  : #{@_color_pair} , #{@attr}, fg: #{@_color}, #{@_bgcolor}, parent: #{@parents.last} " # 2011-12-10 12:38:51
 
-            #chunk =  [color_pair, p, attrib] 
-            chunk = Chunk.new @_color_pair, p, @attrib
+            #chunk =  [color_pair, p, attr] 
+            chunk = Chunk.new @_color_pair, p, @attr
             chunk.color = @_color
             chunk.bgcolor = @_bgcolor
             chunk.parent = @parents.last
