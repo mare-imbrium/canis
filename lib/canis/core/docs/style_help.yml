@@ -2,33 +2,33 @@
 link:
     :color: :yellow
     :bgcolor: :black
-    :attrib: :underline
+    :attr: :underline
 bold:
-    :attrib: :bold
+    :attr: :bold
 em: 
     :color: :blue
-    :attrib: :bold
+    :attr: :bold
 strong: 
     :color: :yellow
-    :attrib: :bold
+    :attr: :bold
 code: 
     :color: :cyan
     :bgcolor: 236
 h1: 
-    :attrib: :reverse
+    :attr: :reverse
 h2: 
     :color: :green
-    :attrib: :bold
+    :attr: :bold
 h3: 
     :color: :yellow
 key: 
     :color: :red
-    :attrib: :bold
+    :attr: :bold
 ul:
     :color: :blue
     :bgcolor: :black
-    :attrib: :underline
+    :attr: :underline
 wb:
     :color: :white
     :_bgcolor: :black
-    :attrib: :bold
+    :attr: :bold
