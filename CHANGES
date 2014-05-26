@@ -18,3 +18,9 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
 
 - introduced layouts. Now a user can hardcode locations of widgets or use a layout
   to do the same. A layout is able to handle a resize of the screen.
+
+2014-05-25 - 16:03 
+
+- Major rewrite of colorparser. now colors are not hardcoded while parsing. We now store link
+  to parent chunk, so that a change in textpads color can affect the pad without a re-parse.
+  Parent's color's are resolved at render time.
