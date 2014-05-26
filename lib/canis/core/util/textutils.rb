@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-22 - 11:11
 #      License: MIT
-#  Last update: 2014-05-25 22:38
+#  Last update: 2014-05-26 19:40
 # ----------------------------------------------------------------------------- #
 #  textutils.rb  Copyright (C) 2012-2014 j kepler
 
@@ -24,7 +24,9 @@ module Canis
         e.gsub! /\[\[(\S+)\]\]/, '#[style=link][\1]#[/end]'
         # double asterisk needs to be more permissive and take a space FIXME
         e.gsub! /\*\*(\S.*?\S)\*\*/, '#[style=strong]\1#[/end]'
-        e.gsub! /\*(\S[^\*]+\S)\*/, '#[style=em]\1#[/end]'
+        # the next is wrong and could match two asteriks also
+        #e.gsub! /\*(\S[^\*]+\S)\*/, '#[style=em]\1#[/end]'
+        e.gsub! /\*(?!\s)([^\*]+)(?<!\s)\*/, '#[style=em]\1#[/end]'
         e.gsub! /\|([^\|]+)\|/, '#[style=ul]\1#[/end]'
         #e.gsub! /__(\w+)__/, '#[style=em]\1#[/end]'
         #e.gsub! /_(\w+)_/, '#[style=em]\1#[/end]'
