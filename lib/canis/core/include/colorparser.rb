@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-25 15:55
+#  Last update: 2014-05-26 01:45
 # ------------------------------------------------------------ #
 #
 
@@ -133,11 +133,22 @@ module Canis
       end
       # returns match for str in this chunk
       # added 2013-03-07 - 23:59 
-      def index str
+      # adding index on 2014-05-26 for multiple matches on one line.
+      def index str, offset = 0
         result = 0
+        _end = 0
         @chunks.each { |e| txt = e.text; 
+          _end += txt.length 
+          if _end < offset
+            result += e.text.length 
+            next
+          end
+
           ix =  txt.index(str) 
-          return result + ix if ix
+          if ix
+            _off = result + ix
+            return _off if _off > offset
+          end
           result += e.text.length 
         }
         return nil
