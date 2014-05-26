@@ -95,4 +95,5 @@ while working under `tmux` in `iTerm` (with solarized), this terminal was
 messing the output. 
 Things are fine with `screen-256color`.
 _____________________________________________________________________
-q to quit, gg to goto top.
+q to quit, gg to goto top. <TAB> goes to next link in help file
+Press <ENTER> to open link.
