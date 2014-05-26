@@ -18,7 +18,6 @@
 require 'logger'
 require 'canis'
 require 'canis/core/widgets/listbox'
-#require 'canis/core/widgets/rtextview'
 require 'canis/core/include/vieditable'
 #require 'canis/experimental/widgets/undomanager'
 class Canis::Listbox
@@ -51,7 +50,7 @@ Then press <n> to go to next match.
 =========================================================================
 ## Vim Edit Keys
 
-The list on left has some extra vim keys enabled such as :
+The [[list]] on left has some extra vim keys enabled such as :
 >
     yy     - yank/copy current line/s
     P, p   - paste after or before
@@ -64,14 +63,14 @@ These are not of use here, but are demonstrative of list capabilities.
 =========================================================================
 ## Buffers
 
-Ordinary a textview contains only one buffer. However, the one on the right
+Ordinary a [[textpad]] contains only one buffer. However, the one on the right
 is extended for multiple buffers. Pressing <ENTER> on the left on several 
 rows opens multiple buffers on the right. Use <M-n> (Alt-N) and <M-p> to navigate.
 ALternatively, <:> maps to a menu, so :n and :p may also be used.
 <BACKSPACE> will also go to previous buffer, like a browser.
 
 =========================================================================
-       Press <M-n> for next help screen, or try ":n" 
+       Press <M-n> for next help screen, or try ":n", [[index]]
 
     eos
   end
@@ -87,6 +86,7 @@ if $0 == __FILE__
     $log.level = Logger::DEBUG
 
     @window = Canis::Window.root_window
+    $log.debug "  WINDOW #{FFI::NCurses.LINES} "
     $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
     # Initialize few color pairs 
     # Create the window to be associated with the form 
