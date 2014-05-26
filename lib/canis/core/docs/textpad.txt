@@ -16,6 +16,29 @@ which is a `tmux` like format. This is used in the `status_line`.
 Finally, there is a (new) help format, much like markdown (very
 restricted, though). This page is formatted using the help format.
 
+Following are some styles it provides:
+
+- strong using __ as in __strong__. end
+- strong using double asterisks that is ** : **strong text with spaces**. end
+- emphasis using single asterisk * as in *emphasis*. end.
+  Emphasis *taking spaces in* between with single asterisk.
+- emphasis using single _ as in _thisisemphsized_, will not take _
+inside.
+- code using tilde as in `do_process_now` or `@bgcolor` and `$fgcolor`.
+- underline using bar as in |underlined|, this depends on TERM setting.
+  xterm shows underlines, most others do not.
+- Link as in [[list]] (double brackets in source, but single in display).
+- key using angular brackets as in <KEY_BACKSPACE>.
+
+A block follows in white and bold (start with a single > on previous
+line, and end with a single < char after block:
+>
+ I think most of these need to be fixed so they don't start capturing
+ if surrounded by spaces. A lookahead and lookbehind is required other
+ wise they can wreak havoc.
+<
+
+
 Textpads do not provide row selection, but do allow mapping of the <ENTER>
 key and provide the `word_under_cursor` to the calling block as part of
 the action event. For instance, on this (or other) help pages, pressing 
