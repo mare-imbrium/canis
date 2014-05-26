@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-25 15:51
+  * Last update: 2014-05-26 13:24
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1181,16 +1181,22 @@ module Canis
     # Ideally would have returned form's color, but it seems that form does not have color any longer.
     def color( *val )
       if val.empty?
-        @color || $def_fg_color
+        return @color if @color
+        return @form.color if @form
+        return $def_fg_color
       else
         @color_pair = nil
         return property_set :color, val
       end
     end
-    # returns widgets bgcolor, or global default.
+    # returns widgets bgcolor, or form's color. This ensures that all widgets use form's color
+    #  unless user has overriden the color.
+    # This is to be used whenever a widget is rendering to check the color at this moment.
     def bgcolor( *val )
       if val.empty?
-        @bgcolor || $def_bg_color
+        return @bgcolor if @bgcolor
+        return @form.bgcolor if @form
+        return $def_bg_color
       else
         @color_pair = nil
         return property_set :bgcolor, val
@@ -1491,12 +1497,9 @@ module Canis
   ##
   #
   # TODO: we don't have an event for when form is entered and exited.
-  # Current ENTER and LEAVE are for when any widgt is entered, so a common event can be put for all widgets
-  # in one place.
   class Form # {{{
     include EventHandler
     include Canis::Utils
-    #attr_reader :value # ???
     
     # array of widgets
     attr_reader :widgets
@@ -1506,8 +1509,9 @@ module Canis
     
     # cursor row and col
     attr_accessor :row, :col
-#   attr_accessor :color
-#   attr_accessor :bgcolor
+    # color and bgcolor for all widget, widgets that don't have color specified will inherit from form
+    # If not mentioned, then global defaults will be taken
+    attr_writer :color, :bgcolor
     
     # has the form been modified
     attr_accessor :modified
@@ -2164,6 +2168,16 @@ module Canis
   # user apps will only supply help_text, form would already have mapped F1 to help.
   def help_manager
     @help_manager ||= HelpManager.new self
+  end
+  # returns forms color, or if not set then app default
+  # This is used by widget's as the color to fallback on when no color is specified for them.
+  # This way all widgets in a form can have one color.
+  def color
+    @color || $def_fg_color
+  end
+  # returns form's bgcolor, or global default.
+  def bgcolor
+    @bgcolor || $def_bg_color
   end
 
     ## ADD HERE FORM
