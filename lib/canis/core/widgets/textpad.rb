@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-25 00:31
+#  Last update: 2014-05-26 12:26
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1308,30 +1308,87 @@ module Canis
     ## 
     # Find the next row that contains given string
     # @return row and col offset of match, or nil
+    # FIXME: 2014-05-26 - 01:26 currently if there are two matches in a row skips the second
+    #   one, which is a pain if two matches only on same row.
+    #   Ok, now it goes to second but won't come back to first, if only two matches, and both in one row.
     # @param String to find
-    def next_match str
+    def ORIGnext_match str
       return unless str
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       ## =~ does not give an error, but it does not work.
       @native_text.each_with_index do |line, ix|
-        _col = line.index str
+        offset = 0
+        # next line just a hack and not correct if only one match in file FIXME
+        offset = @curpos + 1 if ix == @current_index
+        _col = line.index str, offset
         if _col
           first ||= [ ix, _col ]
-          if ix > @current_index
+          if ix > @current_index || ( ix == @current_index && _col > @curpos)
             return [ix, _col]
           end
         end
       end
+      # if first is nil, then none found in current line also, so don't increment offset in current line
+      #  next time. FIXME TODO
       return first
     end
+    # since 2014-05-26 - 12:13 new logic to take into account multiple matches in one line
+    #
+    # First time, starts searching current line from cursor position onwards to end of file
+    #  If no match, then checks from start of file to current line.
+    # @param [String, Regex] pattern to search (uses +:index+)
+    # @param [Fixnum] line number to start with. Optional. +nil+ means start search from current position.
+    # @param [Fixnum] line number to end with. Optional. +nil+ means end search at end of array
+    # @return [Array<Fixnum, Fixnum>] index of line where pattern found, index of offset in line.
+    #     +nil+ returned if no match.
+    # NOTE:
+    #    startline and endline are more for internal purposes, externally we would call this only with
+    #    the pattern.
+    # @example 
+    #     pos = next_match /abc/
+    #     # pos is nil or [line, col]
+    #
+    def next_match str, startline=nil, endline=nil
+      if !startline
+        startline = @current_index
+        pos = @curpos + 1
+        # FIXME you could be at end of line
+        _line = @native_text[startline]
+        _col = _line.index(str, pos) if _line
+        return [startline, _col] if _col
+        startline += 1 # FIXME check this end of file
+      end
+       # FIXME iterate only through the ones we need, not all
+      @native_text.each_with_index do |line, ix|
+        next if ix < startline
+        break if endline && ix > endline
+        # next line just a hack and not correct if only one match in file FIXME
+        _col = line.index str
+        if _col
+          return [ix, _col]
+        end
+      end
+      if startline > 0
+        return next_match str, 0, @current_index
+      end
+      return nil
+
+      # look n current row after the curpos
+      # if no match look in rest of array
+      # if no match and you started from current_index, then search
+      # from start of file to current_index. call _next_match with 0.
+    end
+    # search for the next occurence of given regexp. Returns line and col if found, else nil.
+    # @param [String, Regexp] pattern to search for (uses :index)
+    # @return [nil] return value of no consequence
     def next_regex regex
       if regex.is_a? Symbol
         regex = @text_patterns[regex]
         raise "Pattern specified #{regex} does not exist in text_patterns " unless regex
       end
       @last_regex = regex
-      find_more 
+      find_more
     end
     ## 
     # Ensure current row is visible, if not make it first row
