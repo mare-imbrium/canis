@@ -1,4 +1,5 @@
 require 'canis/core/widgets/textpad'
+require 'canis/core/widgets/applicationheader'
 require 'fileutils'
 
 # A file or array viewer.
@@ -95,6 +96,14 @@ module Canis
       textview.extend(Canis::MultiBuffers)
 
       t = textview
+      t.bind_key(Ncurses::KEY_F5, 'maximize window '){ f = t.form.window; 
+                                                       c = f.left - 1; 
+                                                       #f.hide; 
+        f.resize_with([FFI::NCurses.LINES-0, Ncurses.COLS, 0,0]); 
+        #f.resize_with([0,0, 0,0]); 
+        t.height = Ncurses.LINES - t.row - 0
+        #
+      }
 =begin
       # just for fun -- seeing how we can move window around
       # these are working, but can cause a padrefresh error. we should check for bounds or something.
@@ -124,10 +133,15 @@ module Canis
             textview.instance_eval(&block)
           end
         end
-        # multibuffer requires add_Co after set_co
+        # multibuffer requires add_co after set_co
         # We are using in help, therefore we need multibuffers.
-        textview.set_content content, :content_type => type #, :stylesheet => t.stylesheet
+        #textview.set_content content, :content_type => type #, :stylesheet => t.stylesheet
+        # i need to do this so it is available when moving around
+        # buffers
+        #  but this means that pressing next will again show the same
+        #  buffer.
         textview.add_content content, :content_type => type #, :stylesheet => t.stylesheet
+        textview.buffer_last
       #yield textview if block_given? 
       v_form.repaint
       v_window.wrefresh
