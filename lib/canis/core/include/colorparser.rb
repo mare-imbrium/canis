@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-26 01:45
+#  Last update: 2014-05-26 14:51
 # ------------------------------------------------------------ #
 #
 
@@ -193,14 +193,12 @@ module Canis
         @bgcolor_array = [@bgcolor]
         @attrib_array = [@attr]
         @color_pair_array = [@color_pair]
+        # in some cases like statusline where it requests window to do some parsing, we will never know who
+        #  the parent is. We could somehow get the window, and from there the form ???
         @parents = nil
       end
       # this is the widget actually that created the parser
       def form=(f)
-        # FIXME this means if textpad color changes then i won't be getting it !!!
-        #ch = Chunk.new nil, nil, f.attr
-        #ch.color = f.color
-        #ch.bgcolor = f.bgcolor
         @parents = [f]
       end
 
@@ -228,6 +226,7 @@ module Canis
       public
       def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
 
+        raise "You have not set parent of this using form(). Try setting window.form " unless @parents
         @color_parser ||= get_default_color_parser()
         ## defaults
         #color_pair = @color_pair
