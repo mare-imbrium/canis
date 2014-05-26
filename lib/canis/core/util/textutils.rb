@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-22 - 11:11
 #      License: MIT
-#  Last update: 2014-05-23 12:43
+#  Last update: 2014-05-25 22:38
 # ----------------------------------------------------------------------------- #
 #  textutils.rb  Copyright (C) 2012-2014 j kepler
 
@@ -16,17 +16,28 @@ module Canis
     # 'help' markup is very much like markdown, but a very restricted
     # subset.
     # Currently called only by help_manager in rwidgets.rb
+    # Some of these need to be fixed since they may not allow some
+    # characters, maybe too restrictive, or may match within a word. FIXME
     def self.help2tmux arr
       arr.each do |e|
         # double sq brackets are like wiki links, to internal documents in same location
         e.gsub! /\[\[(\S+)\]\]/, '#[style=link][\1]#[/end]'
-        e.gsub! /\*\*(\w+)\*\*/, '#[style=strong]\1#[/end]'
-        e.gsub! /\*([^\*]+)\*/, '#[style=em]\1#[/end]'
+        # double asterisk needs to be more permissive and take a space FIXME
+        e.gsub! /\*\*(\S.*?\S)\*\*/, '#[style=strong]\1#[/end]'
+        e.gsub! /\*(\S[^\*]+\S)\*/, '#[style=em]\1#[/end]'
         e.gsub! /\|([^\|]+)\|/, '#[style=ul]\1#[/end]'
         #e.gsub! /__(\w+)__/, '#[style=em]\1#[/end]'
         #e.gsub! /_(\w+)_/, '#[style=em]\1#[/end]'
-        e.gsub! /__([a-zA-Z]+)__/, '#[style=strong]\1#[/end]'
-        e.gsub! /_([^_]+)_/, '#[style=em]\1#[/end]'
+        # next one is a bit too restrictive, but did not want a line
+        # full of underlines to get selected.
+        # __(?!_)(.+?)(?<!_)__/
+        #e.gsub! /__([a-zA-Z]+)__/, '#[style=strong]\1#[/end]'
+        # also avoid if a space or _ is after starting __ and before
+        # ending __
+        e.gsub! /__(?![_\s])(.+?)(?<![_\s])__/, '#[style=strong]\1#[/end]'
+        # make sure this does not match inside a word or code
+        # will not accept an underscore inside
+        e.gsub! /\b_([^_]+)_\b/, '#[style=em]\1#[/end]'
         e.gsub! /`([^`]+)`/, '#[style=code]\1#[/end]'
         # keys are mentioned with "<" and ">" surrounding
         e.gsub! /(\<\S+\>)/, '#[style=key]\1#[/end]'
