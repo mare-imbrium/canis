@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-23 15:41
+#  Last update: 2014-05-27 01:34
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -134,12 +134,16 @@ module Canis
     # We may need to have a way to specify which window to repaint.
     #  If there are non-root windows above, we may have manually refresh only the previous one.
     #
-    def self.refresh_all
+    def self.refresh_all current_win=nil
       #Ncurses.touchwin(FFI::NCurses.stdscr)
       # above blanks out entire screen
       # in case of multiple root windows lets just do last otherwise too much refreshing.
-      return unless $global_windows.last
-      wins = [ $global_windows.last ]
+      gw = $global_windows
+      if current_win
+        gw = $global_windows.select {|e| e != current_win }
+      end
+      return unless gw.last
+      wins = [ gw.last ]
       wins.each_with_index do |w,i|
         $log.debug " REFRESH_ALL on #{w.name} (#{i}) sending 1000"
         # NOTE 2014-05-01 - 20:25 although we have reached the root window from any level
@@ -173,11 +177,12 @@ module Canis
     end
 
     def resize_with(layout)
-      $log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
+      #$log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
+      $log.debug "  resize #{@height} , #{@width} , #{@top} , #{@left},  "
       set_layout(layout)
       wresize(height, width)
       mvwin(top, left)
-      Window.refresh_all
+      Window.refresh_all self
     end
 
     %w[width height top left].each do |side|
@@ -580,6 +585,8 @@ module Canis
         require 'canis/core/include/colorparser'
         @color_parser = get_default_color_parser()
         @converter = Chunks::ColorParser.new @color_parser
+        # we need to know set the parent in colorparser. 2014-05-26 - 14:49 
+        @converter.form = self.form
       end
       @converter.convert_to_chunk s, colorp, att
     end
