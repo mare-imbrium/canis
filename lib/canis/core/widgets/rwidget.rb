@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-26 13:24
+  * Last update: 2014-05-27 01:38
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2244,19 +2244,31 @@ module Canis
       wbkgd = get_color($reversecolor, :black, :cyan)
 
       require 'canis/core/util/viewer'
-      Canis::Viewer.view(arr, :layout => [h, w, 2, 4], :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true,
-                        :window_bgcolor => wbkgd ) do |t|
+      # this was the old layout that centered with a border, but was a slight bit confusing since the bg was the same
+      # as the lower window.
+      _layout = [h, w, 2, 4]
+      sh = Ncurses.LINES-1
+      sc = Ncurses.COLS-0
+      # this is the new layout that is much like bline's command list. no border, a thick app header on top
+      #  and no side margin
+      _layout = [ h, sc, sh - h, 0]
+      Canis::Viewer.view(arr, :layout => _layout, :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true,
+                        :app_header => true ) do |t|
         # would have liked it to be 'md' or :help
         t.content_type = :tmux
         t.stylesheet   = stylesheet
+        t.suppress_borders = true
+        t.print_footer = false
         t.bgcolor = :black
-        t.bgcolor = 0
+        t.bgcolor = 16
         t.color = :white
         #t.text_patterns[:link] = Regexp.new(/\[[^\]]\]/)
         t.text_patterns[:link] = Regexp.new(/\[\w+\]/)
         t.bind_key(KEY_TAB, "goto link") { t.next_regex(:link) }
         # FIXME bgcolor add only works if numberm not symbol
-        t.bind_key(?a, "goto link") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; t.clear_pad; t.render_all }
+        t.bind_key(?a, "goto link") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; 
+                                      $log.debug " HELP BGCOLOR is #{t.bgcolor} ";
+                                      t.clear_pad; t.render_all }
         t.bind(:PRESS){|eve| 
           link = nil
           s = eve.word_under_cursor
