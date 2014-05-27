@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-27 01:38
+  * Last update: 2014-05-27 16:47
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1512,6 +1512,7 @@ module Canis
     # color and bgcolor for all widget, widgets that don't have color specified will inherit from form
     # If not mentioned, then global defaults will be taken
     attr_writer :color, :bgcolor
+    attr_accessor :attr
     
     # has the form been modified
     attr_accessor :modified
