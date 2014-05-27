@@ -7,13 +7,15 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-17 21:19
+#  Last update: 2014-05-27 19:45
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
 # == CHANGES: 
 #  - changed @content to @list since all multirow wids and utils expect @list
 #  - changed name from tablewidget to table
+#  - Since parent textpad now uses native_text in a lot of places, and tree does not  
+#     therefore whenever @list changes we need to update @native_text too. :(
 #
 # == TODO
 #   [ ] if no columns, then init_model is called so chash is not cleared.
@@ -142,7 +144,11 @@ module Canis
     #
     #require 'canis/core/include/listselectionmodel'
     require 'canis/core/widgets/tree/treemodel'
+    require 'canis/core/include/listoperations'
+
   class Tree < TextPad
+
+    include Canis::ListOperations
 
     dsl_accessor :print_footer
     attr_reader :treemodel        # returns treemodel for further actions 2011-10-2 
@@ -192,7 +198,7 @@ module Canis
       bind_key($row_selector, 'toggle row selection'){ toggle_row_selection() }
       bind_key(KEY_ENTER, 'toggle expanded state') { toggle_expanded_state() }
       bind_key(?o, 'toggle expanded state') { toggle_expanded_state() }
-      bind_key(?f, 'first row starting with char'){ ask_selection_for_char() }
+      bind_key(?f, 'first row starting with char'){ set_selection_for_char() }
       #bind_key(?\M-v, 'one key selection toggle'){ @one_key_selection = !@one_key_selection }
       bind_key(?O, 'expand children'){ expand_children() }
       bind_key(?X, 'collapse children'){ collapse_children() }
@@ -280,7 +286,7 @@ module Canis
       super
     end
     def convert_to_list tree
-      @list = get_expanded_descendants(tree.root)
+      @list = @native_text = get_expanded_descendants(tree.root)
       #$log.debug "XXX convert #{tree.root.children.size} "
       #$log.debug " converted tree to list. #{@list.size} "
     end
@@ -300,7 +306,9 @@ module Canis
     def current_row
       @list[@current_index]
     end
-    alias :text :current_row  # thanks to shoes, not sure how this will impact since widget has text.
+    # commendte off on 2014-05-27 - 14:27 
+    #alias :text :current_row  # thanks to shoes, not sure how this will impact since widget has text.
+    alias :current_value :current_row  # thanks to shoes, not sure how this will impact since widget has text.
 
     # show default value as selected and fire handler for it
     # This is called in repaint, so can raise an error if called on creation
@@ -320,7 +328,7 @@ module Canis
     ### START FOR scrollable ###
     def get_content
       #@list 2008-12-01 23:13 
-      @list_variable && @list_variable.value || @list 
+      #@list_variable && @list_variable.value || @list 
       # called by next_match in listscrollable
       @list
     end
@@ -354,6 +362,7 @@ module Canis
         _init_model array
       end
       @list << array
+      @native_text = @list # 2014-05-27 - 16:34 
       fire_dimension_changed
       self
     end
@@ -369,7 +378,9 @@ module Canis
       raise ArgumentError, "Argument must be within 0 and #{@list.length}" if ix < 0 or ix >=  @list.length 
       fire_dimension_changed
       #@list.delete_at(ix + @_header_adjustment)
-      @list.delete_at(ix)
+      _ret = @list.delete_at(ix)
+      @native_text = @list # 2014-05-27 - 16:34 
+      return _ret
     end
     
     ##
@@ -654,6 +665,6 @@ module Canis
       #@list = nil
     end
 
-  end # class Table
+  end # class Tree
 
 end # module
