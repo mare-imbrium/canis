@@ -97,12 +97,18 @@ module Canis
 
       t = textview
       t.bind_key(Ncurses::KEY_F5, 'maximize window '){ f = t.form.window; 
-                                                       c = f.left - 1; 
-                                                       #f.hide; 
         f.resize_with([FFI::NCurses.LINES-0, Ncurses.COLS, 0,0]); 
         #f.resize_with([0,0, 0,0]); 
         t.height = Ncurses.LINES - t.row - 0
-        #
+      }
+      t.bind_key(Ncurses::KEY_F6, 'restore window ', layout){ |l,m, n| 
+        f = t.form.window; 
+        $log.debug "  F6 ARG is #{m}, #{n}"
+        f.hide; # need to hide since earlier window was larger.
+        f.resize_with(n);
+        #f.resize_with([0,0, 0,0]); 
+        t.height =  f.height - t.row - 0
+        f.show
       }
 =begin
       # just for fun -- seeing how we can move window around
