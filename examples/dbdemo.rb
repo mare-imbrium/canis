@@ -336,7 +336,7 @@ App.new do
       keyarray = [
         ["F1" , "Help"], ["F10" , "Exit"], 
         ["F2", "Menu"], ["F4", "View"],
-        ["M-d", "Datebase"], ["M-t", "Table"],
+        ["M-d", "Database"], ["M-t", "Table"],
         ["M-x", "Command"], nil
       ]
       tlist_keyarray = keyarray + [ ["Sp", "Select"], nil, ["Enter","View"] ]
