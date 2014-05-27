@@ -1,9 +1,9 @@
- 2. row_selector to be z
+ 1. check native_text again to see how much used
  3. how to override +- * a and others for listbox - need to call before super()
+ 3. row_selector to be z
  4. app to contain window close and confirm close
+ 4. test out vieditable and listeditable with core
  4. when sorting cursor on old row but curr changed
- 5. app needs to pass up exceptions to user app
- 5. test out vieditable and listeditable with core
 .3. Make keylabels more rubyesque - later
 x2. Show key mappings to user
 x5. convert testlistbox to core
