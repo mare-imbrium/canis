@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 11:42
+#  Last update: 2014-05-27 12:19
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -562,6 +562,7 @@ module Canis
       # We maintain original text in @list
       # but use another variable for native format (chunks).
       @parse_required = true
+      @native_text = nil # otherwise non parse cases were never refreshed !
       if @content_type
         parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
       end
