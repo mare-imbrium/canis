@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 01:34
+#  Last update: 2014-05-27 10:52
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -180,6 +180,7 @@ module Canis
       #$log.debug " DARN ! This awready duz a resize!! if h or w or even top or left changed!!! XXX"
       $log.debug "  resize #{@height} , #{@width} , #{@top} , #{@left},  "
       set_layout(layout)
+      $log.debug "  resize after set_layout: #{@height} , #{@width} , #{@top} , #{@left},  "
       wresize(height, width)
       mvwin(top, left)
       Window.refresh_all self
