@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-11-15 - 19:54
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-05 12:38
+#  Last update: 2014-05-27 20:36
 # ----------------------------------------------------------------------------- #
 #
 
@@ -16,6 +16,7 @@ module Canis
     editor = ENV['EDITOR'] || 'vi'
     vimp = %x[which #{editor}].chomp
     shell_out "#{vimp} #{fp}"
+    Window.refresh_all
   end
 
   # TODO we need to move these to some common file so differnt programs and demos
