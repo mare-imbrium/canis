@@ -102,8 +102,9 @@ module Canis
         t.height = Ncurses.LINES - t.row - 0
       }
       t.bind_key(Ncurses::KEY_F6, 'restore window ', layout){ |l,m, n| 
+        # l was DefaultKeyHandler, m was string, n was Hash
         f = t.form.window; 
-        $log.debug "  F6 ARG is #{m}, #{n}"
+        #$log.debug "  F6 ARG is #{m}, #{n}"
         f.hide; # need to hide since earlier window was larger.
         f.resize_with(n);
         #f.resize_with([0,0, 0,0]); 
