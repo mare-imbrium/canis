@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-26 14:51
+#  Last update: 2014-05-27 16:52
 # ------------------------------------------------------------ #
 #
 
@@ -63,7 +63,7 @@ module Canis
         @chunk[1]
       end
       def attr
-        @chunk[2] || @parent.attr
+        @chunk[2] || @parent.attr || NORMAL
       end
 
       # this returns the color of this chunk, else goes up the parents, and finally
