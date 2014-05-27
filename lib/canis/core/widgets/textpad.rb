@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 12:19
+#  Last update: 2014-05-27 20:20
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -562,13 +562,16 @@ module Canis
       # We maintain original text in @list
       # but use another variable for native format (chunks).
       @parse_required = true
-      @native_text = nil # otherwise non parse cases were never refreshed !
+      @native_text = lines
+      #@native_text = nil # otherwise non parse cases were never refreshed ! This may be causing
+         # a nil error in some places
       if @content_type
         parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
       end
 
       return @list if lines.empty?
       @list = lines
+      @native_text ||= @list
       @_populate_needed = true
       @repaint_all = true
       @repaint_required = true
@@ -578,6 +581,8 @@ module Canis
     alias :list :text
     # for compat with textview, FIXME keep one consistent name for this
     alias :set_content :text
+    # this is returning the original content
+    # Who is using this, should it return native ?
     def content
       raise "content is nil " unless @list
       return @list
@@ -673,7 +678,9 @@ module Canis
     # returns focussed value (what cursor is on)
     # This may not be a string. A tree may return a node, a table an array or row
     def current_value
-      @native_text[@current_index]
+      # many descendants do not set native_text - note that list and tree and table use just @list.
+      #@native_text[@current_index]
+      @list[@current_index]
     end
     ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
     #    formatting of data
@@ -1091,7 +1098,9 @@ module Canis
 
     #
     # called when this widget is entered, by form
+    # 2014-05-27 - 17:02 we were not calling super, so :ENTER was not triggered !!!
     def on_enter
+      super
       set_form_row
     end
     # called by form
@@ -1363,7 +1372,7 @@ module Canis
         pos = @curpos + 1
         # FIXME you could be at end of line
         _line = @native_text[startline]
-        _col = _line.index(str, pos) if _line
+        _col = _line.to_s.index(str, pos) if _line
         return [startline, _col] if _col
         startline += 1 # FIXME check this end of file
       end
@@ -1372,7 +1381,7 @@ module Canis
         next if ix < startline
         break if endline && ix > endline
         # next line just a hack and not correct if only one match in file FIXME
-        _col = line.index str
+        _col = line.to_s.index str
         if _col
           return [ix, _col]
         end
