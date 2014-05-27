@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-26 12:26
+#  Last update: 2014-05-27 11:42
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -144,6 +144,7 @@ module Canis
       @left = @col
       @lastrow = @row + @row_offset
       @lastcol = @col + @col_offset
+      $log.debug "  CALC_DIMENSION #{@rows} , #{@cols}, #{@height} , #{@width} , #{@top} , #{@left} "
     end
     # returns the row and col where the cursor is initially placed, and where printing starts from.
     def rowcol #:nodoc:
@@ -265,6 +266,12 @@ module Canis
     #   try reducing height when creating textpad.
     public
     def padrefresh
+      # sometimes padref is called directly from somewhere but dimensions have changed.
+      # 2014-05-27 - 11:42 
+      unless @__first_time
+        __calc_dimensions
+        @__first_time = true
+      end
       # startrow is the row of TP plus 1 for border
       top = @window.top
       left = @window.left
@@ -297,7 +304,7 @@ module Canis
       # could affect some other calculation somewhere.
 
       retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
-      $log.warn "XXXPADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
+      $log.warn "XXXPADREFRESH #{retval} #{self.class}:#{self.name}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == -1
       # remove next debug statement after some testing DELETE
       $log.debug "0PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
       if retval < 0
