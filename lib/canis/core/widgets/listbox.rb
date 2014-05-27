@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 12:21
+#  Last update: 2014-05-27 20:31
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -168,7 +168,7 @@ module Canis
       return :UNHANDLED if char == :UNHANDLED
       #alert "got #{char}"
       @oldrow = @current_index
-      @last_regex = "^#{char}"
+      @last_regex = /^#{char}/i
       ix = next_regex @last_regex
       return unless ix
       @current_index = ix[0] 
