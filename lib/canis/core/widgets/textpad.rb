@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-28 17:45
+#  Last update: 2014-05-28 22:44
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -764,7 +764,6 @@ module Canis
     # goto first line of file
     public
     def goto_start
-      #@oldindex = @current_index
       $multiplier ||= 0
       if $multiplier > 0
         goto_line $multiplier - 1
@@ -778,7 +777,6 @@ module Canis
 
     # goto last line of file
     def goto_end
-      #@oldindex = @current_index
       $multiplier ||= 0
       if $multiplier > 0
         goto_line $multiplier - 1
@@ -1143,15 +1141,16 @@ module Canis
       ensure_visible
 
       check_prow
-      #$log.debug "XXX: PAD BOUNDS ci:#{@current_index} , old #{@oldrow},pr #{@prow}, max #{@maxrow} pcol #{@pcol} maxcol #{@maxcol}"
       @crow = @current_index + r - @prow
       @crow = r if @crow < r
+      #$log.debug "XXX: PAD BOUNDS ci:#{@current_index} , old #{@oldrow},pr #{@prow}, crow #{@crow}, max #{@maxrow} pcol #{@pcol} maxcol #{@maxcol}"
       # 2 depends on whetehr suppress_borders
       if @suppress_borders
         @crow = @row + @height -1 if @crow >= r + @height -1
       else
         @crow = @row + @height -2 if @crow >= r + @height -2
       end
+      #$log.debug "  PAD BOUNDS CROW #{@crow} calling setrowcol"
       setrowcol @crow, @curpos+c
       lastcurpos @crow, @curpos+c
       if @oldindex != @current_index
@@ -1180,7 +1179,9 @@ module Canis
 
       cc = @list.count
 
-      if cc < @rows
+      #$log.debug "  check_prow prow #{@prow} , list count #{cc}, rows #{@rows} "
+      # 2014-05-28 - 22:41 changed < to <= otherwise prow became -1 when equal
+      if cc <= @rows
         @prow = 0
       else
         maxrow = cc - @rows - 1
@@ -1188,6 +1189,7 @@ module Canis
           @prow = maxrow
         end
       end
+      #$log.debug "  check_prow after prow #{@prow} , list count #{cc} "
       # we still need to check the max that prow can go otherwise
       # the pad shows earlier stuff.
       # 
