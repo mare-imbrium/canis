@@ -48,7 +48,9 @@ if $0 == __FILE__
   begin
     # XXX update with new color and kb
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"canis14.log")))
+    path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    $log = Logger.new(path)
     $log.level = Logger::DEBUG
     catch(:close) do
     tp = SetupMessagebox.new()
