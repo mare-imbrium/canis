@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 19:45
+#  Last update: 2014-05-28 17:09
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -587,7 +587,8 @@ module Canis
       }
       @repaint_required = true
       #set_form_row  # will not work if off form
-      set_focus_on crow
+      #set_focus_on crow
+      goto_line crow
     end
 
     def has_been_expanded node
