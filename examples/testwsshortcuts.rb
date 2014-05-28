@@ -35,7 +35,7 @@ class SetupMessagebox
       radio :text => "OSX", :value => "OSX", :group => :os
       radio :text => "Window", :value => "Win", :group => :os
       flow :margin_top => 2, :margin_left => 4, :item_width => 15  do
-        button :text => "Ok" do throw :close; end
+        button :text => "Ok", :default_button => true do throw :close; end
         button :text => "Cancel"
         button :text => "Apply"
       end
