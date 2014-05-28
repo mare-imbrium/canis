@@ -5,9 +5,9 @@ require 'canis/core/util/promptmenu'
 
   def my_help_text
     <<-eos
-    abasiclist.rb
+    |abasiclist.rb|
     =========================================================================
-    Basic Usage
+    **Basic Usage**
 
     This simple example shows 2 lists inside a "flow". Each takes 50 percent
     of the screen's width. 
@@ -21,11 +21,11 @@ require 'canis/core/util/promptmenu'
     output. "edit" shells out to your EDITOR.
 
     You can try multiple selection using <v> and <V> for range 
-    select. Check the general help screen for more _list_ commands. The selections
+    select. Check the general help screen for more [[list]] commands. The selections
     are not mapped to any command.
 
     =========================================================================
-    :n or Alt-n for next buffer. 'q' to quit.
+    :n or Alt-n for next buffer. 'q' to quit. [[index]]
 
     eos
   end
