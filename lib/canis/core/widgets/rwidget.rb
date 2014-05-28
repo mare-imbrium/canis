@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-27 16:47
+  * Last update: 2014-05-28 14:32
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -495,7 +495,7 @@ module Canis
           #@_key_map[a0][a1] = blk
           #$log.debug " XX assigning #{keycode} to  _key_map " if $log.debug? 
         else
-          #$log.debug " assigning #{keycode} to  _key_map " if $log.debug? 
+          $log.debug " assigning #{keycode} to  _key_map for #{self.class}, #{@name}" if $log.debug? 
         end
         @_key_map[keycode] = blk
         @_key_args ||= {}
@@ -3225,6 +3225,10 @@ module Canis
     def default_button tf=nil
       return @default_button unless tf
       raise ArgumentError, "default button must be true or false" if ![false,true].include? tf
+      unless @form
+        bind(:FORM_ATTACHED){ default_button(tf) }
+        return self
+      end
       $log.debug "XXX:  BUTTON DEFAULT setting to true : #{tf} "
       @default_button = tf
       if tf
