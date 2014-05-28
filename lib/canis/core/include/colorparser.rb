@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 16:52
+#  Last update: 2014-05-28 12:02
 # ------------------------------------------------------------ #
 #
 
@@ -134,6 +134,7 @@ module Canis
       # returns match for str in this chunk
       # added 2013-03-07 - 23:59 
       # adding index on 2014-05-26 for multiple matches on one line.
+      # 2014-05-28 - 12:02 may no longer be used since i have added to_s in next_match in textpad.
       def index str, offset = 0
         result = 0
         _end = 0
