@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 20:20
+#  Last update: 2014-05-28 12:03
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -360,7 +360,8 @@ module Canis
       clear_row @pad, ix
       parse_formatted_line ix
       #render @pad, ix, @list[ix]
-      render @pad, ix, @native_text[ix]
+      _arr = _getarray
+      render @pad, ix, _arr[ix]
     
     end
 # ---- end pad related ----- }}}
@@ -373,8 +374,9 @@ module Canis
       # can't this be in one place, it pops up everywhere
       @color_pair = get_color($datacolor, @color, @bgcolor)
       @native_text ||= @list
+      _arr = _getarray
       #@list.each_with_index { |line, ix|
-      @native_text.each_with_index { |line, ix|
+      _arr.each_with_index { |line, ix|
         #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
         render @pad, ix, line
       }
@@ -588,6 +590,17 @@ module Canis
       return @list
     end
     alias :get_content :content
+    #
+    # internal method to return the correct list.
+    # Rather than trying to synch list and native text for those who do not use the latter
+    #  let us just use the correct array
+    def _getarray
+      if @content_type.nil? or @content_type == :none
+        return @list
+      else
+        return @native_text
+      end
+    end
     # 
     # pass in formatted text along with parser (:tmux or :ansi)
     # This text contains markup such as ansi, or tmux
@@ -915,14 +928,15 @@ module Canis
       end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       line = @current_index
-      buff = @native_text[line].to_s
+      _arr = _getarray
+      buff = _arr[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
         found = buff.index(regex, pos)
         if !found
           # if not found, we've lost a counter
-          if line+1 < @native_text.length
+          if line+1 < _arr.length
             line += 1
           else
             return
@@ -952,8 +966,9 @@ module Canis
         raise "Pattern specified #{regex} does not exist in text_patterns " unless regex
       end
       $multiplier = 1 if !$multiplier || $multiplier == 0
+      _arr = _getarray
       line = @current_index
-      buff = @native_text[line].to_s
+      buff = _arr[line].to_s
       return unless buff
       pos = @curpos || 0 # list does not have curpos
       $multiplier.times {
@@ -964,7 +979,7 @@ module Canis
             pos = 0
           elsif line > 0
             line -= 1
-            pos = @native_text[line].to_s.size
+            pos = _arr[line].to_s.size
           else
             return
           end
@@ -1010,7 +1025,8 @@ module Canis
     def cursor_eol
       # pcol is based on max length not current line's length
       @pcol = @content_cols - @cols - 1
-      @curpos = @native_text[@current_index].size
+      _arr = _getarray
+      @curpos = _arr[@current_index].size
       @repaint_required = true
     end
     # 
@@ -1366,18 +1382,24 @@ module Canis
     #     pos = next_match /abc/
     #     # pos is nil or [line, col]
     #
+    # 2014-05-28 - Added to_s before index() so that other descendants can use, such as treemodel or tablemodel
     def next_match str, startline=nil, endline=nil
+      # 1. look in current row after the curpos
+      # 2. if no match look in rest of array
+      # 3. if no match and you started from current_index, then search
+      #   from start of file to current_index. call _next_match with 0.
+      _arr = _getarray
       if !startline
         startline = @current_index
         pos = @curpos + 1
         # FIXME you could be at end of line
-        _line = @native_text[startline]
+        _line = _arr[startline]
         _col = _line.to_s.index(str, pos) if _line
         return [startline, _col] if _col
         startline += 1 # FIXME check this end of file
       end
        # FIXME iterate only through the ones we need, not all
-      @native_text.each_with_index do |line, ix|
+      _arr.each_with_index do |line, ix|
         next if ix < startline
         break if endline && ix > endline
         # next line just a hack and not correct if only one match in file FIXME
@@ -1391,10 +1413,6 @@ module Canis
       end
       return nil
 
-      # look n current row after the curpos
-      # if no match look in rest of array
-      # if no match and you started from current_index, then search
-      # from start of file to current_index. call _next_match with 0.
     end
     # search for the next occurence of given regexp. Returns line and col if found, else nil.
     # @param [String, Regexp] pattern to search for (uses :index)
