@@ -6,7 +6,14 @@ leafs and branches (nodes) that contain more leafs or branches.
 These are often used for directory-like structures.
 
 Trees support all or most motion commands of [[Textpad]] in addition to
-defining some additional ones.
+defining some additional ones such as:
+>
+  - O   Expand all children
+  - X   Collapse all children
+  - o   toggle expanded state
+  - p   go to parent
+  - x   collapse parent
+<
 
 Pressing <ENTER> expands or collapses a node (branch).
 The `$row_selector` key by default is "v" which is used to trigger a
