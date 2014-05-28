@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-28 12:02
+#  Last update: 2014-05-29 01:14
 # ------------------------------------------------------------ #
 #
 
@@ -280,7 +280,7 @@ module Canis
             @_color_pair = nil
             @attr = nil
 
-            $log.debug "XXX: CHUNK end parents:#{@parents.count}, last: #{@parents.last} "
+            #$log.debug "XXX: CHUNK end parents:#{@parents.count}, last: #{@parents.last} "
           when :reset   # ansi has this
             # end all previous colors
             # end the current (last) span
@@ -294,8 +294,7 @@ module Canis
           when String
 
             ## create the chunk
-            #$log.debug "XXX:  CHUNK     using on #{p}  : #{@color_pair} , #{@attr} " # 2011-12-10 12:38:51
-            $log.debug "XXX:  CHUNK     using on #{p}  : #{@_color_pair} , #{@attr}, fg: #{@_color}, #{@_bgcolor}, parent: #{@parents.last} " # 2011-12-10 12:38:51
+            #$log.debug "XXX:  CHUNK     using on #{p}  : #{@_color_pair} , #{@attr}, fg: #{@_color}, #{@_bgcolor}, parent: #{@parents.last} " # 2011-12-10 12:38:51
 
             #chunk =  [color_pair, p, attr] 
             chunk = Chunk.new @_color_pair, p, @attr
@@ -304,7 +303,7 @@ module Canis
             chunk.parent = @parents.last
             if newblockflag
               @parents << chunk
-              $log.debug "XXX: CHUNK start parents:#{@parents.count}, #{@parents.last} "
+              #$log.debug "XXX: CHUNK start parents:#{@parents.count}, #{@parents.last} "
               newblockflag = true
             end
             if block_given?
