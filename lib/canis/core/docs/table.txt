@@ -13,9 +13,19 @@ Tables support all or most motion commands of [[Textpad]].
 Tables may be configured to support selection capabilities of [[List]] 
 if required.
 
+Some operations on tables are as follows:
+<
+    w      -    move to next column
+    b      -    move to previous column
+    <M-->  -    <Alt-minus> to reduce column width
+    <M-+>  -    <Alt-plus> to increase column width
+    <=>    -    press <equal> to size width of column to width of data in current column 
+
+>
+
 Some basic row addition and editing facilities are also provided, which
 must be bound to a key, if the application allows editing. It is
 expected that an application will customize the basic row editing
-feature for its needs.
+feature for its needs. See |tabular.rb|.
 
 (This page needs to be completed)
