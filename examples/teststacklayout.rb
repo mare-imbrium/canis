@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 23:34
 #      License: MIT
-#  Last update: 2014-05-09 15:51
+#  Last update: 2014-05-28 22:09
 # ----------------------------------------------------------------------------- #
 
 if __FILE__ == $PROGRAM_NAME
@@ -14,6 +14,11 @@ if __FILE__ == $PROGRAM_NAME
   require 'canis/core/include/layouts/stacklayout'
   App.new do
 
+
+      @form.bind_key(FFI::NCurses::KEY_F3,'view log') { 
+        require 'canis/core/util/viewer'
+        Canis::Viewer.view("canis14.log", :close_key => KEY_ENTER, :title => "<Enter> to close")
+      }
     # if i add form here, it will repaint them first, and have no dimensions
     lb = Listbox.new @form, :list => ["borodin","berlioz","bernstein","balakirev", "elgar"] , :name => "mylist"
     lb1 = Listbox.new @form, :list => ["bach","beethoven","mozart","gorecki", "chopin","wagner","grieg","holst"] , :name => "mylist1"
