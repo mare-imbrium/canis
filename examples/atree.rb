@@ -85,14 +85,14 @@ App.new do
         stack :margin_top => 0, :width_pc => "40", :height => :expand do
           # using height_pc as 100 was causing prefresh to fail if file lines went beyond 31
           # tput lines gives 32 so only when file length exceeded was it actually writing beyond screen
-          t = textview  :suppress_borders => true, :height_pc => 80
+          t = textview  :suppress_borders => true, :height_pc => 90, :color => :green, :bgcolor => :black
             var.command do |filename| 
               filename = filename.value
               if File.directory? filename
                 lines = Dir.entries(filename )
                 t.set_content lines
               elsif File.exist? filename
-                lines = File.open(filename,'r').readlines 
+                lines = File.open(filename,'r').read.split("\n") 
                 # next line bombs on binary files. normally we would check file type using +file+ command
                 t.set_content lines
               else
