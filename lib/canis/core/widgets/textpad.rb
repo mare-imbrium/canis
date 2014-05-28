@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-28 12:03
+#  Last update: 2014-05-28 17:45
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -683,7 +683,9 @@ module Canis
           @color_parser.form = self
           @native_text[lineno] = @color_parser.convert_to_chunk( @list[lineno]) 
         else
-          @native_text[lineno] = @list[lineno]
+          # table does not use native text at all, so we need to check
+          # actually we don't need this line at all
+          @native_text[lineno] = @list[lineno] if @native_text
         end
 
       end
@@ -693,7 +695,7 @@ module Canis
     def current_value
       # many descendants do not set native_text - note that list and tree and table use just @list.
       #@native_text[@current_index]
-      @list[@current_index]
+      _getarray[@current_index]
     end
     ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
     #    formatting of data
