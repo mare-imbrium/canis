@@ -1,0 +1,16 @@
+# Help for Trees
+
+Trees are multirow components that support tree-like information, with
+leafs and branches (nodes) that contain more leafs or branches.
+
+These are often used for directory-like structures.
+
+Trees support all or most motion commands of [[Textpad]] in addition to
+defining some additional ones.
+
+Pressing <ENTER> expands or collapses a node (branch).
+The `$row_selector` key by default is "v" which is used to trigger a
+method, such as displaying details on some other list or view.
+
+(This page needs to be completed)
+
