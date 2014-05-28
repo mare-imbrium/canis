@@ -1,6 +1,7 @@
 # G E N E R A L   H E L P
 =======================
               <q> to quit this window. <Space> to scroll. 
+    <TAB> goes to next link in help file. Press <ENTER> to open link.
 
 _____________________________________________________________________
 ## 1. General Help 
