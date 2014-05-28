@@ -42,19 +42,17 @@ App.new do
   end
 def help_text
     <<-eos
-         Help for tabular widgets   
-         ------------------------
+         Help for Tables
+         ---------------
 
          Keys that can be used on header
 
     <ENTER>     - sort given field (press on header)
-    <->         - press <minus> to reduce column width
-    <+>         - press <plus> to increase column width
 
          Keys that can be used on data rows
 
-    <space>     -  select a row
-    <Ctr-space> - range select
+    <v>         - select a row
+    <V>         - range select
     <u>         - unselect all (conflicts with vim keys!!)
     <a>         - select all
     <*>         - invert selection
@@ -71,12 +69,13 @@ def help_text
 
          Motion keys 
 
-    Usual for lists and textview such as :
+    Usual for [[list]] and [[textpad]] such as :
     j, k, h, l
     w and b for (next/prev) column
     C-d and C-b
     gg and G
 
+    [[table]]  |   [[index]]
     eos
 end
 def edit_row tw
