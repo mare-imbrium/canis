@@ -1,0 +1,21 @@
+# Help for Tables
+
+Tables are multirow components that support columnar information.
+
+Columns may be resized, or hidden. Keys for this will have to be defined
+by the application, if appropriate.
+
+Data may be sorted on column by pressing <ENTER> on the header, if the 
+default table sorter has been enabled, or a custom sorter defined.
+
+Tables support all or most motion commands of [[Textpad]].
+
+Tables may be configured to support selection capabilities of [[List]] 
+if required.
+
+Some basic row addition and editing facilities are also provided, which
+must be bound to a key, if the application allows editing. It is
+expected that an application will customize the basic row editing
+feature for its needs.
+
+(This page needs to be completed)
