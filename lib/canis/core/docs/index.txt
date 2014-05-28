@@ -28,7 +28,7 @@ _____________________________________________________________________
 _____________________________________________________________________
 ## 3. Multiline widgets
 
-In most widgets such as [[list]], [[textpad]], _table_, and _tree_ the
+In most widgets such as [[list]], [[textpad]], [[table]], and [[tree]] the
 following vim-bindings are applicable.
 
           j,k,l,h, gg, G, C-d, C-b, C-e, C-y, w, b, /
