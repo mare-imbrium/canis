@@ -1,5 +1,5 @@
 require 'canis'
-require 'canis/core/widgets/rtree'
+require 'canis/core/widgets/tree'
 
 if $0 == __FILE__
   $choice = ARGV[0].to_i || 1
@@ -60,6 +60,7 @@ class Tester
           end
           branch "ack" do
             leaf "ackrc"
+            leaf "agrc"
           end
         end
       end
