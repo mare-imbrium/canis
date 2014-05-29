@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-28 22:44
+#  Last update: 2014-05-29 22:52
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -99,8 +99,12 @@ module Canis
         @lastrow = @row + @row_offset
         @lastcol = @col + @col_offset
       end
+      # next 4 are required because in some cases a descendant may not use methods such as list or text
+      #  to populate. +tree+ has an option of using +root()+.
       @repaint_required = true
+      @repaint_all = true
       @parse_required = true
+      @_populate_needed = true
       map_keys unless @mapped_keys
     end
 
@@ -1230,7 +1234,9 @@ module Canis
       # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
 
       # creates pad and calls render_all
-      populate_pad if @_populate_needed
+      populate_pad if !@pad or @_populate_needed
+
+      raise "PAD IS NIL -- populate_pad was not called ??" unless @pad
 
       _do_borders
       print_foot if @repaint_footer_required  # if still not done
@@ -1479,6 +1485,7 @@ module Canis
   # a test renderer to see how things go
   class DefaultFileRenderer
     attr_accessor :default_colors
+    attr_reader :hash
 
     def initialize
       @default_colors = [:white, :black, NORMAL]
