@@ -18,7 +18,7 @@ end
   message "Press F10 or qq to quit "
 
   file = "data/todo.txt"
-  alist = File.open(file,'r').readlines if File.exists? file
+  alist = File.open(file,'r').read.split("\n") if File.exists? file
   #flow :margin_top => 1, :item_width => 50 , :height => FFI::NCurses.LINES-2 do
   #stack :margin_top => 1, :width => :expand, :height => FFI::NCurses.LINES-4 do
 
@@ -31,7 +31,7 @@ end
     # modify the default file renderer
     dr = DefaultFileRenderer.new
     dr.insert_mapping /^x/, [:blue, :black]
-    dr.insert_mapping /^.1/, [:yellow, :red]
+    dr.insert_mapping /^.1/, [:white, :blue]
     dr.insert_mapping /^.2/, [:red, :blue]
     dr.insert_mapping /^.3/, [:white, :black]
     dr.insert_mapping /^.4/, [:green, :black]
