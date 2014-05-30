@@ -6,7 +6,7 @@
   * Author: jkepler (http://github.com/mare-imbrium/canis/)
   * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2014-04-24 01:02
+  * Last update:  2014-05-30 12:21
 
   == CHANGES
      As of 1.5.0, this replaces the earlier TabbedPane which
@@ -110,7 +110,8 @@ module Canis
       else
         @components.each { |e| e.repaint }
       end # if repaint_required
-      print_border if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
+      # next line is not called. earlier the 's' was missing, suppress_borders is not false
+      print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       @repaint_required = false
     end
     def handle_key ch
@@ -336,13 +337,6 @@ module Canis
       self
     end
 
-    def DEPRECATED_handle_key ch # :nodoc
-      map_keys unless @keys_mapped
-      ret = process_key ch, self
-      @multiplier = 0
-      return :UNHANDLED if ret == :UNHANDLED
-      return 0
-    end
 
     # Put all the housekeeping stuff at the end
     private
@@ -355,6 +349,9 @@ module Canis
       # I'll keep current tabs comps in this to simplify
       @components     = []      
       @_entered = false
+      # added on 2014-05-30 - 12:13 otherwise borders not printed first time
+      @repaint_all = true
+      @repaint_required = true
     end
 
     def map_keys
