@@ -62,6 +62,7 @@ end
 # 
 # changed order of name and fields, thanks hramrach
 def view_data name, fields="*"
+  fields = "*" if fields == ""
   stmt = "select #{fields} from #{name}"
   stmt << $where_string if $where_string
   stmt << $order_string if $order_string
@@ -142,6 +143,7 @@ App.new do
       >            Last row
 
       F10      -   Quit application
+      [[index]]
 
 
 
