@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-29 22:52
+#  Last update: 2014-05-31 01:17
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -962,7 +962,8 @@ module Canis
         #backward_regex(/[[:punct:][:space:]]\w/)
         backward_regex(:word)
     end
-    # jump to previous occurence of given regexp
+    # jump to previous occurence of given regexp within a line, and then to previous line
+    #   This is more line 'w' or 'b' in vim, not like '/'
     # @param [Regexp] pattern to go back to.
     def backward_regex regex
       if regex.is_a? Symbol
@@ -971,21 +972,37 @@ module Canis
       end
       $multiplier = 1 if !$multiplier || $multiplier == 0
       _arr = _getarray
-      line = @current_index
-      buff = _arr[line].to_s
-      return unless buff
       pos = @curpos || 0 # list does not have curpos
+      line = @current_index
+      #buff = _arr[line].to_s
+      #return unless buff
+      # if curpos is at zero , we should be checking previous line !
       $multiplier.times {
-        found = buff.rindex(regex, pos-2)
+        # if at start of line, go to previous line
+        if pos == 0 
+          if @current_index > 0
+            line -= 1
+            pos = _arr[line].to_s.size
+          else
+            # we are on first line of file at start
+            break
+          end
+        end
+        buff = _arr[line].to_s
+        return unless buff
+        pos2 = pos - 2
+        pos2 = 0 if pos2 < 0
+        found = buff.rindex(regex, pos2)
+        $log.debug "  backward: pos #{pos} , found #{found}, pos2 = #{pos2} "
         if !found || found == 0
           # if not found, we've lost a counter
           if pos > 0
             pos = 0
           elsif line > 0
-            line -= 1
-            pos = _arr[line].to_s.size
+            #line -= 1
+            #pos = _arr[line].to_s.size
           else
-            return
+            break
           end
         else
           pos = found + 1
