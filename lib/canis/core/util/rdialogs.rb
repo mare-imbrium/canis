@@ -440,8 +440,9 @@ def popuplist list, config={}, &block
           return lb.current_index if lb.selection_mode != :multiple
 
           x = lb.selected_indices
-          return x if x
-          x = lb.current_index unless x
+          # now returns empty array not nil
+          return x if x and !x.empty?
+          x = lb.current_index
           return [x]
           # if multiple selection, then return list of selected_indices and don't catch 32
         elsif ch == $row_selector      # if single selection, earlier 32
