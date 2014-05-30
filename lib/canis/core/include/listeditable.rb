@@ -71,7 +71,8 @@ module ListEditable
     # warning: delete buffer can now be an array
     fire_handler :CHANGE, InputDataEvent.new(@curpos,@curpos+@delete_buffer.length, self, :DELETE_LINE, line, @delete_buffer)     #  2008-12-24 18:34 
     set_modified 
-    fire_dimension_changed
+    # next line being called from textarea which is old style and thus bombs
+    fire_dimension_changed if respond_to? :fire_dimension_changed
   end
     def delete_curr_char num=($multiplier == 0 ? 1 : $multiplier)
       return -1 unless @editable
