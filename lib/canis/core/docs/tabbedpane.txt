@@ -1,0 +1,15 @@
+# Help for TabbedPanes
+
+TabbedPanes allow multiple forms to occupy one area on the screen.
+Following are some keys useful on a tabbedpane:
+<
+
+    <TAB>   -   navigate between tabs or components
+    <DOWN>  -   navigate to the components of a tab
+    <UP>    -   navigate between components on a tab
+                or back to the the tabs
+    <SPACE> -   activate the tab under cursor
+                Earlier, <ENTER> would have worked, but now
+                <ENTER> only fires the default button an a page.
+>
+(This page needs to be completed)
