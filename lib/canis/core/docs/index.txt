@@ -95,6 +95,10 @@ Some terminals mess the screen output such as `xterm-256color`. At least
 while working under `tmux` in `iTerm` (with solarized), this terminal was 
 messing the output. 
 Things are fine with `screen-256color`.
+
+### 6.3 Other components
+
+-  [[tabbedpane]]
 _____________________________________________________________________
 q to quit, gg to goto top. <TAB> goes to next link in help file
 Press <ENTER> to open link.
