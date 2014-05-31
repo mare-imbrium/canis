@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-31 14:38
+#  Last update: 2014-06-01 00:32
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -455,11 +455,8 @@ module Canis
     # before updating a single row in a table 
     # we need to clear the row otherwise previous contents can show through
     def clear_row pad, lineno
-      if @renderer
-        # required for listrenderer
-        if @renderer.respond_to? :clear_row
+      if @renderer and @renderer.respond_to? :clear_row
           @renderer.clear_row pad, lineno
-        end
       else
         # need pad width not window width, the other clearstring uses width of 
         #  widget to paint on window.
