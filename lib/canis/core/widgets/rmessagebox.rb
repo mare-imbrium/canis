@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-01 23:35
+#  Last update: 2014-05-31 11:44
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -63,6 +63,10 @@ module Canis
       #bordertitle_init
       @color ||= :black
       @bgcolor ||= :white
+      # 2014-05-31 - 11:44 adding form color 
+      #   try not to set buttons color in this program, let button pick up user or form colors
+      @form.color = @color
+      @form.bgcolor = @bgcolor
       @maxrow = 3
 
       #instance_eval &block if block_given?
