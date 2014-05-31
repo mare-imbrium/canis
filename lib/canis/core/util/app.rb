@@ -112,9 +112,10 @@ module Canis
         path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
         file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
         $log = Logger.new(path)
-        $log.level = Logger::DEBUG # change to warn when you've tested your app.
+        # if not set, will default to 0 which is debug. Other values are 1 - info, 2 - warn
+        $log.level = ENV["CANIS_LOG_LEVEL"].to_i
         colors = Ncurses.COLORS
-        $log.debug "START #{colors} colors  --------- #{$0} win: #{@window} "
+        $log.info "START #{colors} colors  --------- #{$0} win: #{@window} : log level: #{$log.level}"
       end
     end
     def logger; return $log; end
