@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 20:31
+#  Last update: 2014-05-31 14:38
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -212,6 +212,8 @@ module Canis
       @left_margin = obj.left_margin
       # internal width based on both borders - earlier internal_width which we need
       @int_w = 3 
+      # 3 leaves a blank black in popuplists as in testlistbox.rb F4
+      @int_w = 2 
     end
     #
     # @param pad for calling print methods on
@@ -259,17 +261,22 @@ module Canis
     # clear row before writing so previous contents are erased and don't show through
     # I could do this everytime i write but trying to make it faster
     # and only call this if +fire_row_changed+ is called.
+    # NOTE: in clear_row one is supposed to clear to the width of the pad, not window
+    #   otherwise on scrolling you might get black bg if you have some other color bg.
+    #   This is mostly important if you have a bgcolor that is different from the terminal
+    #   bgcolor.
     # @param - pad
     # @param - line number (index of row to clear)
     def clear_row pad, lineno
       @color_pair ||= get_color($datacolor, @obj.color, @obj.bgcolor)
       cp = @color_pair
       att = NORMAL
-      clearstring = " " * (@obj.width - @left_margin - @int_w)
+      @_clearstring ||= " " * (@obj.width - @left_margin - @int_w)
+      # with int_w = 3 we get that one space in popuplist
       # added attr on 2014-05-02 - 00:16 otherwise a list inside a white bg messagebox shows
       # empty rows in black bg.
       FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-      FFI::NCurses.mvwaddstr(pad,lineno, @left_margin, clearstring) 
+      FFI::NCurses.mvwaddstr(pad,lineno, @left_margin, @_clearstring) 
       FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
     end
   end
