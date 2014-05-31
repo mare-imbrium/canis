@@ -38,8 +38,6 @@ if $0 == __FILE__
         button_type :ok_cancel
         item Label.new :row => 1, :col => 1, :text => "Enter your name:"
         item l
-  
-        #default_button 0 # TODO
       end
       @mb.run
       $log.debug "XXX:  #{l.selected_indices}  "
