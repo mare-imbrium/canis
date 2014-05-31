@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-31 13:11
+  * Last update: 2014-05-31 18:35
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1300,7 +1300,7 @@ module Canis
     #  @form.row = @row + 1 + @winrow
       #@form.row = @row + 1 
       r, c = rowcol
-      $log.warn " empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
+      #$log.warn " empty set_form_row in widget #{self} r = #{r} , c = #{c}  "
       #raise "trying to set 0, maybe called repaint before container has set value" if row <= 0
       setrowcol row, nil
     end
@@ -1312,7 +1312,7 @@ module Canis
       @curpos = col1 || 0 # 2010-01-14 21:02 
       #@form.col = @col + @col_offset + @curpos
       c = @col + @col_offset + @curpos
-      $log.warn " #{@name} empty set_form_col #{c}, curpos #{@curpos}  , #{@col} + #{@col_offset} #{@form} "
+      #$log.warn " #{@name} empty set_form_col #{c}, curpos #{@curpos}  , #{@col} + #{@col_offset} #{@form} "
       setrowcol nil, c
     end
     def hide
@@ -2054,15 +2054,15 @@ module Canis
   # windows, since a black rectangle is often left when a window is destroyed. This is internally
   # triggered whenever a window is destroyed, and currently only for root window.
   def repaint_all_widgets
-    $log.debug "  REPAINT ALL in FORM called "
+    #$log.debug "  REPAINT ALL in FORM called "
     @widgets.each do |w|
       next if w.visible == false
       next if w.class.to_s == "Canis::MenuBar"
-      $log.debug "   ---- REPAINT ALL #{w.name} "
+      #$log.debug "   ---- REPAINT ALL #{w.name} "
       w.repaint_required true
       w.repaint
     end
-    $log.debug "  REPAINT ALL in FORM complete "
+    #$log.debug "  REPAINT ALL in FORM complete "
     #  place cursor on current_widget 
     setpos
   end
@@ -2729,7 +2729,7 @@ module Canis
     max = min + @width
     c = min if c < min
     c = max if c > max
-    $log.debug " #{@name} FIELD set_form_col #{c}, curpos #{@curpos}  , #{@col} + #{@col_offset} pcol:#{@pcol} "
+    #$log.debug " #{@name} FIELD set_form_col #{c}, curpos #{@curpos}  , #{@col} + #{@col_offset} pcol:#{@pcol} "
     setrowcol nil, c
   end
   def delete_eol
