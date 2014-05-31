@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-28 17:32
+  * Last update: 2014-05-31 11:37
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -3251,6 +3251,7 @@ module Canis
       @surround_chars[0] + ret + @surround_chars[1]
     end
 
+    # FIXME 2014-05-31 since form checks for highlight color and sets repaint on on_enter, we shoul not set it.
     def repaint  # button
 
       @bgcolor ||= $def_bg_color
