@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-31 11:44
+#  Last update: 2014-05-31 12:51
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -74,7 +74,7 @@ module Canis
 
     end
     def item widget
-      # remove from existing form if set FIXME
+      # remove from existing form if set, problem with this is mnemonics -- rare situation.
       if widget.form
         f = widget.form
         f.remove_widget widget
@@ -97,9 +97,13 @@ module Canis
       # in most cases this override is okay, but what if user has set it
       # The problem is that widget and field are doing a default setting so i don't know
       # if user has set or widget has done a default setting. NOTE
-      widget.color ||= @color    # we are overriding colors, how to avoid since widget sets it
-      widget.bgcolor  ||= @bgcolor
-      widget.attr = @attr if @attr # we are overriding what user has put. DARN !
+      # 2014-05-31 - 12:40 CANIS BUTTONCOLOR i have commented out since it should take from form
+      #   to see effect
+      if false
+        widget.color ||= @color    # we are overriding colors, how to avoid since widget sets it
+        widget.bgcolor  ||= @bgcolor
+        widget.attr = @attr if @attr # we are overriding what user has put. DARN !
+      end
       @maxrow = widget.row if widget.row > @maxrow
       @suggested_h = @height || @maxrow+6
       @suggested_w ||= 0
@@ -293,6 +297,7 @@ module Canis
       tpp = self
       _color = @color
       _bgcolor = @bgcolor
+      # 2014-05-31 - 12:50 CANIS BUTTONCOLOR not setting color since it should pick from form
       names.each_with_index do |bname, ix|
         text = bname
 
@@ -302,8 +307,9 @@ module Canis
           row brow
           col bcol
           highlight_background $reversecolor 
-          color _color
-          bgcolor _bgcolor
+          # commented off 2014-05-31 - 12:50 BUTTONCOLOR
+          #color _color
+          #bgcolor _bgcolor
         end
         @action_buttons << button 
         button.form = @form
