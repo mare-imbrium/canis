@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-31 01:17
+#  Last update: 2014-05-31 14:38
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -196,7 +196,7 @@ module Canis
       # clearstring is the string required to clear the pad to background color
       @clearstring = nil
       $log.debug "  populate pad color = #{@color} , bg = #{@bgcolor} "
-      cp = get_color($datacolor, @color, @bgcolor)
+      cp = get_color($datacolor, color(), bgcolor())
       # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
       @cp = FFI::NCurses.COLOR_PAIR(cp)
       # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
@@ -226,11 +226,15 @@ module Canis
       # as in testmessagebox.rb 5
 
       # if called directly then cp does not reflect changes to bgcolor
-      cp = get_color($datacolor, @color, @bgcolor)
+      _color = color()
+      _bgcolor = bgcolor()
+      cp = get_color($datacolor, _color, _bgcolor)
       @cp = FFI::NCurses.COLOR_PAIR(cp)
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
+      return
+      ## TRYING OUT COMMENTING OFF THE REMAINDER 2014-05-31 - 14:35 
       # next part is messing up messageboxes which have a white background
       # so i use this copied from print_border
       # In messageboxes the border is more inside. but pad cannot clear the entire
@@ -242,14 +246,14 @@ module Canis
       # need to account for borders. in col+1 and ww
       ww=@width-0 if @suppress_borders
       color = @cp || $datacolor # check this out XXX @cp is already converted to COLOR_PAIR !!
-      color = get_color($datacolor, @color, @bgcolor)
-      att = @attr || NORMAL
-      sp = " "
+      color = get_color($datacolor, _color, _bgcolor)
+      att = attr() || NORMAL
+      sp = " " * ww
       #if color == $datacolor
-      $log.debug "  clear_pad: colors #{@cp}, ( #{@bgcolor} #{@color} ) #{$datacolor} , attrib #{@attr} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
+      $log.debug "  clear_pad: colors #{@cp}, ( #{_bgcolor} #{_color} ) #{$datacolor} , attrib #{att} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
       # 2014-05-15 - 11:01 seems we were clearing an extra row at bottom. 
         (r+1).upto(r+@height-startcol-1) do |rr|
-          @window.printstring( rr, @col+0,sp*ww , color, att)
+          @window.printstring( rr, @col+0,sp , color, att)
         end
       #end
     end
@@ -376,7 +380,7 @@ module Canis
     # override this for better control
     def render_all
       # can't this be in one place, it pops up everywhere
-      @color_pair = get_color($datacolor, @color, @bgcolor)
+      @color_pair = get_color($datacolor, color(), bgcolor() )
       @native_text ||= @list
       _arr = _getarray
       #@list.each_with_index { |line, ix|
@@ -457,13 +461,15 @@ module Canis
           @renderer.clear_row pad, lineno
         end
       else
-        @clearstring ||= " " * @width
+        # need pad width not window width, the other clearstring uses width of 
+        #  widget to paint on window.
+        @_clearstring ||= " " * @content_cols
         # what about bg color ??? XXX, left_margin and internal width
         #cp = get_color($datacolor, @color, @bgcolor)
         cp = @cp || FFI::NCurses.COLOR_PAIR($datacolor)
-        att = @attr || NORMAL
+        att = attr() || NORMAL
         FFI::NCurses.wattron(pad,cp | att)
-        FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) 
+        FFI::NCurses.mvwaddstr(pad,lineno, 0, @_clearstring) 
         FFI::NCurses.wattroff(pad,cp | att)
       end
     end
@@ -658,8 +664,8 @@ module Canis
         return unless @parse_required
 
         config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
-        config[:bgcolor] = @bgcolor || :black
-        config[:color] = @color || :white
+        config[:bgcolor] = bgcolor() || :black
+        config[:color] = color() || :white
         #config[:color_pair] = @color_pair
 
         require 'canis/core/include/colorparser'
@@ -1271,7 +1277,7 @@ module Canis
         if @repaint_all
           ## XXX im not getting the background color.
           #@window.print_border_only @top, @left, @height-1, @width, $datacolor
-          clr = get_color $datacolor, @color, @bgcolor
+          clr = get_color $datacolor, color(), bgcolor()
           #@window.print_border @top, @left, @height-1, @width, clr
           @window.print_border_only @top, @left, @height-1, @width, clr
           print_title
