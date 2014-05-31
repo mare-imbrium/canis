@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-31 11:37
+  * Last update: 2014-05-31 13:11
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1123,7 +1123,6 @@ module Canis
       @col_offset ||= 0
       #@ext_row_offset = @ext_col_offset = 0 # 2010-02-07 20:18  # removed on 2011-09-29 
       @state = :NORMAL
-      #@attr = nil    # 2011-11-5 i could be removing what's been entered since super is called
 
       @handler = nil # we can avoid firing if nil
       #@event_args = {} # 2014-04-22 - 18:47 declared in bind_key
@@ -1257,13 +1256,15 @@ module Canis
     #  widget does not have display_length.
     def repaint
         r,c = rowcol
-        @bgcolor ||= $def_bg_color # moved down 2011-11-5 
-        @color   ||= $def_fg_color
-        $log.debug("widget repaint : r:#{r} c:#{c} col:#{@color}" )
+        #@bgcolor ||= $def_bg_color # moved down 2011-11-5 
+        #@color   ||= $def_fg_color
+        _bgcolor = bgcolor()
+        _color = color()
+        $log.debug("widget repaint : r:#{r} c:#{c} col:#{_color}" )
         value = getvalue_for_paint
         len = @width || value.length
-        acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
-        @graphic.printstring r, c, "%-*s" % [len, value], acolor, @attr
+        acolor = @color_pair || get_color($datacolor, _color, _bgcolor)
+        @graphic.printstring r, c, "%-*s" % [len, value], acolor, attr()
         # next line should be in same color but only have @att so we can change att is nec
         #@form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, @bgcolor, nil)
     end
@@ -2401,8 +2402,6 @@ module Canis
       #@type=config.fetch("type", :varchar)
       @row = 0
       @col = 0
-      #@bgcolor = $def_bg_color
-      #@color = $def_fg_color
       @editable = true
       @focusable = true
       #@event_args = {}             # arguments passed at time of binding, to use when firing event
@@ -2608,8 +2607,10 @@ module Canis
       position_label
       @label_unplaced = nil
     end
-    @bgcolor ||= $def_bg_color
-    @color   ||= $def_fg_color
+    #@bgcolor ||= $def_bg_color
+    #@color   ||= $def_fg_color
+    _color = color()
+    _bgcolor = bgcolor()
     $log.debug("repaint FIELD: #{id}, #{name}, #{row} #{col},pcol:#{@pcol},  #{focusable} st: #{@state} ")
     @width = 1 if width == 0
     printval = getvalue_for_paint().to_s # added 2009-01-06 23:27 
@@ -2622,10 +2623,10 @@ module Canis
       end
     end
   
-    acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
+    acolor = @color_pair || get_color($datacolor, _color, _bgcolor)
     if @state == :HIGHLIGHTED
-      _bgcolor = @highlight_background || @bgcolor
-      _color = @highlight_foreground || @color
+      _bgcolor = @highlight_background || _bgcolor
+      _color = @highlight_foreground || _color
       acolor = get_color(acolor, _color, _bgcolor)
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
@@ -2639,7 +2640,7 @@ module Canis
       c += label.length + 2
       @col_offset = c-@col            # required so cursor lands in right place
     end
-    @graphic.printstring r, c, sprintf("%-*s", width, printval), acolor, @attr
+    @graphic.printstring r, c, sprintf("%-*s", width, printval), acolor, attr()
     @field_col = c
     @repaint_required = false
   end
@@ -3071,8 +3072,10 @@ module Canis
       raise "Label row or col nil #{@row} , #{@col}, #{@text} " if @row.nil? || @col.nil?
       r,c = rowcol
 
-      @bgcolor ||= $def_bg_color
-      @color   ||= $def_fg_color
+      #@bgcolor ||= $def_bg_color
+      #@color   ||= $def_fg_color
+      _bgcolor = bgcolor()
+      _color = color()
       # value often nil so putting blank, but usually some application error
       value = getvalue_for_paint || ""
 
@@ -3090,18 +3093,18 @@ module Canis
       # the user could have set color_pair, use that, else determine color
       # This implies that if he sets cp, then changing col and bg won't have an effect !
       # A general routine that only changes color will not work here.
-      acolor = @color_pair || get_color($datacolor, @color, @bgcolor)
+      acolor = @color_pair || get_color($datacolor, _color, _bgcolor)
       #$log.debug "label :#{@text}, #{value}, r #{r}, c #{c} col= #{@color}, #{@bgcolor} acolor  #{acolor} j:#{@justify} dlL: #{@width} "
       str = @justify.to_sym == :right ? "%*s" : "%-*s"  # added 2008-12-22 19:05 
     
       @graphic ||= @form.window
       # clear the area
-      @graphic.printstring r, c, " " * len , acolor, @attr
+      @graphic.printstring r, c, " " * len , acolor, attr()
       if @justify.to_sym == :center
         padding = (@width - value.length)/2
         value = " "*padding + value + " "*padding # so its cleared if we change it midway
       end
-      @graphic.printstring r, c, str % [len, value], acolor, @attr
+      @graphic.printstring r, c, str % [len, value], acolor, attr()
       if @mnemonic
         ulindex = value.index(@mnemonic) || value.index(@mnemonic.swapcase)
         @graphic.mvchgat(y=r, x=c+ulindex, max=1, Ncurses::A_BOLD|Ncurses::A_UNDERLINE, acolor, nil)
@@ -3252,26 +3255,31 @@ module Canis
     end
 
     # FIXME 2014-05-31 since form checks for highlight color and sets repaint on on_enter, we shoul not set it.
+    #   but what if it is set at form level ?
+    #    also it is not correct to set colors now that form's defaults are taken
     def repaint  # button
 
-      @bgcolor ||= $def_bg_color
-      @color   ||= $def_fg_color
+      #@bgcolor ||= $def_bg_color
+      #@color   ||= $def_fg_color
         $log.debug("BUTTON repaint : #{self}  r:#{@row} c:#{@col} , #{@color} , #{@bgcolor} , #{getvalue_for_paint}" )
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
-        @highlight_foreground ||= $reversecolor
-        @highlight_background ||= 0
-        _bgcolor = @bgcolor
-        _color = @color
+        #  These are both colorpairs not colors ??? 2014-05-31 - 11:58 
+        _highlight_foreground = @highlight_foreground || $reversecolor
+        _highlight_background = @highlight_background || 0
+        _bgcolor = bgcolor()
+        _color = color()
         if @state == :HIGHLIGHTED
-          _bgcolor = @state==:HIGHLIGHTED ? @highlight_background : @bgcolor
-          _color = @state==:HIGHLIGHTED ? @highlight_foreground : @color
+          _bgcolor = @state==:HIGHLIGHTED ? _highlight_background : _bgcolor
+          _color = @state==:HIGHLIGHTED ? _highlight_foreground : _color
         elsif selected? # only for certain buttons lie toggle and radio
-          _bgcolor = @selected_background || @bgcolor
-          _color   = @selected_foreground || @color
+          _bgcolor = @selected_background || _bgcolor
+          _color   = @selected_foreground || _color
         end
         $log.debug "XXX: button #{text}   STATE is #{@state} color #{_color} , bg: #{_bgcolor} "
         if _bgcolor.is_a?( Fixnum) && _color.is_a?( Fixnum)
+          # i think this means they are colorpairs not colors, but what if we use colors on the 256 scale ?
+          #  i don;t like this at all. 
         else
           _color = get_color($datacolor, _color, _bgcolor)
         end
@@ -3279,7 +3287,7 @@ module Canis
         $log.debug("button repaint :#{self} r:#{r} c:#{c} col:#{_color} bg #{_bgcolor} v: #{value} ul #{@underline} mnem #{@mnemonic} datacolor #{$datacolor} ")
         len = @width || value.length
         @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
-        @graphic.printstring r, c, "%-*s" % [len, value], _color, @attr
+        @graphic.printstring r, c, "%-*s" % [len, value], _color, attr()
 #       @form.window.mvchgat(y=r, x=c, max=len, Ncurses::A_NORMAL, bgcolor, nil)
         # in toggle buttons the underline can change as the text toggles
         if @underline || @mnemonic
@@ -3289,10 +3297,6 @@ module Canis
           if uline
             y=r #-@graphic.top
             x=c+uline #-@graphic.left
-            if @graphic.window_type == :PAD
-              x -= @graphic.left 
-              y -= @graphic.top
-            end
             #
             # NOTE: often values go below zero since root windows are defined 
             # with 0 w and h, and then i might use that value for calcaluting
