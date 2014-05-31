@@ -24,3 +24,11 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
 - Major rewrite of colorparser. now colors are not hardcoded while parsing. We now store link
   to parent chunk, so that a change in textpads color can affect the pad without a re-parse.
   Parent's color's are resolved at render time.
+
+2014-05-31 - 18:20 
+- minor changes that could result in some color related issues with buttons or other widgets
+  - repaint in various widgets no longer sets @bgcolor and @color, it uses the method
+    Same with @attr. messagebox also does not set the color variables but uses the method
+  - clear_pad clear_row uses content_cols i/o width so complete pad is cleared.
+    Also i have put a return in the middle, i think the second part of clear is redundant
+    now, if the first half works properly.
