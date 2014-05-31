@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-31 14:38
+#  Last update: 2014-06-01 00:33
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -213,7 +213,9 @@ module Canis
       # internal width based on both borders - earlier internal_width which we need
       @int_w = 3 
       # 3 leaves a blank black in popuplists as in testlistbox.rb F4
-      @int_w = 2 
+      # setting it as 2 means that in some cases, the next line first character
+      #   gets overwritten with traversal
+      #@int_w = 2 
     end
     #
     # @param pad for calling print methods on
@@ -267,7 +269,7 @@ module Canis
     #   bgcolor.
     # @param - pad
     # @param - line number (index of row to clear)
-    def clear_row pad, lineno
+    def _clear_row pad, lineno
       @color_pair ||= get_color($datacolor, @obj.color, @obj.bgcolor)
       cp = @color_pair
       att = NORMAL
