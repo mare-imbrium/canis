@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-01 00:32
+#  Last update: 2014-06-01 13:13
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1423,9 +1423,12 @@ module Canis
         startline = @current_index
         pos = @curpos + 1
         # FIXME you could be at end of line
-        _line = _arr[startline]
-        _col = _line.to_s.index(str, pos) if _line
-        return [startline, _col] if _col
+        #_line = _arr[startline]
+        _line = to_searchable(startline)
+        _col = _line.index(str, pos) if _line
+        if _col
+          return [startline, _col] 
+        end
         startline += 1 # FIXME check this end of file
       end
        # FIXME iterate only through the ones we need, not all
@@ -1433,7 +1436,8 @@ module Canis
         next if ix < startline
         break if endline && ix > endline
         # next line just a hack and not correct if only one match in file FIXME
-        _col = line.to_s.index str
+        line = to_searchable(ix)
+        _col = line.index str
         if _col
           return [ix, _col]
         end
@@ -1454,6 +1458,11 @@ module Canis
       end
       @last_regex = regex
       find_more
+    end
+    # convert the row to something we can run +index+ on. it should be exactly
+    # as the display will be, so find offsets are correct. Required for descendants such as Table.
+    def to_searchable index
+      @list[index].to_s
     end
     ## 
     # Ensure current row is visible, if not make it first row
