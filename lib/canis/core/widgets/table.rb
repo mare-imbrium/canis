@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-04-16 12:20
+#  Last update: 2014-06-01 13:10
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -238,9 +238,9 @@ module Canis
       end
       ##
       # Takes the array of row data and formats it using column widths
-      # and returns a string which is used for printing
+      # and returns an array which is used for printing
       #
-      # TODO return an array so caller can color columns if need be
+      # return an array so caller can color columns if need be
       def convert_value_to_text r  
         str = []
         fmt = nil
@@ -272,10 +272,16 @@ module Canis
         }
         return str
       end
+      # return a string representation of the row so that +index+ can be applied to it.
+      #  This must take into account columns widths and offsets. This is used by textpad's
+      #  next_match method
+      def to_searchable arr
+        convert_value_to_text(arr).join
+      end
       #
       # @param pad for calling print methods on
       # @param lineno the line number on the pad to print on
-      # @param text data to print
+      # @param [String] data to print which will be an array (@list[index])
       def render pad, lineno, str
         #lineno += 1 # header_adjustment
         # header_adjustment means columns have been set
@@ -504,6 +510,15 @@ module Canis
       }
       x -= 1 # since we start offsets with 0, so first auto becoming 1
       return x
+    end
+    # convert the row into something searchable so that offsets returned by +index+
+    #  are exactly what is seen on the screen.
+    def to_searchable index
+      if @renderer
+        @renderer.to_searchable(@list[index])
+      else
+        @list[index].to_s
+      end
     end
     # jump cursor to next column
     # TODO : if cursor goes out of view, then pad should scroll right or left and down
@@ -951,7 +966,9 @@ module Canis
     #   overwrites the matched row.
     # @return row and col offset of match, or nil
     # @param String to find
-    def next_match str
+    #@ deprecate since it does not get second match in line. textpad does
+    # however, the offset textpad shows is wrong
+    def OLDnext_match str
       _calculate_column_offsets unless @coffsets
       first = nil
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
@@ -976,7 +993,7 @@ module Canis
       return first
     end
     # yields each column to caller method
-    # for true returned, collects index of row into array and returns the array
+    # if yield returns true,  collects index of row into array and returns the array
     # @returns array of indices which can be empty
     # Value yielded can be fixnum or date etc
     def matching_indices 
