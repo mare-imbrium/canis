@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-05-31 18:35
+  * Last update: 2014-06-01 17:02
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -575,7 +575,7 @@ module Canis
             $log.debug  " got node #{n} with #{e} "
             # instead of just nil, we need to go back up, but since not recursive ...
             #return nil unless n
-            $log.debug  "push #{unconsumed} " unless n
+            $log.debug  "push unconsumed:#{unconsumed} " unless n
             unconsumed.each {|e| window.ungetch(e)} unless n
             return actions.last unless n
             mp = n.map
@@ -2149,7 +2149,11 @@ module Canis
             else
               #$log.debug " before calling process_key in form #{ch}  " if $log.debug? 
               ret = process_key ch, self
-              $log.debug "FORM process_key #{ch} got ret #{ret} in #{self} "
+              # seems we need to flushinp in case composite has pushed key
+              $log.debug "FORM process_key #{ch} got ret #{ret} in #{self}, flushing input "
+              # 2014-06-01 - 17:01 added flush, maybe at some point we could do it only if unhandled
+              #   in case some method wishes to actually push some keys
+              Ncurses.flushinp
               return :UNHANDLED if ret == :UNHANDLED
             end
           elsif handled == :NO_NEXT_FIELD || handled == :NO_PREV_FIELD # 2011-10-4 
