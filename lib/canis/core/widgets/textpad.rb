@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-01 13:13
+#  Last update: 2014-06-01 14:05
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1462,7 +1462,7 @@ module Canis
     # convert the row to something we can run +index+ on. it should be exactly
     # as the display will be, so find offsets are correct. Required for descendants such as Table.
     def to_searchable index
-      @list[index].to_s
+      _getarray[index].to_s
     end
     ## 
     # Ensure current row is visible, if not make it first row
