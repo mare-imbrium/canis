@@ -2,6 +2,7 @@ require 'canis/core/util/app'
 require 'canis/core/include/appmethods'
 require 'canis/core/widgets/listbox'
 require 'canis/core/util/promptmenu'
+require './common/devel.rb'
 
   def my_help_text
     <<-eos
@@ -34,6 +35,7 @@ require 'canis/core/util/promptmenu'
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.
 App.new do 
+  Canis::devel_bindings @form
   def disp_menu
     # ideally this shuld get action_manager and add_action so these are added to widgets actions
     f = @form.get_current_field
@@ -156,6 +158,16 @@ App.new do
     #p.key("s", 'specification'){ specification }
   #end
   #@form.bind_key(?\C-x){ pm.call }
+  # testing that 'q' works along with 'qq'
+  @form.bind_key(?q){ ht = @form.current_widget.help_text || "No help for this widget"; alert ht }
+
+  # testing triple bindings, along with a fall-back with only two bindings.
+  @form.bind_key([?\\, ?\\, ?h]){ ht = @form.current_widget.help_text || "No help for this widget"; alert ht }
+  @form.bind_key([?\\, ?\\, ?H]){ ht = @form.current_widget.help_text || "No help for this widget"; 
+                                  str = get_string("Enter help text:", :default => ht);
+                                  @form.current_widget.help_text = str
+                                  }
+  @form.bind_key([?\\, ?\\]){ alert "Enter h for seeing helptext on this widget, H for setting it"; }
 
   alist = File.open("data/brew.txt",'r').readlines
   list2 = File.open("data/gemlist.txt",'r').readlines
@@ -163,11 +175,12 @@ App.new do
 
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
     lb = listbox :list => alist, :suppress_borders => false, :title => "[ brew packages ]",
-      :left_margin => 1, :width_pc => 50, :name => 'lb1', :selection_mode => :single
+      :left_margin => 0, :width_pc => 50, :name => 'lb1', :selection_mode => :single
     lb.show_selector = false
+    lb.help_text = "Brew packages on your system. Use vim keys to navigate, or : to run a command"
     
     lb2 = listbox :list => list2, :justify => :left, :title => "[ gems ]", :suppress_borders => false,
-      :left_margin => 1, :width_pc => 50, :name => 'lb2'
+      :left_margin => 0, :width_pc => 50, :name => 'lb2'
     end
   
  
