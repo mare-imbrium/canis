@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-01 17:02
+  * Last update: 2014-06-04 12:35
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -489,7 +489,7 @@ module Canis
             e = e.getbyte(0) if e.is_a? String
             ee << e
           end
-          bind_composite_mapping ee, args, &blk
+          bind_composite_mapping ee, args, blk
           return self
           #@_key_map[a0] ||= OrderedHash.new
           #@_key_map[a0][a1] = blk
@@ -528,7 +528,7 @@ module Canis
         end
       end
 
-      def bind_composite_mapping key, *args, &action
+      def bind_composite_mapping key, *args, action
         @_key_composite_map ||= Hash.new {|hash, key| hash[key] = MapNode.new }
         if key.is_a? String
           n = @_key_composite_map[key]
@@ -565,8 +565,10 @@ module Canis
           if e.nil? or e == -1
             #puts "e is nil TODO "
             # TODO
-            $log.debug "  -1  push #{unconsumed} " 
-            unconsumed.each {|e| window.ungetch(e)}
+            #$log.debug "  -1  push #{unconsumed} returning: #{actions.last}" 
+            $log.debug "  -1  returning: #{actions.last}" 
+            # is there a reason we are pushing here ?
+            #unconsumed.each {|e| window.ungetch(e)}
             return actions.last 
           else
             $log.debug  " in loop with #{e} "
@@ -581,6 +583,7 @@ module Canis
             mp = n.map
             # there are no more keys, only an action
             if mp.nil? or mp.empty?
+              $log.debug "  mp is nil or empty returning action: #{n.action}"
               #puts "mp is nil or empty"
               return n.action
             end
@@ -812,7 +815,7 @@ module Canis
           # blk either has a proc or is nil
           # we still need to check for a complex map.  if none, then execute simple map.
           ret = check_composite_mapping(ch, window)
-          $log.debug "  composite returned #{ret} for #{ch} "
+          $log.debug "  composite returned (#{ret}) for #{ch} "
           if !ret
             return execute_mapping(blk, ch, object) if blk
           end
@@ -824,6 +827,7 @@ module Canis
 
       if blk.is_a? Symbol
         if respond_to? blk
+          $log.debug "  RESPONDING TO BLCK #{keycode}"
           return send(blk, *@_key_args[keycode])
         else
           ## 2013-03-05 - 19:50 why the hell is there an alert here, nowhere else
@@ -1011,7 +1015,8 @@ module Canis
       # Can throw a FieldValidationException or PropertyVetoException
       def fire_property_change text, oldvalue, newvalue
         return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
-        $log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+        #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
+        $log.debug " FPC #{self}: #{text} "
         if @pce.nil?
           @pce = PropertyChangeEvent.new(self, text, oldvalue, newvalue)
         else
@@ -1698,6 +1703,7 @@ module Canis
       return nil if @active_index.nil?   # for forms that have no focusable field 2009-01-08 12:22 
       @widgets[@active_index]
     end
+    alias :current_widget :get_current_field
     # take focus to first focussable field
     # we shoud not send to select_next. have a separate method to avoid bugs.
     # but check current_field, in case called from anotehr field TODO FIXME
@@ -2257,9 +2263,10 @@ module Canis
       sc = Ncurses.COLS-0
       # this is the new layout that is much like bline's command list. no border, a thick app header on top
       #  and no side margin
+      #  Suppressing border means that title will not be updated on app_header, we have to do so FIXME
       _layout = [ h, sc, sh - h, 0]
       Canis::Viewer.view(arr, :layout => _layout, :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true,
-                        :app_header => true ) do |t|
+                        :app_header => true ) do |t, items|
         # would have liked it to be 'md' or :help
         t.content_type = :tmux
         t.stylesheet   = stylesheet
@@ -2268,6 +2275,14 @@ module Canis
         t.bgcolor = :black
         t.bgcolor = 16
         t.color = :white
+        ah = items[:header]
+        t.bind(:PROPERTY_CHANGE) { |eve|
+          # title is not a property, so we check if text has changed and then look for title.
+          if eve.property_name == :text
+            #$log.debug "  PROP NAME IS #{eve.property_name} , title is #{t.title} "
+            ah.text_center = t.title
+          end
+        }
         #t.text_patterns[:link] = Regexp.new(/\[[^\]]\]/)
         t.text_patterns[:link] = Regexp.new(/\[\w+\]/)
         t.bind_key(KEY_TAB, "goto link") { t.next_regex(:link) }
@@ -2286,6 +2301,7 @@ module Canis
             arr = read_help_file link
             if arr
               t.add_content arr, :title => link
+              #items[:header].text_center = "[#{link}]" 
               t.buffer_last
             else
               alert "No help file for #{link}"
