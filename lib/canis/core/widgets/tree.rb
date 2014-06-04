@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-28 17:09
+#  Last update: 2014-06-03 12:54
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -207,9 +207,10 @@ module Canis
       # TODO
       bind_key(?x, 'collapse parent'){ collapse_parent() }
       bind_key(?p, 'goto parent'){ goto_parent() }
+      # # commented since textpad is now calling this
       # this can be brought back into include and used from other textpad too.
-      require 'canis/core/include/listbindings'
-      bindings
+      #require 'canis/core/include/listbindings'
+      #bindings
     end
     # Returns root if no argument given.
     # Now we return root if already set
