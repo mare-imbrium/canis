@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-07 12:33
+#  Last update: 2014-06-03 14:10
 # ----------------------------------------------------------------------------- #
 #
 module Canis
@@ -22,6 +22,10 @@ module Canis
       # the next was irritating if user wanted to add a row ! 2011-10-10 
       #bind_key(Ncurses::KEY_DOWN){ ret = down ; get_window.ungetch(KEY_TAB) if ret == :NO_NEXT_ROW }
       bind_key(Ncurses::KEY_DOWN, 'next row'){ ret = down ; }
+      bind_key(279, 'goto_start'){ goto_start } 
+      bind_key(277, 'goto end'){ goto_end } 
+      bind_key(338, 'scroll forward'){ scroll_forward() } 
+      bind_key(339, 'scroll backward'){ scroll_backward() } 
 
       # this allows us to set on a component basis, or global basis
       # Motivation was mainly for textarea which needs emacs keys
@@ -42,9 +46,10 @@ module Canis
         # some of these will not have effect in textarea such as j k, gg and G, search
         bind_key(?j, 'next row'){ down() }
         bind_key(?k, 'previous row'){ up() }
-        ## added 2013-03-04 - 17:52 
         bind_key(?w, 'forward_word'){ forward_word }
         bind_key(?b, 'backward_word'){ backward_word }
+        bind_key(?W, 'forward WORD'){ forward_regex :WORD }
+        bind_key(?B, 'backward WORD'){ backward_regex :WORD }
         bind_key(?\C-d, 'scroll forward'){ scroll_forward() }
         bind_key(32, 'scroll forward'){ scroll_forward() } unless $row_selector == 32
         bind_key(0, 'scroll backward'){ scroll_backward() } unless $range_selector == 0
@@ -64,11 +69,13 @@ module Canis
         bind_key(?n, :find_more)
         bind_key(?h, 'cursor backward'){ cursor_backward }  if respond_to? :cursor_backward
         bind_key(?l, 'cursor forward'){ cursor_forward } if respond_to? :cursor_forward
+        bind_key(?$, :cursor_eol)
       end
       bind_key(?\C-a, 'start of line'){ cursor_bol } if respond_to? :cursor_bol
       bind_key(?\C-e, 'end of line'){ cursor_eol } if respond_to? :cursor_eol
       bind_key(?\M-l, :scroll_right)
       bind_key(?\M-h, :scroll_left)
+      bind_key(KEY_ENTER, :fire_action_event)
 
       # save as and edit_external are only in tv and textarea
       # save_as can be given to list's also and tables
