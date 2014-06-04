@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-01 14:05
+#  Last update: 2014-06-04 16:09
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -85,7 +85,10 @@ module Canis
       @startcol = 0
       register_events( [:ENTER_ROW, :PRESS])
       @text_patterns = {}
-      @text_patterns[:word] =  /[[:punct:][:space:]]\w/
+      # FIXME we need to be compatible with vim's word
+      @text_patterns[:word] =  /[[:punct:][:space:]]\S/
+      # we need to be compatible with vim's WORD
+      @text_patterns[:WORD] =  /[[:space:]]\S/
       super
 
       init_vars
@@ -150,6 +153,14 @@ module Canis
       @lastcol = @col + @col_offset
       $log.debug "  CALC_DIMENSION #{@rows} , #{@cols}, #{@height} , #{@width} , #{@top} , #{@left} "
     end
+    def scrollatrows
+      unless @suppress_borders
+        @height - 3
+      else
+        @height - 1
+      end
+    end
+    alias :rows :scrollatrows
     # returns the row and col where the cursor is initially placed, and where printing starts from.
     def rowcol #:nodoc:
       return @row+@row_offset, @col+@col_offset
@@ -233,7 +244,9 @@ module Canis
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
-      return
+      # REST IS REQUIRED otherwise sometimes last line of window is not cleared
+      # Happens in bline.rb. i think the above clears the new pad size in the window
+      #  which if it is smaller then does not clear complete window.
       ## TRYING OUT COMMENTING OFF THE REMAINDER 2014-05-31 - 14:35 
       # next part is messing up messageboxes which have a white background
       # so i use this copied from print_border
@@ -506,6 +519,8 @@ module Canis
     # to print the contents. (e.g. cygnus gem sends in :get_file_contents).
     #      filename("a.c", method(:get_file_contents))
     #
+    # TODO: i think this should be sent to +text+ in case content_type has been set. FIXME
+    #
     def filename(filename, reader=nil)
       @file = filename
       unless File.exists? filename
@@ -585,6 +600,8 @@ module Canis
       @repaint_all = true
       @repaint_required = true
       init_vars
+      # i don't want the whole thing going into the event 2014-06-04
+      fire_property_change :text, "dummmy", "text has changed"
       self
     end
     alias :list :text
@@ -1065,7 +1082,7 @@ module Canis
     # return true if the given row is visible
     def is_visible? index
       j = index - @prow #@toprow
-      j >= 0 && j <= @scrollatrows
+      j >= 0 && j <= scrollatrows()
     end
 #---- Section: movement end -----# }}}
 #---- Section: internal stuff start -----# {{{
@@ -1095,7 +1112,7 @@ module Canis
         $multiplier = 0
         bounds_check
       rescue => err
-        $log.error " TEXTPAD ERROR INS #{err} "
+        $log.error " TEXTPAD ERROR _handle_key #{err} "
         $log.debug(err.backtrace.join("\n"))
         alert "#{err}"
         #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
@@ -1202,6 +1219,7 @@ module Canis
       @pcol = 0 if @pcol < 0
 
       cc = @list.count
+      @rows = rows()
 
       #$log.debug "  check_prow prow #{@prow} , list count #{cc}, rows #{@rows} "
       # 2014-05-28 - 22:41 changed < to <= otherwise prow became -1 when equal
@@ -1294,6 +1312,9 @@ module Canis
     # TODO take from listbindings so that emacs and vim can be selected. also user can change in one place.
     def map_keys
       @mapped_keys = true
+      require 'canis/core/include/listbindings'
+      bindings
+=begin
       bind_key([?g,?g], 'goto_start'){ goto_start } # mapping double keys like vim
       bind_key(279, 'goto_start'){ goto_start } 
       bind_keys([?G,277], 'goto end'){ goto_end } 
@@ -1321,6 +1342,7 @@ module Canis
       bind_key(?h, :cursor_backward)
       bind_key(?$, :cursor_eol)
       bind_key(KEY_ENTER, :fire_action_event)
+=end
     end
     # convenience method to return byte -- is it used ???
     private
@@ -1346,6 +1368,7 @@ module Canis
       return if str.nil? 
       str = @last_regex if str == ""
       return if !str or str == ""
+      str = Regexp.new str if str.is_a? String
       ix = next_match str
       return unless ix
       @last_regex = str
@@ -1616,6 +1639,7 @@ module Canis
         when ?0.getbyte(0)..?9.getbyte(0)
           if ch == ?0.getbyte(0) && $multiplier == 0
             @source.cursor_bol
+            @source.bounds_check
             return 0
           end
           # storing digits entered so we can multiply motion actions
@@ -1634,7 +1658,7 @@ module Canis
             # if i put a padrefresh here it becomes okay but only for one pad,
             # i still need to do it for all pads.
           rescue => err
-            $log.error " TEXTPAD ERROR INS #{err} "
+            $log.error " TEXTPAD ERROR handle_key #{err} "
             $log.debug(err.backtrace.join("\n"))
             alert "#{err}"
             #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
@@ -1659,6 +1683,7 @@ module Canis
         #textdialog ["Error in TextPad: #{err} ", *err.backtrace], :title => "Exception"
         $error_message.value = ""
       ensure
+        # this means that even unhandled will trigger a refresh
         @source.padrefresh
         Ncurses::Panel.update_panels
       end
