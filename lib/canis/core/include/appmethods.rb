@@ -67,7 +67,8 @@ module Canis
         res << ex.backtrace.join("\n") 
       end
       res.gsub!("\t","   ")
-      Canis::Viewer.view(res.split("\n"), :close_key => KEY_ENTER, :title => "<Enter> to close, M-l M-h to scroll")
+      # Earlier close key was ENTER but we need that to execute or fire
+      Canis::Viewer.view(res.split("\n"), :close_key => 'q', :title => "<q> to close, M-l M-h to scroll")
     end
     def shell_out command
       w = @window || @form.window
