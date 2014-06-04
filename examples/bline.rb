@@ -1,5 +1,4 @@
 require 'canis/core/util/app'
-#require 'canis/core/util/extras/bottomline'
 require 'canis/core/util/rcommandwindow'
 require 'fileutils'
 require 'pathname'
