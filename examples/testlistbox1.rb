@@ -35,7 +35,7 @@ require './common/devel.rb'
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.
 App.new do 
-  Canis::devel_bindings @form
+  devel_bindings
   def disp_menu
     # ideally this shuld get action_manager and add_action so these are added to widgets actions
     f = @form.get_current_field
