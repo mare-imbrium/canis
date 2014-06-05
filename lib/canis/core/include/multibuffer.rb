@@ -66,8 +66,14 @@ module Canis
       l = @_buffers[x]
       if l
         if l.is_a? String
-          arr = File.open(l,"r").read.split("\n")
-          @_buffers[x] = arr
+          if File.directory? l
+            Dir.chdir(l)
+            arr = Dir.entries(".")
+            @_buffers[x] = arr
+          else
+            arr = File.open(l,"r").read.split("\n")
+            @_buffers[x] = arr
+          end
         end
       end
     end
