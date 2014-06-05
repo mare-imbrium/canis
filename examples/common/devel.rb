@@ -4,13 +4,16 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-06-04 01:55
+#  Last update: 2014-06-05 00:06
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
 require 'canis/core/util/rcommandwindow'
 module Canis
-  def devel_bindings form
+  module Devel
+  def devel_bindings
+    form = @form
+    raise "Form not set in Canis::Devel" unless form
     #alert "executing devel_bindings "
     form.bind_key(FFI::NCurses::KEY_F3,'view log') { 
       view("canis14.log", :close_key => 'q', :title => "<q> to close")
@@ -19,7 +22,6 @@ module Canis
       view("canis14.log", :close_key => 'q', :title => "<q> to close")
     }
     form.bind_key([?\\,?\\,?x],'view current') { 
-      # this should open file with code coloring.
       code_browse $0
     }
     form.bind_key([?\\,?\\,?c],'run command') { 
@@ -34,25 +36,14 @@ module Canis
   # TODO : provide key 'gf' to open other files under cursor
   # @param [String] file name to browse
   def code_browse path
-      dr = DefaultFileRenderer.new
-      dr.insert_mapping /^\s*## /, [:red, :black]
-      dr.insert_mapping /^\s*#/, [:blue, :black]
-      dr.insert_mapping /^\s*(class|module)/, [:cyan, :black, BOLD]
-      dr.insert_mapping /^\s*(def|function)/, [:yellow, :black, FFI::NCurses::A_BOLD]
-      dr.insert_mapping /^\s*(require|load)/, [:green, :black]
-      dr.insert_mapping /^\s*(end|if |elsif|else|begin|rescue|ensure|include|extend|while|unless|case |when )/, [:magenta, :black]
+      dr = ruby_renderer
       view(path, :close_key => 'q', :title => $0) do |t|
         t.renderer  dr
         t.bind_key([?\\,?\\,?o],'choose file') { 
-          # currently opens a new window each time, should use same textview
-          #choose_file_and_view
           str = choose_file "**/*"
           if str and str != ""
-            # isnpt there a faster way like add_file ? FIXME
-            # next does not take care of title
-            t.add_content(File.open(str).read.split("\n"))
+            t.add_content str
             t.buffer_last
-            #t.title = str
           else
             alert "nothing chosen"
           end
@@ -68,6 +59,16 @@ module Canis
     if str and str != ""
       code_browse str
     end
+  end
+  def ruby_renderer
+      dr = DefaultFileRenderer.new
+      dr.insert_mapping /^\s*## /, [:red, :black]
+      dr.insert_mapping /^\s*#/, [:blue, :black]
+      dr.insert_mapping /^\s*(class|module)/, [:cyan, :black, BOLD]
+      dr.insert_mapping /^\s*(def|function)/, [:yellow, :black, FFI::NCurses::A_BOLD]
+      dr.insert_mapping /^\s*(require|load)/, [:green, :black]
+      dr.insert_mapping /^\s*(end|if |elsif|else|begin|rescue|ensure|include|extend|while|unless|case |when )/, [:magenta, :black]
+      return dr
   end
 =begin
   def file_edit fp #=@current_list.filepath
@@ -103,4 +104,5 @@ module Canis
 =end
 
 end # module
-include Canis
+end # module
+include Canis::Devel
