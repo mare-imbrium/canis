@@ -8,9 +8,9 @@ require 'fileutils'
 #   - 2014-04-09 - 00:58 changed textview to textpad 
 # Can be used for print_help_page
 # SUGGESTIONS WELCOME.
-# NOTE - this was meant to be a viwer which could close on pressing q. Now it is being reused by rcommandwindow.
-# which uses all keys, so now we can't close on 'q'. This is ridiculous. if we need something that general purpose
-# we should create another pad for that.  Even for ENTER we had to put in hacks. 
+# NOTE: since this is not a proper class / object, it is being hacked to pieces
+#  We need to either make this a proper class, or else make another one with a class,
+#  and use this for simple purposes only. 
 
 module Canis
   # a data viewer for viewing some text or filecontents
@@ -111,6 +111,15 @@ module Canis
         t.height =  f.height - t.row - 0
         f.show
       }
+      t.bind_key(?\C-\], "open file under cursor") { 
+        eve = t.text_action_event
+        file = eve.word_under_cursor.strip
+        if File.exists? file
+          t.add_content file
+          t.buffer_last
+        end
+      }
+
 =begin
       # just for fun -- seeing how we can move window around
       # these are working, but can cause a padrefresh error. we should check for bounds or something.
