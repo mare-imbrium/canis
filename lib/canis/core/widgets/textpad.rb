@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-04 16:09
+#  Last update: 2014-06-04 18:28
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1133,8 +1133,11 @@ module Canis
     def fire_action_event
       return if @list.nil? || @list.size == 0
       require 'canis/core/include/ractionevent'
-      aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
+      aev = text_action_event
       fire_handler :PRESS, aev
+    end
+    def text_action_event
+      aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
     end
     # 
     # execute binding when a row is entered, used more in lists to display some text
