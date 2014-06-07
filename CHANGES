@@ -32,3 +32,8 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
   - clear_pad clear_row uses content_cols i/o width so complete pad is cleared.
     Also i have put a return in the middle, i think the second part of clear is redundant
     now, if the first half works properly.
+
+2014-06-06 - 00:05 
+- Released 0.0.1
+
+
