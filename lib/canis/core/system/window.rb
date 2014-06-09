@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 11:45
+#  Last update: 2014-06-09 16:37
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -40,7 +40,6 @@ module Canis
     attr_reader :width, :height, :top, :left
     attr_accessor :layout # hash containing hwtl
     attr_reader   :panel   # reader requires so he can del it in end
-    attr_reader   :window_type   # window or pad to distinguish 2009-11-02 23:11 
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     #attr_accessor :modified # has it been modified and may need a refresh 2014-04-22 - 10:23 CLEANUP
     # for root windows we need to know the form so we can ask it to update when
@@ -97,7 +96,6 @@ module Canis
 
     end
     def init_vars
-      @window_type = :WINDOW
       Ncurses::keypad(@window, true)
       # Added this so we can get Esc, and also C-c pressed in succession does not crash system
       #  2011-12-20 half-delay crashes system as does cbreak
@@ -113,7 +111,7 @@ module Canis
     ##
     # this is an alternative constructor
     def self.root_window(layout = { :height => 0, :width => 0, :top => 0, :left => 0 })
-      #Canis::start_ncurses
+    
       @layout = layout
       @window = Window.new(@layout)
       @window.name = "Window::ROOTW:#{$global_windows.count}"
@@ -240,20 +238,6 @@ module Canis
 
     # Ncurses
 
-    def pos
-      raise "dead code ??"
-      return y, x
-    end
-
-    def y
-      raise "dead code ??"
-      Ncurses.getcury(@window)
-    end
-
-    def x
-      raise "dead code ??"
-      Ncurses.getcurx(@window)
-    end
 
     def x=(n) move(y, n) end
     def y=(n) move(n, x) end
@@ -311,66 +295,6 @@ module Canis
     #end
     #++
 
-    # dead code ??? --- {{{
-    # NOTE: many of these methods using width will not work since root windows width 
-    #  is 0
-    def print_empty_line
-      raise "print empty is working"
-      return unless visible?
-      w = getmaxx == 0? Ncurses.COLS : getmaxx
-      printw(' ' * w)
-    end
-
-    def print_line(string)
-      raise "print line is working"
-      w = getmaxx == 0? Ncurses.COLS : getmaxx
-      print(string.ljust(w))
-    end
-
-    
-
-    def puts(*strings)
-      raise "puts is working, remove this"
-      print(strings.join("\n") << "\n")
-    end
-
-    def _refresh
-      raise "dead code remove"
-      return unless visible?
-      @window.refresh
-    end
-
-    def wnoutrefresh
-      #raise "dead code ???"
-      return unless visible?
-      # next line gives error XXX DEAD
-      @window.wnoutrefresh
-    end
-
-    def color=(color)
-      raise "dead code ???"
-      @color = color
-      @window.color_set(color, nil)
-    end
-
-    def highlight_line(color, y, x, max)
-      raise "dead code"
-      @window.mvchgat(y, x, max, Ncurses::A_NORMAL, color, nil)
-    end
-    # doesn't seem to work, clears first line, not both
-    def clear
-      # return unless visible?
-      raise "dead code ??"
-      move 0, 0
-      puts *Array.new(height){ ' ' * (width - 1) }
-    end
-
-    def on_top
-      raise "on_top used, remove this line dead code"
-      Ncurses::Panel.top_panel @panel.pointer
-      wnoutrefresh
-    end
-    # --- dead code ??? }}}
 
     # return the character to the keyboard buffer to be read again.
     def ungetch(ch)
