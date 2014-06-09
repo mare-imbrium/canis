@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-04 18:28
+#  Last update: 2014-06-09 20:58
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -73,6 +73,7 @@ module Canis
     attr_accessor :content_type
     # path of yaml file which contains conversion of style names to color, bgcolor and attrib
     attr_accessor :stylesheet
+    attr_accessor :pad
 
     def initialize form=nil, config={}, &block
 
@@ -109,6 +110,7 @@ module Canis
       @parse_required = true
       @_populate_needed = true
       map_keys unless @mapped_keys
+      # FIXME wherer to put this.
     end
 
     # calculates the dimensions of the pad which will be used when the pad refreshes, taking into account
@@ -186,21 +188,42 @@ module Canis
     def create_pad
       destroy if @pad
       #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
-      #@pad = FFI::NCurses.newpad(@content_rows, @content_cols)
+
+      @content_rows = @content_cols = nil
+      @content_rows = pad_rows()
+      @content_cols = pad_cols()
+      $log.debug "XXXCP: create_pad :#{@content_rows} , #{@content_cols} . w:#{@width} c #{@cols} , r: #{@rows}" 
+      raise "create_pad content_rows is nil " unless @content_rows
+      raise "create_pad content_cols is nil " unless @content_cols
+
       @pad = @window.get_pad(@content_rows, @content_cols )
 
+    end
+    # content_rows can be more than size of pad, but never less. Same for cols.
+    # height of pad, or number of row, earlier called @content_rows
+    public
+    def pad_rows 
+      # content_rows can be more than size of pad, but never less. Same for cols.
+      return @content_rows if @content_rows
+      content_rows = @list.count
+      content_rows = @rows if content_rows < @rows
+      return content_rows
+    end
+      # content_rows can be more than size of pad, but never less. Same for cols.
+    # width or cols of pad, earlier called @content_cols
+    public
+    def pad_cols
+      return @content_cols if @content_cols
+      _content_cols = content_cols()
+      _content_cols = @cols if _content_cols < @cols
+      return _content_cols
     end
 
     private
     # create and populate pad
+    # FIXME - coupling @content_row and @cp are used elsewhere.
     def populate_pad
       @_populate_needed = false
-      @content_rows = @list.count
-
-      # content_rows can be more than size of pad, but never less. Same for cols.
-      @content_cols = content_cols()
-      @content_rows = @rows if @content_rows < @rows
-      @content_cols = @cols if @content_cols < @cols
 
       create_pad
 
@@ -394,6 +417,8 @@ module Canis
     def render_all
       # can't this be in one place, it pops up everywhere
       @color_pair = get_color($datacolor, color(), bgcolor() )
+      @renderer.color_pair = @color_pair if @renderer.respond_to? :color_pair=
+      @renderer.attr = @attr if @renderer.respond_to? :attr=
       @native_text ||= @list
       _arr = _getarray
       #@list.each_with_index { |line, ix|
@@ -409,61 +434,14 @@ module Canis
     def renderer r
       @renderer = r
     end
-    #
-    # default method for rendering a line
-    # If it is a chunkline, then we take care of it.
-    # Only if it is a String do we pass to renderer.
-    # Should a renderer be allowed to handle chunks. Or be yielded chunks?
-    #
     def render pad, lineno, text
-      if text.is_a? AbstractChunkLine
-        FFI::NCurses.wmove @pad, lineno, 0
-        a = get_attrib @attr
-      
-        show_colored_chunks text, @color_pair, a
-        return
-      end
-      if @renderer
-        @renderer.render @pad, lineno, text
-      else
-        ## messabox does have a method to paint the whole window in bg color its in rwidget.rb
-        att = NORMAL
-        FFI::NCurses.wattron(@pad, @cp | att)
-        FFI::NCurses.mvwaddstr(@pad,lineno, 0, @clearstring) if @clearstring
-        FFI::NCurses.mvwaddstr(@pad,lineno, 0, @list[lineno])
-
-        #FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
-        FFI::NCurses.wattroff(@pad, @cp | att)
-      end
+      @renderer.render pad, lineno, text
     end
+    #
     ## ---- the next 2 methods deal with printing chunks
     # we should put it int a common module and include it
     # in Window and Pad stuff and perhaps include it conditionally.
 
-    ## 2013-03-07 - 19:57 changed width to @content_cols since data not printing
-    # in some cases fully when ansi sequences were present int some line but not in others
-    # lines without ansi were printing less by a few chars.
-    # This was prolly copied from rwindow, where it is okay since its for a specific width
-    def print(string, _width = @content_cols)
-      #return unless visible?
-      w = _width == 0? Ncurses.COLS : _width
-      FFI::NCurses.waddnstr(@pad,string.to_s, w) # changed 2011 dts  
-    end
-
-    def show_colored_chunks(chunks, defcolor = nil, defattr = nil)
-      #return unless visible?
-      chunks.each_with_color do |text, color, attrib|
-
-        color ||= defcolor
-        attrib ||= defattr || NORMAL
-
-        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. "
-        FFI::NCurses.wcolor_set(@pad, color,nil) if color
-        FFI::NCurses.wattron(@pad, attrib) if attrib
-        print(text)
-        FFI::NCurses.wattroff(@pad, attrib) if attrib
-      end
-    end
 
     # before updating a single row in a table 
     # we need to clear the row otherwise previous contents can show through
@@ -623,31 +601,6 @@ module Canis
         return @list
       else
         return @native_text
-      end
-    end
-    # 
-    # pass in formatted text along with parser (:tmux or :ansi)
-    # This text contains markup such as ansi, or tmux
-    # NOTE this does not call init_vars, i think it should, text() does
-    # @deprecated
-    def formatted_text text, fmt
-      raise "deprecated formatted_text"
-
-      @formatted_text = text
-      @color_parser = fmt
-      @repaint_required = true
-      _convert_formatted
-      # don't know if start is always required. so putting in caller
-      #goto_start
-      #remove_all
-    end
-    # @deprecated
-    def _convert_formatted
-      raise "deprecated _convert_formatted"
-      if @formatted_text
-        l = parse_formatted_text(@color_parser, @formatted_text)
-        text(l)
-        @formatted_text = nil
       end
     end
       # This has been moved from rwidget since only used here.
@@ -1087,6 +1040,9 @@ module Canis
 #---- Section: movement end -----# }}}
 #---- Section: internal stuff start -----# {{{
     public
+    def create_default_renderer
+      @renderer = DefaultRenderer.new self
+    end
     def create_default_keyhandler
       @key_handler = DefaultKeyHandler.new self
     end
@@ -1250,6 +1206,9 @@ module Canis
       @graphic = @form.window unless @graphic
       @window ||= @graphic
       raise "Window not set in textpad" unless @window
+      unless @renderer
+        create_default_renderer
+      end
 
       ## 2013-03-08 - 21:01 This is the fix to the issue of form callign an event like ? or F1
       # which throws up a messagebox which leaves a black rect. We have no place to put a refresh
@@ -1536,13 +1495,91 @@ module Canis
 ##---- dead unused }}}
 
   end  # class textpad 
+  class DefaultRenderer
+    # to be called by source prior to render for the first row. 
+    attr_accessor :attr
+    attr_reader :color_pair
+
+    def initialize source
+      @source = source
+      # the following can change after the renderer is created.
+      @content_cols = @source.pad_cols
+      @attr = @source.attr
+      @color_pair = @source.color_pair
+    end
+    # to be called by source prior to render for the first row. This ensures
+    # that renderer always has the latest color since this can be changed after the renderer
+    # was created
+    def color_pair=(cp)
+      @color_pair = cp
+      @cp = FFI::NCurses.COLOR_PAIR(cp)
+    end
+    #
+    # default method for rendering a line
+    # If it is a chunkline, then we take care of it.
+    # Only if it is a String do we pass to renderer.
+    # Should a renderer be allowed to handle chunks. Or be yielded chunks?
+    #
+    def render pad, lineno, text
+      if text.is_a? AbstractChunkLine
+        FFI::NCurses.wmove pad, lineno, 0
+        a = get_attrib @attr
+
+        show_colored_chunks pad, text, @color_pair, a
+        return
+      end
+      # using first call to initialize some vars, in case they change between repaints.
+      if lineno == 0
+        #cp = get_color($datacolor, @source.color(), @source.bgcolor())
+        #@cp = FFI::NCurses.COLOR_PAIR(cp)
+        # FIXME since we are writing on the pad, should this not be padwidth
+        @clearstring = " " * @source.width
+        @list = @source.content
+        @content_cols = @source.pad_cols
+      end
+      ## messabox does have a method to paint the whole window in bg color its in rwidget.rb
+      att = NORMAL
+      FFI::NCurses.wattron(pad, @cp | att)
+      FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) if @clearstring
+      FFI::NCurses.mvwaddstr(pad,lineno, 0, @list[lineno])
+
+      #FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
+      FFI::NCurses.wattroff(pad, @cp | att)
+    end
+    ## 2013-03-07 - 19:57 changed width to @content_cols since data not printing
+    # in some cases fully when ansi sequences were present int some line but not in others
+    # lines without ansi were printing less by a few chars.
+    # This was prolly copied from rwindow, where it is okay since its for a specific width
+    # FIXME @content_cols
+    def print(pad, string, _width = @content_cols)
+      w = _width == 0? Ncurses.COLS : _width
+      FFI::NCurses.waddnstr(pad,string.to_s, w) # changed 2011 dts  
+    end
+
+    def show_colored_chunks(pad, chunks, defcolor = nil, defattr = nil)
+      #return unless visible?
+      chunks.each_with_color do |text, color, attrib|
+
+        color ||= defcolor
+        attrib ||= defattr || NORMAL
+
+        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. "
+        FFI::NCurses.wcolor_set(pad, color,nil) if color
+        FFI::NCurses.wattron(pad, attrib) if attrib
+        print(pad, text)
+        FFI::NCurses.wattroff(pad, attrib) if attrib
+      end
+    end
+  end
 # renderer {{{
-  # a test renderer to see how things go
+  # a simple file renderer that allows setting of colors per line based on 
+  # regexps passed to +insert_mapping+. See +tasks.rb+ for example usage.
+  #   
   class DefaultFileRenderer
     attr_accessor :default_colors
     attr_reader :hash
 
-    def initialize
+    def initialize source=nil
       @default_colors = [:white, :black, NORMAL]
       @pair = get_color($datacolor, @default_colors.first, @default_colors[1])
     end
@@ -1550,10 +1587,13 @@ module Canis
     def color_mappings hash
       @hash = hash
     end
+    # takes a regexp, and an array of color, bgcolor and attr
     def insert_mapping regex, dim
       @hash ||= {}
       @hash[regex] = dim
     end
+    # matches given line with each regexp to determine color use
+    # Internally used by render.
     def match_line line
       @hash.each_pair {| k , p|
         if line =~ k
@@ -1562,6 +1602,7 @@ module Canis
       }
       return @default_colors
     end
+    # render given line in color configured using +insert_mapping+
     def render pad, lineno, text
       if @hash
         dim = match_line text
@@ -1583,48 +1624,6 @@ module Canis
       FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
     end
     #
-    # @param pad for calling print methods on
-    # @param lineno the line number on the pad to print on
-    # @param text data to print
-    def OLDrender pad, lineno, text
-      bg = :black
-      fg = :white
-      att = NORMAL
-      #cp = $datacolor
-      cp = get_color($datacolor, fg, bg)
-      ## XXX believe it or not, the next line can give you "invalid byte sequence in UTF-8
-      # even when processing filename at times. Or if its an mp3 or non-text file.
-      if text =~ /^\s*# / || text =~ /^\s*## /
-        fg = :red
-        #att = BOLD
-        cp = get_color($datacolor, fg, bg)
-      elsif text =~ /^\s*#/
-        fg = :blue
-        cp = get_color($datacolor, fg, bg)
-      elsif text =~ /^\s*(class|module) /
-        fg = :cyan
-        att = BOLD
-        cp = get_color($datacolor, fg, bg)
-      elsif text =~ /^\s*def / || text =~ /^\s*function /
-        fg = :yellow
-        att = BOLD
-        cp = get_color($datacolor, fg, bg)
-      elsif text =~ /^\s*(end|if |elsif|else|begin|rescue|ensure|include|extend|while|unless|case |when )/
-        fg = :magenta
-        att = BOLD
-        cp = get_color($datacolor, fg, bg)
-      elsif text =~ /^\s*=/
-        # rdoc case
-        fg = :blue
-        bg = :white
-        cp = get_color($datacolor, fg, bg)
-        att = REVERSE
-      end
-      FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-      FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
-      FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-
-    end
   end
 # renderer }}}
 # This is the default key handler.
