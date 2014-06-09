@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-04 12:35
+  * Last update: 2014-06-09 18:23
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1679,13 +1679,13 @@ module Canis
        # XXX this creates a problem if window is a pad
        # although this does show cursor movement etc.
        ### @window.wrefresh
-       if @window.window_type == :WINDOW
+       #if @window.window_type == :WINDOW
          #$log.debug " formrepaint #{@name} calling window.wrefresh #{@window} "
          @window.wrefresh
          Ncurses::Panel.update_panels ## added 2010-11-05 00:30 to see if clears the stdscr problems
-       else
-         $log.warn " XXX formrepaint #{@name} no refresh called  2011-09-19  #{@window} "
-       end
+       #else
+         #$log.warn " XXX formrepaint #{@name} no refresh called  2011-09-19  #{@window} "
+       #end
     end
     ## 
     # move cursor to where the fields row and col are
