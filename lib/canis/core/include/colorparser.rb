@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-29 01:14
+#  Last update: 2014-06-10 21:09
 # ------------------------------------------------------------ #
 #
 
@@ -172,6 +172,42 @@ module Canis
       # 2013-03-21 - 19:01 
       def method_missing(sym, *args, &block)
         self.to_s.send sym, *args, &block
+      end
+      # print a chunkline 
+      # NOTE: tested with pad only. Not with window.
+      #  Moved from textpad, this is the one method textpad is to call.
+      #  @param [Pad] pad on which to print
+      #  @param [Fixnum] lineno to print (zero-based)
+      #  @param [Fixnum] column to start printing on, usually 0
+      #  @param [Fixnum] width of pad, usually @content_cols
+      #  @param [color_pair] colorpair of textpad or widget
+      #  @param [attr] attr of textpad or widget
+      def print pad, lineno, col, width, color_pair, attr
+        FFI::NCurses.wmove pad, lineno, col
+        a = get_attrib attr
+
+        show_colored_chunks pad, width, color_pair, a
+      end
+      # moved from textpad.rb. Note that this does printing for a pad not window
+      #  so not yet tested if window is passed. Called by +print+.
+      def show_colored_chunks(pad, width, defcolor = nil, defattr = nil)
+        #return unless visible?
+        self.each_with_color do |text, color, attrib|
+
+          color ||= defcolor
+          attrib ||= defattr || NORMAL
+
+          #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. "
+          FFI::NCurses.wcolor_set(pad, color,nil) if color
+          FFI::NCurses.wattron(pad, attrib) if attrib
+          _print(pad, text, width)
+          FFI::NCurses.wattroff(pad, attrib) if attrib
+        end
+      end
+      # called only by show_colored_chunks
+      def _print(pad, string, _width )
+        w = _width == 0? Ncurses.COLS : _width
+        FFI::NCurses.waddnstr(pad,string.to_s, w) # changed 2011 dts  
       end
     end
     class ColorParser
