@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-09 20:58
+#  Last update: 2014-06-10 21:05
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1503,7 +1503,7 @@ module Canis
     def initialize source
       @source = source
       # the following can change after the renderer is created.
-      @content_cols = @source.pad_cols
+      #@content_cols = @source.pad_cols
       @attr = @source.attr
       @color_pair = @source.color_pair
     end
@@ -1521,11 +1521,11 @@ module Canis
     # Should a renderer be allowed to handle chunks. Or be yielded chunks?
     #
     def render pad, lineno, text
+      if lineno == 0
+        @content_cols = @source.pad_cols
+      end
       if text.is_a? AbstractChunkLine
-        FFI::NCurses.wmove pad, lineno, 0
-        a = get_attrib @attr
-
-        show_colored_chunks pad, text, @color_pair, a
+        text.print pad, lineno, 0, @content_cols, color_pair, attr
         return
       end
       # using first call to initialize some vars, in case they change between repaints.
@@ -1545,30 +1545,6 @@ module Canis
 
       #FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
       FFI::NCurses.wattroff(pad, @cp | att)
-    end
-    ## 2013-03-07 - 19:57 changed width to @content_cols since data not printing
-    # in some cases fully when ansi sequences were present int some line but not in others
-    # lines without ansi were printing less by a few chars.
-    # This was prolly copied from rwindow, where it is okay since its for a specific width
-    # FIXME @content_cols
-    def print(pad, string, _width = @content_cols)
-      w = _width == 0? Ncurses.COLS : _width
-      FFI::NCurses.waddnstr(pad,string.to_s, w) # changed 2011 dts  
-    end
-
-    def show_colored_chunks(pad, chunks, defcolor = nil, defattr = nil)
-      #return unless visible?
-      chunks.each_with_color do |text, color, attrib|
-
-        color ||= defcolor
-        attrib ||= defattr || NORMAL
-
-        #$log.debug "XXX: CHUNK textpad #{text}, cp #{color} ,  attrib #{attrib}. "
-        FFI::NCurses.wcolor_set(pad, color,nil) if color
-        FFI::NCurses.wattron(pad, attrib) if attrib
-        print(pad, text)
-        FFI::NCurses.wattroff(pad, attrib) if attrib
-      end
     end
   end
 # renderer {{{
