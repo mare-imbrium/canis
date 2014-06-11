@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-10 21:05
+#  Last update: 2014-06-11 16:42
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -402,7 +402,8 @@ module Canis
     def fire_row_changed ix
       return if ix >= @list.length
       clear_row @pad, ix
-      parse_formatted_line ix
+      #parse_formatted_line ix
+      parse_line ix
       #render @pad, ix, @list[ix]
       _arr = _getarray
       render @pad, ix, _arr[ix]
@@ -568,6 +569,7 @@ module Canis
       #@native_text = nil # otherwise non parse cases were never refreshed ! This may be causing
          # a nil error in some places
       if @content_type
+        #preprocess_text
         parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
       end
 
@@ -602,6 +604,24 @@ module Canis
       else
         return @native_text
       end
+    end
+    def preprocess_text
+      #return unless @parse_required
+      parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
+
+=begin
+      require 'canis/core/include/canisparser'
+      # currently this is like pseudo-code ... how it should look roughtly
+      @parser ||= CanisParser[@content_type]
+      raise "Textpad could not find a parser for #{@content_type} " unless @parser
+      @parser.parent = self
+      @native_text = @parser.parse_text(@list)
+      @parse_required = false
+=end
+    end
+    def parse_line lineno
+      parse_formatted_line(lineno)
+      #@native_text[lineno] = @parser.parse_line(@list[lineno]) 
     end
       # This has been moved from rwidget since only used here.
       #
@@ -1228,6 +1248,7 @@ module Canis
       #_convert_formatted
       # Now this is being called every time a repaint happens, it should only be called if data has changed.
       if @content_type
+        #preprocess_text
         parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
       end
 
