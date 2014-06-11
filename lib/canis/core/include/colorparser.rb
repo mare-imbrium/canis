@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-10 21:09
+#  Last update: 2014-06-11 16:40
 # ------------------------------------------------------------ #
 #
 
@@ -352,8 +352,11 @@ module Canis
         return res unless block_given?
       end
       def get_default_color_parser
-        require 'canis/core/util/defaultcolorparser'
-        @color_parser || DefaultColorParser.new
+        #require 'canis/core/util/defaultcolorparser'
+        #@color_parser || DefaultColorParser.new
+
+        require 'canis/core/include/canisparser'
+        @color_parser ||= CanisParser[:tmux]
       end
       public
       # set a stylesheet -- this is a file path containing yaml
@@ -382,6 +385,11 @@ module Canis
           content_type = f
         end
         $log.debug "XXX:  color_parser setting in CP to #{f} "
+        require 'canis/core/include/canisparser'
+        # currently this is like pseudo-code ... how it should look roughtly
+        @color_parser ||= CanisParser[content_type]
+        raise "colorparser could not find a parser for #{content_type} " unless @color_parser
+=begin
         if content_type == :tmux
           @color_parser = get_default_color_parser()
         elsif content_type == :ansi
@@ -390,6 +398,7 @@ module Canis
         else
           @color_parser = f
         end
+=end
       end
     end # class
   end
