@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-11 16:42
+#  Last update: 2014-06-16 19:11
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -55,6 +55,10 @@ module Canis
     # the object that handles keys that are sent to this object by the form.
     # This widget creates its own default handler if not overridden by user.
     attr_accessor :key_handler
+    # the object that handles conversion of content in some format to what
+    # can be displayed by a handler or renderer. It handled one-time conversion
+    # of markup-up content to an internal format.
+    attr_accessor :content_type_handler
 
     # an array of 4 items for h w t and l which can be nil, padrefresh will check
     # its bounds against this to ensure no caller messes up.
@@ -538,7 +542,7 @@ module Canis
       end
       lines = val[0]
       raise "Textpad: text() received nil" unless lines
-      fmt = val.size == 2 ? val[1] : :none
+      fmt = val.size == 2 ? val[1] : nil
       case fmt
       when Hash
         #raise "textpad.text expected content_type in Hash : #{fmt}" 
@@ -551,8 +555,10 @@ module Canis
         fmt = c
         #raise "textpad.text expected content_type in Hash : #{fmt}" unless fmt
       when Symbol
+        @content_type = fmt
+      when NilClass
       else
-        raise "textpad.text expected symbol or content_type in Hash" 
+        raise "textpad.text expected symbol or content_type in Hash, got #{fmt.class} " 
       end
 
       ## some programs like testlistbox which uses multibuffers calls this with a config
@@ -565,17 +571,21 @@ module Canis
       # We maintain original text in @list
       # but use another variable for native format (chunks).
       @parse_required = true
-      @native_text = lines
-      #@native_text = nil # otherwise non parse cases were never refreshed ! This may be causing
-         # a nil error in some places
+      @list = lines
+
+      # 2014-06-15 - 13:39 i am commenting this off, since a user can change or set content_type
+      # at any time, and also content handler.
       if @content_type
+        # this will create a default content handler if not yet specified
+        #  which is wrong since user may specify it after setting text. he may not have
+        #  set the content type yet too. Too much dependent on order !
         #preprocess_text
-        parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
+        #parse_formatted_text lines, :content_type => @content_type, :stylesheet => @stylesheet
       end
 
       return @list if lines.empty?
-      @list = lines
-      @native_text ||= @list
+      #@list = lines
+      #@native_text ||= @list
       @_populate_needed = true
       @repaint_all = true
       @repaint_required = true
@@ -606,6 +616,7 @@ module Canis
       end
     end
     def preprocess_text
+      return unless @content_type
       #return unless @parse_required
       parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
 
@@ -650,40 +661,50 @@ module Canis
       def parse_formatted_text(formatted_text, config=nil)
         return unless @parse_required
 
+        unless @content_type_handler
+          create_default_content_type_handler
+        end
+        @native_text = @content_type_handler.parse_text formatted_text
+        @parse_required = false
+=begin
         config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
-        config[:bgcolor] = bgcolor() || :black
-        config[:color] = color() || :white
+        # commented next two lines to see if necessary 2014-06-12 - 19:25 
+        #config[:bgcolor] = bgcolor() || :black
+        #config[:color] = color() || :white
+        
         #config[:color_pair] = @color_pair
+        # TODO user to be able to set his own parser FIXME which can take hash, or content_type and form/parent.
 
         require 'canis/core/include/colorparser'
         cp = Chunks::ColorParser.new config
         cp.form = self
-        l = []
-        formatted_text.each { |e| 
-          l << cp.convert_to_chunk(e) 
-        }
-        cp = nil
+        @native_text = cp.parse_text formatted_text
+        #cp = nil
         @parse_required = false
-        @native_text = l
+=end
       end
       # An individual line has changed, so we need to generate the chunkline for that again.
       # Updates the native_text array, does not return anything.
       # @param [Fixnum] linenumber that has changed.
       def parse_formatted_line(lineno)
+        return unless @content_type
+        @native_text[lineno] = @content_type_handler.parse_line( @list[lineno]) 
+=begin
         if @content_type
           config = { :content_type => @content_type, :stylesheet => @stylesheet }
-          config[:bgcolor] = @bgcolor || :black
-          config[:color] = @color || :white
-          config[:attr] = @attr
+          #config[:bgcolor] = @bgcolor || :black
+          #config[:color] = @color || :white
+          #config[:attr] = @attr
 
           @color_parser ||= Chunks::ColorParser.new config
           @color_parser.form = self
-          @native_text[lineno] = @color_parser.convert_to_chunk( @list[lineno]) 
+          @native_text[lineno] = @color_parser.parse_line( @list[lineno]) 
         else
           # table does not use native text at all, so we need to check
           # actually we don't need this line at all
-          @native_text[lineno] = @list[lineno] if @native_text
+          #@native_text[lineno] = @list[lineno] if @native_text
         end
+=end
 
       end
     #
@@ -1066,6 +1087,16 @@ module Canis
     def create_default_keyhandler
       @key_handler = DefaultKeyHandler.new self
     end
+    # if there is a content_type specfied but nothing to handle the content
+    #  then we create a default handler.
+    def create_default_content_type_handler
+      #@content_type_handler = DefaultContentTypeHandler.new self
+      require 'canis/core/include/colorparser'
+      config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
+      cp = Chunks::ColorParser.new self
+      #cp.form = self
+      @content_type_handler = cp
+    end
     #
     def handle_key ch
       return :UNHANDLED unless @list
@@ -1248,8 +1279,8 @@ module Canis
       #_convert_formatted
       # Now this is being called every time a repaint happens, it should only be called if data has changed.
       if @content_type
-        #preprocess_text
-        parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
+        preprocess_text
+        #parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
       end
 
       # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
