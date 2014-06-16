@@ -1,10 +1,11 @@
 # ------------------------------------------------------------ #
 #         File: chunk.rb 
-#  Description: 
+#  Description: Contains classes that implement the default native format
+#               we use for colored lines display.
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-11 16:40
+#  Last update: 2014-06-16 19:12
 # ------------------------------------------------------------ #
 #
 
@@ -191,7 +192,7 @@ module Canis
       # moved from textpad.rb. Note that this does printing for a pad not window
       #  so not yet tested if window is passed. Called by +print+.
       def show_colored_chunks(pad, width, defcolor = nil, defattr = nil)
-        #return unless visible?
+
         self.each_with_color do |text, color, attrib|
 
           color ||= defcolor
@@ -210,17 +211,29 @@ module Canis
         FFI::NCurses.waddnstr(pad,string.to_s, w) # changed 2011 dts  
       end
     end
+
+    # This class does not do the actual parsing which must be done by a class
+    #   based on the actual format of the marked up document. 
+    #   However, this class converts the parsed fragments to a Chunkline
+    #   which is an array of Chunks,
     class ColorParser
       attr_reader :stylesheet
       # hash containing color, bgcolor and attr for a given style
       attr_writer :style_map
       def initialize cp
-        color_parser cp
+        # in some cases like statusline where it requests window to do some parsing, we will never know who
+        #  the parent is. We could somehow get the window, and from there the form ???
+        @parents = nil
+
+        chunk_parser cp
 
         if cp.is_a? Hash
           @color = cp[:color]
           @bgcolor = cp[:bgcolor]
           @attr = cp[:attr]
+        end
+        if cp.is_a? TextPad
+          self.form = cp
         end
         @attr     ||= FFI::NCurses::A_NORMAL
         @color      ||= :white
@@ -230,13 +243,63 @@ module Canis
         @bgcolor_array = [@bgcolor]
         @attrib_array = [@attr]
         @color_pair_array = [@color_pair]
-        # in some cases like statusline where it requests window to do some parsing, we will never know who
-        #  the parent is. We could somehow get the window, and from there the form ???
-        @parents = nil
       end
       # this is the widget actually that created the parser
       def form=(f)
         @parents = [f]
+      end
+      public
+      # set a stylesheet -- this is a file path containing yaml
+      # a style_map is loaded from the stylesheet
+      # Sending a symbol such as :help will load style_help.yml
+      # @param [String, Symbol] s is a pathname for stylesheet or symbol pointing to a stylesheet
+      def stylesheet=(s)
+        return unless s
+        if s.is_a? Symbol
+          s = CANIS_DOCPATH + "style_#{s}.yml"
+        end
+        @stylesheet = s
+        if File.exist? s
+          require 'yaml'
+          @style_map = YAML::load( File.open( File.expand_path(s) ))
+        else
+          raise "Could not find stylesheet file #{s}"
+        end
+      end
+      # what if a text pad changes it's content type, should be not allow it to just
+      #  use the same parser with a changed internal parser
+      # UNUSED as yet
+      def content_type ct
+        return if ct == @content_type
+        @content_type = ct
+        self.chunk_parser ct
+      end
+      # supply with a color parser, if you supplied formatted text
+      def chunk_parser f
+        if f.is_a? Hash
+          self.stylesheet = f[:stylesheet]
+          content_type = f[:content_type]
+        elsif f.is_a? TextPad
+          self.stylesheet = f.stylesheet
+          content_type = f.content_type
+        else
+          content_type = f
+        end
+        @content_type = content_type
+        $log.debug "XXX:  chunk_parser setting in CP to #{f} "
+        require 'canis/core/include/canisparser'
+        @chunk_parser ||= CanisParser[content_type]
+        raise "colorparser could not find a parser for #{content_type} " unless @chunk_parser
+=begin
+        if content_type == :tmux
+          @chunk_parser = get_default_color_parser()
+        elsif content_type == :ansi
+          require 'canis/core/util/ansiparser'
+          @chunk_parser = AnsiParser.new
+        else
+          @chunk_parser = f
+        end
+=end
       end
 
       # since 2014-05-19 - 13:14 
@@ -249,6 +312,16 @@ module Canis
           return retval
         end
         raise "Style given in document, but no stylesheet provided"
+      end
+      # parse array of Strings into array of Chunks (Chunklines)
+      # @param [Array<String>] formatted text to be parsed into chunks
+      # @return [Array<Abstractchunkline>] array of text in our native format (chunklines)
+      def parse_text formatted_text
+        l = []
+        formatted_text.each { |e| 
+          l << convert_to_chunk(e) 
+        }
+        return l
       end
       #
       # Takes a formatted string and converts the parsed parts to chunks.
@@ -264,18 +337,12 @@ module Canis
       def convert_to_chunk s, colorp=$datacolor, att=FFI::NCurses::A_NORMAL
 
         raise "You have not set parent of this using form(). Try setting window.form " unless @parents
-        @color_parser ||= get_default_color_parser()
-        ## defaults
-        #color_pair = @color_pair
-        #attr = @attr
-        #res = []
+        @chunk_parser ||= get_default_color_parser()
         res = ChunkLine.new
-        #color = @color
-        #bgcolor = @bgcolor
         # stack the values, so when user issues "/end" we can pop earlier ones
 
         newblockflag = false
-        @color_parser.parse_format(s) do |p|
+        @chunk_parser.parse_format(s) do |p|
           case p
           when Array
             newblockflag = true
@@ -351,54 +418,15 @@ module Canis
         end # parse
         return res unless block_given?
       end
+      alias :parse_line :convert_to_chunk
+
+      # returns an instance of the default color parser (tmux parser)
       def get_default_color_parser
         #require 'canis/core/util/defaultcolorparser'
-        #@color_parser || DefaultColorParser.new
+        #@chunk_parser || DefaultColorParser.new
 
         require 'canis/core/include/canisparser'
-        @color_parser ||= CanisParser[:tmux]
-      end
-      public
-      # set a stylesheet -- this is a file path containing yaml
-      # a style_map is loaded from the stylesheet
-      # Sending a symbol such as :help will load style_help.yml
-      # @param [String, Symbol] s is a pathname for stylesheet or symbol pointing to a stylesheet
-      def stylesheet=(s)
-        return unless s
-        if s.is_a? Symbol
-          s = CANIS_DOCPATH + "style_#{s}.yml"
-        end
-        @stylesheet = s
-        if File.exist? s
-          require 'yaml'
-          @style_map = YAML::load( File.open( File.expand_path(s) ))
-        else
-          raise "Could not find stylesheet file #{s}"
-        end
-      end
-      # supply with a color parser, if you supplied formatted text
-      def color_parser f
-        if f.is_a? Hash
-          self.stylesheet = f[:stylesheet]
-          content_type = f[:content_type]
-        else
-          content_type = f
-        end
-        $log.debug "XXX:  color_parser setting in CP to #{f} "
-        require 'canis/core/include/canisparser'
-        # currently this is like pseudo-code ... how it should look roughtly
-        @color_parser ||= CanisParser[content_type]
-        raise "colorparser could not find a parser for #{content_type} " unless @color_parser
-=begin
-        if content_type == :tmux
-          @color_parser = get_default_color_parser()
-        elsif content_type == :ansi
-          require 'canis/core/util/ansiparser'
-          @color_parser = AnsiParser.new
-        else
-          @color_parser = f
-        end
-=end
+        @chunk_parser ||= CanisParser[:tmux]
       end
     end # class
   end
