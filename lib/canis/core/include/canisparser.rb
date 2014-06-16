@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-11 - 12:23
 #      License: MIT
-#  Last update: 2014-06-11 17:44
+#  Last update: 2014-06-16 16:56
 # ----------------------------------------------------------------------------- #
 #  canisparser.rb  Copyright (C) 2012-2014 j kepler
 module Canis
@@ -80,15 +80,18 @@ module Canis
       filename = args.first
       klassname = args[1]
       $log.debug "  canisparser init got #{args} "
+      raise "Canisparser init got nil" unless filename
       require filename
       clazz = Object.const_get(klassname).new
       #  clazz = 'Foo::Bar'.split('::').inject(Object) {|o,c| o.const_get c}
       #return clazz
       @clazz = clazz
     end
+    # delegate call to color parser
     def parse_format s, *args, &block
       @clazz.parse_format(s, *args, &block)
     end
+    # delegate all call to color parser
     def method_missing meth, *args, &block
       #$log.debug "  canisparser got method_missing for #{meth}, sending to #{@clazz.class} "
       @clazz.send( meth, *args, &block)
