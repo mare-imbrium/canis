@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-16 19:12
+#  Last update: 2014-06-16 20:23
 # ------------------------------------------------------------ #
 #
 
@@ -282,8 +282,11 @@ module Canis
         elsif f.is_a? TextPad
           self.stylesheet = f.stylesheet
           content_type = f.content_type
-        else
+        elsif f.is_a? Symbol
           content_type = f
+        else
+          @chunk_parser = f
+          return
         end
         @content_type = content_type
         $log.debug "XXX:  chunk_parser setting in CP to #{f} "
