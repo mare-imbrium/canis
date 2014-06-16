@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-09 16:37
+#  Last update: 2014-06-16 20:26
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
