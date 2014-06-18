@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-01 00:33
+#  Last update: 2014-06-18 18:11
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -205,7 +205,7 @@ module Canis
   # Also, focussed row is shown in bold, although we can make that optional and configurable
   # A user wanting a different rendering of listboxes may either extend this class
   # or completely replace it and set it as the renderer.
-  class ListRenderer
+  class ListRenderer < AbstractTextPadRenderer
     def initialize obj
       @obj = obj
       @selected_indices = obj.selected_indices
