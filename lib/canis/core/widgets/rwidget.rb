@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-09 18:23
+  * Last update: 2014-06-18 18:49
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1459,7 +1459,8 @@ module Canis
      # if one of them is nil, i just use the existing value
      def color_pair(*val)
        if val.empty?
-         return @color_pair
+         #return @color_pair 
+         return @color_pair || get_color($datacolor, color(), bgcolor())
        end
 
        oldvalue = @color_pair
