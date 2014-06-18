@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-16 19:11
+#  Last update: 2014-06-18 18:47
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -420,6 +420,10 @@ module Canis
     # 2013-03-27 - 01:51 separated so that widgets with headers such as tables can
     # override this for better control
     def render_all
+      _arr = _getarray
+      @renderer.source ||= self
+      @renderer.render_all @pad, _arr
+=begin
       # can't this be in one place, it pops up everywhere
       @color_pair = get_color($datacolor, color(), bgcolor() )
       @renderer.color_pair = @color_pair if @renderer.respond_to? :color_pair=
@@ -431,6 +435,7 @@ module Canis
         #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
         render @pad, ix, line
       }
+=end
     end
 
     public
@@ -439,6 +444,8 @@ module Canis
     def renderer r
       @renderer = r
     end
+    # This is to render a row, for those overriding classes who have overridden
+    #  render_all, but not +render+. e.g. +Table+
     def render pad, lineno, text
       @renderer.render pad, lineno, text
     end
@@ -1547,25 +1554,48 @@ module Canis
 ##---- dead unused }}}
 
   end  # class textpad 
-  class DefaultRenderer
-    # to be called by source prior to render for the first row. 
-    attr_accessor :attr
-    attr_reader :color_pair
+  class AbstractTextPadRenderer
+    attr_accessor :attr, :color_pair, :cp
+    attr_accessor :content_cols, :list, :source
 
     def initialize source
       @source = source
-      # the following can change after the renderer is created.
-      #@content_cols = @source.pad_cols
-      @attr = @source.attr
-      @color_pair = @source.color_pair
     end
-    # to be called by source prior to render for the first row. This ensures
-    # that renderer always has the latest color since this can be changed after the renderer
-    # was created
-    def color_pair=(cp)
-      @color_pair = cp
+    # have the renderer get the latest colors from the widget.
+    # Override this if for some reason the renderer wishes to hardcode its own.
+    # But then the widgets colors would be changed ?
+    def update_colors
+      @attr = @source.attr
+      cp = get_color($datacolor, @source.color(), @source.bgcolor())
+      @color_pair = @source.color_pair || cp
       @cp = FFI::NCurses.COLOR_PAIR(cp)
     end
+
+    # derived classes may choose to override this.
+    # However, they should set size and color and attrib at the start since these 
+    # can change after the object has been created depending on the application.
+    def render_all pad, arr
+      update_colors
+      @content_cols = @source.pad_cols
+      @clearstring = " " * @content_cols
+      @list = arr
+
+      att = @attr || NORMAL
+      FFI::NCurses.wattron(pad, @cp | att)
+
+      arr.each_with_index { |line, ix|
+        render pad, ix, line
+      }
+      FFI::NCurses.wattroff(pad, @cp | att)
+    end
+    # concrete / derived classes should override this for their specific uses.
+    def render pad, lineno, text
+      FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) if @clearstring
+      FFI::NCurses.mvwaddstr(pad,lineno, 0, text)
+    end
+  end
+  class DefaultRenderer < AbstractTextPadRenderer
+
     #
     # default method for rendering a line
     # If it is a chunkline, then we take care of it.
@@ -1573,21 +1603,9 @@ module Canis
     # Should a renderer be allowed to handle chunks. Or be yielded chunks?
     #
     def render pad, lineno, text
-      if lineno == 0
-        @content_cols = @source.pad_cols
-      end
       if text.is_a? AbstractChunkLine
         text.print pad, lineno, 0, @content_cols, color_pair, attr
         return
-      end
-      # using first call to initialize some vars, in case they change between repaints.
-      if lineno == 0
-        #cp = get_color($datacolor, @source.color(), @source.bgcolor())
-        #@cp = FFI::NCurses.COLOR_PAIR(cp)
-        # FIXME since we are writing on the pad, should this not be padwidth
-        @clearstring = " " * @source.width
-        @list = @source.content
-        @content_cols = @source.pad_cols
       end
       ## messabox does have a method to paint the whole window in bg color its in rwidget.rb
       att = NORMAL
@@ -1603,7 +1621,7 @@ module Canis
   # a simple file renderer that allows setting of colors per line based on 
   # regexps passed to +insert_mapping+. See +tasks.rb+ for example usage.
   #   
-  class DefaultFileRenderer
+  class DefaultFileRenderer < AbstractTextPadRenderer
     attr_accessor :default_colors
     attr_reader :hash
 
