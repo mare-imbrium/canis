@@ -92,6 +92,7 @@ App.new do
                 lines = Dir.entries(filename )
                 t.set_content lines
               elsif File.exist? filename
+                # next line bombs on "invalid byte sequence on UTF-8" on split.
                 lines = File.open(filename,'r').read.split("\n") 
                 # next line bombs on binary files. normally we would check file type using +file+ command
                 t.set_content lines
