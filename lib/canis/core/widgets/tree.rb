@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-03 12:54
+#  Last update: 2014-06-18 18:31
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -48,7 +48,7 @@ module Canis
   #
   # perhaps we can combine the two but have different methods or some flag
   # that way oter methods can be shared
-    class DefaultTreeRenderer
+    class DefaultTreeRenderer < AbstractTextPadRenderer
 
       PLUS_PLUS = "++"
       PLUS_MINUS = "+-"
@@ -101,6 +101,8 @@ module Canis
         #graphic.printstring r, c, "%-*s" % [len, _value], @color_pair,@attr
         cp = @color_pair
         att = @attrib
+        raise "attrib is nil in tree render 104" unless att
+        raise "color pair is nil in tree render 104" unless cp
         # added for selection, but will crash if selection is not extended !!! XXX
           if @source.is_row_selected? lineno
             att = REVERSE
