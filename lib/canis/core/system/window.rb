@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-16 20:26
+#  Last update: 2014-06-20 01:08
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -584,8 +584,9 @@ module Canis
       # FIXME - in tabbedpanes this clears one previous line ??? XXX when using a textarea/view
       # when using a pad this calls pads printstring which again reduces top and left !!! 2010-01-26 23:53 
       ww=width-2
+      clr = " "*ww
       (row+1).upto(row+height-1) do |r|
-        printstring( r, col+1," "*ww , color, att)
+        printstring( r, col+1, clr, color, att)
       end
       print_border_only row, col, height, width, color, att
     end
