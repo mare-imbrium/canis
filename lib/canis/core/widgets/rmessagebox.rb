@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-31 12:51
+#  Last update: 2014-06-19 18:16
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -121,13 +121,13 @@ module Canis
     end
     def repaint
       _create_window unless @window
-      acolor = get_color $reverscolor # this implicitly uses color and bgcolor fooling me often
+      acolor = get_color $reverscolor, @color, @bgcolor 
       $log.debug " MESSAGE BOX bg:#{@bgcolor} , co:#{@color} , colorpair:#{acolor}"
       @window.wbkgd(Ncurses.COLOR_PAIR(acolor)); #  does not work on xterm-256color
 
       #print_borders unless @suppress_borders # do this once only, unless everything changes
       #@window.print_border_mb 1,2, @height, @width, $normalcolor, FFI::NCurses::A_REVERSE
-      @color_pair = get_color($datacolor)
+      @color_pair = get_color($datacolor, @color, @bgcolor)
       bordercolor = @border_color || @color_pair
       borderatt = @border_attrib || Ncurses::A_NORMAL
       @window.wattron(Ncurses.COLOR_PAIR(bordercolor) | (borderatt || FFI::NCurses::A_NORMAL))
