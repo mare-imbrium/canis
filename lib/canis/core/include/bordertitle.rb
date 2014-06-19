@@ -33,7 +33,8 @@ module Canis
       bordertitle_init unless @_bordertitle_init_called
       return unless @title
       raise "#{self} needs width" unless @width
-      @color_pair ||= get_color($datacolor) # should we not use this ??? XXX 
+      # removed || since this can change after first invocation and should be recalculated.
+      @color_pair = get_color($datacolor) 
       #$log.debug " print_title #{@row}, #{@col}, #{@width}  "
       # check title.length and truncate if exceeds width
       _title = @title
