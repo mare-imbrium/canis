@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-06-05 00:06
+#  Last update: 2014-06-19 18:07
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -29,6 +29,24 @@ module Canis
     }
     form.bind_key([?\\,?\\,?o],'choose file') { 
       choose_file_and_view
+    }
+    form.bind_key([?\\,?g,?f],'change global fore color') { 
+      ret = get_string "Enter a foreground color (number)", :default => "255"
+      if ret
+        $def_fg_color = ret.to_i
+        form.repaint_all_widgets
+      end
+    }
+    form.bind_key([?\\,?g,?b],'change global bg color') { 
+      ret = get_string "Enter a background color (number)", :default => "0"
+      if ret
+        $def_bg_color = ret.to_i
+        form.repaint_all_widgets
+      end
+    }
+    form.bind_key([?\\,?f,?f],'change forms fore color') { 
+    }
+    form.bind_key([?\\,?f,?b],'change forms bg color') { 
     }
   end
   # a quick dirty code formatter,
