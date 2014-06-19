@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-18 18:49
+  * Last update: 2014-06-19 18:12
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -320,7 +320,7 @@ module Canis
       # @param [Symbol] color name such as white black cyan magenta red green yellow
       # @param [Symbol] bgcolor name such as white black cyan magenta red green yellow
       # @example get_color $promptcolor, :white, :cyan
-      def get_color default=$datacolor, color=@color, bgcolor=@bgcolor
+      def get_color default=$datacolor, color=color(), bgcolor=bgcolor()
         return default if color.nil? || bgcolor.nil?
         #raise ArgumentError, "Color not valid: #{color}: #{ColorMap.colors} " if !ColorMap.is_color? color
         #raise ArgumentError, "Bgolor not valid: #{bgcolor} : #{ColorMap.colors} " if !ColorMap.is_color? bgcolor
@@ -2066,7 +2066,8 @@ module Canis
       next if w.visible == false
       next if w.class.to_s == "Canis::MenuBar"
       #$log.debug "   ---- REPAINT ALL #{w.name} "
-      w.repaint_required true
+      #w.repaint_required true
+      w.repaint_all true
       w.repaint
     end
     #$log.debug "  REPAINT ALL in FORM complete "
@@ -2288,7 +2289,7 @@ module Canis
         t.text_patterns[:link] = Regexp.new(/\[\w+\]/)
         t.bind_key(KEY_TAB, "goto link") { t.next_regex(:link) }
         # FIXME bgcolor add only works if numberm not symbol
-        t.bind_key(?a, "goto link") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; 
+        t.bind_key(?a, "increment bgcolor") { t.bgcolor += 1 ; t.bgcolor = 1 if t.bgcolor > 256; 
                                       $log.debug " HELP BGCOLOR is #{t.bgcolor} ";
                                       t.clear_pad; t.render_all }
         t.bind(:PRESS){|eve| 
