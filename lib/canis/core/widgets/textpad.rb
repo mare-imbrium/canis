@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-18 18:47
+#  Last update: 2014-06-20 01:15
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -280,7 +280,11 @@ module Canis
       # In messageboxes the border is more inside. but pad cannot clear the entire
       # window. The component may be just a part of the window.
       r,c = rowcol
+      # width - 2 was okay if we started from @col + 1 as print_border does in window
+      # but here we start from @col so reduce only 1 2014-06-20 - 01:13 TEST THIS XXX
       ww=width-2
+      ww=width-1
+      _col = @col + 0
       startcol = 1
       startcol = 0 if @suppress_borders
       # need to account for borders. in col+1 and ww
@@ -292,8 +296,9 @@ module Canis
       #if color == $datacolor
       $log.debug "  clear_pad: colors #{@cp}, ( #{_bgcolor} #{_color} ) #{$datacolor} , attrib #{att} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
       # 2014-05-15 - 11:01 seems we were clearing an extra row at bottom. 
-        (r+1).upto(r+@height-startcol-1) do |rr|
-          @window.printstring( rr, @col+0,sp , color, att)
+      # earlier it was r+1 but that was missing the first row, so now made it r+0 2014-06-20 - 01:15 XXX
+        (r+0).upto(r+@height-startcol-1) do |rr|
+          @window.printstring( rr, _col ,sp , color, att)
         end
       #end
     end
@@ -495,6 +500,12 @@ module Canis
       end
 =end
       @repaint_footer_required = false # 2010-01-23 22:55 
+    end
+    # This is so that repaint_all_widgets can work with textpad objects.
+    def repaint_all tf
+      super
+      clear_pad
+      render_all
     end
 
 
