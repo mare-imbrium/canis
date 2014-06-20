@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-20 01:15
+#  Last update: 2014-06-20 13:26
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1110,7 +1110,8 @@ module Canis
     def create_default_content_type_handler
       #@content_type_handler = DefaultContentTypeHandler.new self
       require 'canis/core/include/colorparser'
-      config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
+      #config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
+      # cp will take the content+type from self and select actual parser
       cp = Chunks::ColorParser.new self
       #cp.form = self
       @content_type_handler = cp
