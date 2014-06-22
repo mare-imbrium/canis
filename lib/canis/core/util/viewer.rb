@@ -28,6 +28,11 @@ module Canis
         content = _get_contents(what)
       when Array
         content = what
+      when TextDocument
+        $log.debug "  setting content to textdocument #{what.options.keys} "
+        content = what
+        #content = what.text
+        #config[:content_type] = what.content_type
       else
         raise ArgumentError, "Viewer: Expecting Filename or Contents (array), but got #{what.class} "
       end
