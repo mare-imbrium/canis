@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-20 13:26
+#  Last update: 2014-06-23 01:44
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -74,10 +74,12 @@ module Canis
     #  create key bindings for the same.
     attr_reader :text_patterns
     # type of content in case parsing is required. Values :tmux, :ansi, :none
-    attr_accessor :content_type
+    # trying to put content+type into document
+    #attr_accessor :content_type
     # path of yaml file which contains conversion of style names to color, bgcolor and attrib
-    attr_accessor :stylesheet
+    #attr_accessor :stylesheet
     attr_accessor :pad
+    attr_reader :document
 
     def initialize form=nil, config={}, &block
 
@@ -88,7 +90,7 @@ module Canis
       @prow = @pcol = 0
       @startrow = 0
       @startcol = 0
-      register_events( [:ENTER_ROW, :PRESS])
+      register_events( [:ENTER_ROW, :PRESS, :DIMENSION_CHANGED, :ROW_CHANGED])
       @text_patterns = {}
       # FIXME we need to be compatible with vim's word
       @text_patterns[:word] =  /[[:punct:][:space:]]\S/
@@ -111,7 +113,6 @@ module Canis
       #  to populate. +tree+ has an option of using +root()+.
       @repaint_required = true
       @repaint_all = true
-      @parse_required = true
       @_populate_needed = true
       map_keys unless @mapped_keys
       # FIXME wherer to put this.
@@ -176,13 +177,13 @@ module Canis
     # This also calls fire_dimension_changed so that the dimensions can be recalculated
     def height=(val)
       super
-      fire_dimension_changed
+      fire_dimension_changed :height
     end
     # set the width
     # This also calls fire_dimension_changed so that the dimensions can be recalculated
     def width=(val)
       super
-      fire_dimension_changed
+      fire_dimension_changed :width
     end
 # ---- Section initialization end ----- }}}
 # ---- Section pad related start ----------- {{{
@@ -238,10 +239,6 @@ module Canis
       # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
       @cp = FFI::NCurses.COLOR_PAIR(cp)
       # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
-      #if cp != $datacolor
-        #@clearstring ||= " " * @width
-        @clearstring = " " * @width
-      #end
       clear_pad
 
       Ncurses::Panel.update_panels
@@ -268,6 +265,10 @@ module Canis
       _bgcolor = bgcolor()
       cp = get_color($datacolor, _color, _bgcolor)
       @cp = FFI::NCurses.COLOR_PAIR(cp)
+
+      raise "pad not created" unless @pad
+      $log.debug "  clear pad content Rows is #{@content_rows} "
+      raise "content_rows is nil" unless @content_rows
       (0..@content_rows).each do |n|
         clear_row @pad, n
       end
@@ -398,12 +399,14 @@ module Canis
     # the pad needs to be recreated. However, cursor positioning is maintained since this
     # is considered to be a minor change. 
     # We do not call `init_vars` since user is continuing to do some work on a row/col.
-    def fire_dimension_changed
+    # NOTE : if height and width are changed then only render_all is required
+    #    not a reparse since content has not changed.
+    def fire_dimension_changed _method=nil
       # recreate pad since width or ht has changed (row count or col width changed)
       @_populate_needed = true
       @repaint_required = true
       @repaint_all = true
-      @parse_required = true
+      fire_handler :DIMENSION_CHANGED, _method
       @__first_time = nil
     end
     # repaint only one row since content of that row has changed. 
@@ -411,9 +414,8 @@ module Canis
     def fire_row_changed ix
       return if ix >= @list.length
       clear_row @pad, ix
-      #parse_formatted_line ix
-      parse_line ix
-      #render @pad, ix, @list[ix]
+      # allow documents to reparse that line
+      fire_handler :ROW_CHANGED, ix
       _arr = _getarray
       render @pad, ix, _arr[ix]
     
@@ -428,19 +430,6 @@ module Canis
       _arr = _getarray
       @renderer.source ||= self
       @renderer.render_all @pad, _arr
-=begin
-      # can't this be in one place, it pops up everywhere
-      @color_pair = get_color($datacolor, color(), bgcolor() )
-      @renderer.color_pair = @color_pair if @renderer.respond_to? :color_pair=
-      @renderer.attr = @attr if @renderer.respond_to? :attr=
-      @native_text ||= @list
-      _arr = _getarray
-      #@list.each_with_index { |line, ix|
-      _arr.each_with_index { |line, ix|
-        #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
-        render @pad, ix, line
-      }
-=end
     end
 
     public
@@ -450,7 +439,8 @@ module Canis
       @renderer = r
     end
     # This is to render a row, for those overriding classes who have overridden
-    #  render_all, but not +render+. e.g. +Table+
+    #  render_all, but not +render+. e.g. +Table+. THis is also required
+    #  for row modifications.
     def render pad, lineno, text
       @renderer.render pad, lineno, text
     end
@@ -558,6 +548,73 @@ module Canis
       if val.empty?
         return @list
       end
+      $log.debug "  TEXTPAD inside text() with #{val.class} "
+      case val
+      when Array
+        # either its an array of strings
+        # or its an array, and val[0] is an array of strings, and val[1] is a hash / symbol TODO
+        case val[0]
+        when String
+          # This is the usual simple case of an array of strings
+          @list = val
+          $log.debug "  creating TEXTDOC 0 with String"
+        when TextDocument
+          # this is repeating it seems FIXME
+          $log.debug "  creating TEXTDOC 04 with TextDocu #{val[0].content_type} "
+
+          @document = val[0]
+          @document.source ||= self
+          @list = @document.text
+        when Array
+          # This is the complex case which i would like to phase out.
+          # Earlier this was what was used where the second arg was an optional hash
+          @list = val[0]
+          if val[1].is_a? Symbol
+            @content_type = val[1]
+            hsh = { :text => @list, :content_type => @content_type }
+            $log.debug "  creating TEXTDOC 1 with #{@content_type} "
+            @document = TextDocument.new hsh
+            @document.source = self
+          elsif val[1].is_a? Hash
+            # content type comes nil from viewer/help which sets it later using block yield
+            @content_type = val[1][:content_type]
+            @stylesheet = val[1][:stylesheet]
+            @title = val[1][:title] if val[1].key? :title
+            $log.debug "  creating TEXTDOC 2 with #{@content_type}, #{val[1]} "
+            @document = TextDocument.new val[1]
+            @document.text = @list
+            @document.source = self
+          else
+          #raise "val_1 Unable to do anything with #{val[1].class} "
+            $log.debug " val_1 Unable to do anything with #{val[1].class} in textpad text()"
+          end
+        else
+          raise "val_0 Unable to do anything with #{val[0].class} "
+        end
+      when Hash
+        $log.debug "  creating TEXTDOC 3 with #{val[:content_type]} "
+        @document = TextDocument.new val
+        @document.source ||= self
+        @list = @document.text
+      when TextDocument
+        $log.debug "  creating TEXTDOC 4 with TextDocu #{val.content_type} "
+
+        @document = val
+        @document.source ||= self
+        @list = @document.text
+      end
+      @_populate_needed = true
+      @repaint_all = true
+      @repaint_required = true
+      init_vars
+      # i don't want the whole thing going into the event 2014-06-04
+      fire_property_change :text, "dummmy", "text has changed"
+      self
+    end
+    def ORIG_text(*val)
+      if val.empty?
+        return @list
+      end
       lines = val[0]
       raise "Textpad: text() received nil" unless lines
       fmt = val.size == 2 ? val[1] : nil
@@ -627,104 +684,19 @@ module Canis
     # Rather than trying to synch list and native text for those who do not use the latter
     #  let us just use the correct array
     def _getarray
-      if @content_type.nil? or @content_type == :none
+      #if @content_type.nil? or @content_type == :none
+      if @document.nil?
         return @list
       else
-        return @native_text
+        return @document.native_text
       end
     end
+    # textpad's preprocess
     def preprocess_text
-      return unless @content_type
-      #return unless @parse_required
-      parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
-
-=begin
-      require 'canis/core/include/canisparser'
-      # currently this is like pseudo-code ... how it should look roughtly
-      @parser ||= CanisParser[@content_type]
-      raise "Textpad could not find a parser for #{@content_type} " unless @parser
-      @parser.parent = self
-      @native_text = @parser.parse_text(@list)
-      @parse_required = false
-=end
-    end
-    def parse_line lineno
-      parse_formatted_line(lineno)
-      #@native_text[lineno] = @parser.parse_line(@list[lineno]) 
-    end
-      # This has been moved from rwidget since only used here.
-      #
-      # Converts formatted text into chunkline objects.
-      #
-      # To print chunklines you may for each row:
-      #       window.wmove row+height, col
-      #       a = get_attrib @attr
-      #       window.show_colored_chunks content, color, a
-      #
-      # @param [color_parser] object or symbol :tmux, :ansi
-      #       the color_parser implements parse_format, the symbols
-      #       relate to default parsers provided.
-      # @param [String] string containing formatted text
-      #def OLDparse_formatted_text(color_parser, formatted_text)
-
-    # This is now to be called at start when text is set,
-    # and whenever there is a data modification.
-    # This updates @native_text
-    # @param [Array<String>] original content sent in by user
-    #     which may contain markup
-    # @param [Hash] config containing
-    #    content_type
-    #    stylesheet
-    # @return [Chunklines] content in array of chunks.
-      def parse_formatted_text(formatted_text, config=nil)
-        return unless @parse_required
-
-        unless @content_type_handler
-          create_default_content_type_handler
-        end
-        @native_text = @content_type_handler.parse_text formatted_text
-        @parse_required = false
-=begin
-        config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
-        # commented next two lines to see if necessary 2014-06-12 - 19:25 
-        #config[:bgcolor] = bgcolor() || :black
-        #config[:color] = color() || :white
-        
-        #config[:color_pair] = @color_pair
-        # TODO user to be able to set his own parser FIXME which can take hash, or content_type and form/parent.
-
-        require 'canis/core/include/colorparser'
-        cp = Chunks::ColorParser.new config
-        cp.form = self
-        @native_text = cp.parse_text formatted_text
-        #cp = nil
-        @parse_required = false
-=end
+      if @document
+        @document.preprocess_text @list
       end
-      # An individual line has changed, so we need to generate the chunkline for that again.
-      # Updates the native_text array, does not return anything.
-      # @param [Fixnum] linenumber that has changed.
-      def parse_formatted_line(lineno)
-        return unless @content_type
-        @native_text[lineno] = @content_type_handler.parse_line( @list[lineno]) 
-=begin
-        if @content_type
-          config = { :content_type => @content_type, :stylesheet => @stylesheet }
-          #config[:bgcolor] = @bgcolor || :black
-          #config[:color] = @color || :white
-          #config[:attr] = @attr
-
-          @color_parser ||= Chunks::ColorParser.new config
-          @color_parser.form = self
-          @native_text[lineno] = @color_parser.parse_line( @list[lineno]) 
-        else
-          # table does not use native text at all, so we need to check
-          # actually we don't need this line at all
-          #@native_text[lineno] = @list[lineno] if @native_text
-        end
-=end
-
-      end
+    end
     #
     # returns focussed value (what cursor is on)
     # This may not be a string. A tree may return a node, a table an array or row
@@ -744,7 +716,7 @@ module Canis
       raise "append: deprecated pls use << or push as per Array semantics"
       @list ||= []
       @list.push text
-      fire_dimension_changed
+      fire_dimension_changed :append
       self
     end
     # @deprecated : row_count used just for compat, use length or size
@@ -768,8 +740,7 @@ module Canis
       eval %{
       def #{e}(*args)
         @list ||= []
-        fire_dimension_changed
-        @parse_required = true
+        fire_dimension_changed e
         @list.send(:#{e}, *args)
         self
       end
@@ -782,7 +753,7 @@ module Canis
       return unless @list
       @list.clear
       @native_text.clear
-      fire_dimension_changed
+      fire_dimension_changed :clear
       init_vars
     end
     # update the value at index with given value, returning self
@@ -1205,6 +1176,7 @@ module Canis
 
     public
     def bounds_check
+      raise "@list is empty in textpad. Bounds_check." unless @list
       r,c = rowcol
       @current_index = 0 if @current_index < 0
       @current_index = @list.count()-1 if @current_index > @list.count()-1
@@ -1295,12 +1267,7 @@ module Canis
       # if repaint is required, print_foot not called. unless repaint_all is set, and that 
       # is rarely set.
       
-      #_convert_formatted
-      # Now this is being called every time a repaint happens, it should only be called if data has changed.
-      if @content_type
-        preprocess_text
-        #parse_formatted_text @list, :content_type => @content_type, :stylesheet => @stylesheet
-      end
+      preprocess_text
 
       # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
 
@@ -1601,6 +1568,7 @@ module Canis
       FFI::NCurses.wattroff(pad, @cp | att)
     end
     # concrete / derived classes should override this for their specific uses.
+    # Called if only a row is changed.
     def render pad, lineno, text
       FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) if @clearstring
       FFI::NCurses.mvwaddstr(pad,lineno, 0, text)
@@ -1750,4 +1718,80 @@ module Canis
       return 0
     end # def
   end # class }}}
-end # mod
+
+  # In an attempt to keep TextPad simple, and move complexity of complex content out of it,
+  #  I am trying to move specialized processing and rendering to a Document class which manages the same.
+  #  I would also like to keep content, and content_type etc together. This should percolate to multibuffers
+  #  to.
+  #  An application may create a TextDocument object and pass it to TextPad using the +text+ method.
+  #  Or an app may send in a hash, which +text+ uses to create this object.
+  class TextDocument
+    attr_accessor :content_type
+    attr_accessor :stylesheet
+    # options passed in constructor including content_type and stylesheet
+    attr_accessor :options
+    # +text+ is the original Array<String> which contains markup of some sort
+    #  which source will retrieve. Changes happen to this (row added, deleted, changed)
+    attr_accessor :text
+    attr_reader :native_text
+    # specify a renderer if you do not want the DefaultRenderer to be installed.
+    attr_accessor :renderer
+    attr_reader :source
+
+    def initialize hash
+      @parse_required = true
+      @options = hash
+      @content_type = hash[:content_type]
+      @stylesheet = hash[:stylesheet]
+      @text = hash[:text]
+      $log.debug "  TEXTDOCUMENT created with #{@content_type} , #{@stylesheet} "
+      raise "textpad has nil content_type " unless @content_type
+    end
+    def parse_required
+      @parse_required = true
+    end
+    # set the object that is using this textdocument (typically TextPad).
+    # This allows us to bind to events such as adding or deleting a row, or modification of data.
+    def source=(sou)
+      @source = sou
+      if @renderer
+        @source.renderer = @renderer
+      end
+      @source.bind :ROW_CHANGED  do | o, ix|  parse_line ix ; end
+      @source.bind :DIMENSION_CHANGED do | o, _meth|  parse_required() ; end
+    end
+    # if there is a content_type specfied but nothing to handle the content
+    #  then we create a default handler.
+    def create_default_content_type_handler
+      raise "source is nil in textdocument" unless @source
+      require 'canis/core/include/colorparser'
+      # cp will take the content+type from self and select actual parser
+      cp = Chunks::ColorParser.new @source
+      @content_type_handler = cp
+    end
+    def preprocess_text data
+      parse_formatted_text data
+    end
+    def parse_line(lineno)
+      @native_text[lineno] = @content_type_handler.parse_line( @list[lineno]) 
+    end
+    # This is now to be called at start when text is set,
+    # and whenever there is a data modification.
+    # This updates @native_text
+    # @param [Array<String>] original content sent in by user
+    #     which may contain markup
+    # @param [Hash] config containing
+    #    content_type
+    #    stylesheet
+    # @return [Chunklines] content in array of chunks.
+    def parse_formatted_text(formatted_text, config=nil)
+      return unless @parse_required
+
+      unless @content_type_handler
+        create_default_content_type_handler
+      end
+      @native_text = @content_type_handler.parse_text formatted_text
+      @parse_required = false
+    end
+  end
+  end # mod
