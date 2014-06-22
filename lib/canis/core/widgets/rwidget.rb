@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-19 18:12
+  * Last update: 2014-06-23 01:15
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2267,11 +2267,12 @@ module Canis
       #  and no side margin
       #  Suppressing border means that title will not be updated on app_header, we have to do so FIXME
       _layout = [ h, sc, sh - h, 0]
-      Canis::Viewer.view(arr, :layout => _layout, :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true,
+      doc = TextDocument.new :text => arr, :content_type => :tmux, :stylesheet => stylesheet
+      Canis::Viewer.view(doc, :layout => _layout, :close_key => KEY_F10, :title => "[ Help ]", :print_footer => true,
                         :app_header => true ) do |t, items|
         # would have liked it to be 'md' or :help
-        t.content_type = :tmux
-        t.stylesheet   = stylesheet
+        #t.content_type = :tmux
+        #t.stylesheet   = stylesheet
         t.suppress_borders = true
         t.print_footer = false
         t.bgcolor = :black
