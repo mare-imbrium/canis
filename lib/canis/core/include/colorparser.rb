@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-16 20:23
+#  Last update: 2014-06-23 01:43
 # ------------------------------------------------------------ #
 #
 
@@ -280,8 +280,9 @@ module Canis
           self.stylesheet = f[:stylesheet]
           content_type = f[:content_type]
         elsif f.is_a? TextPad
-          self.stylesheet = f.stylesheet
-          content_type = f.content_type
+          ff = f.document
+          self.stylesheet = ff.stylesheet
+          content_type = ff.content_type
         elsif f.is_a? Symbol
           content_type = f
         else
@@ -289,7 +290,7 @@ module Canis
           return
         end
         @content_type = content_type
-        $log.debug "XXX:  chunk_parser setting in CP to #{f} "
+        $log.debug "XXX:  chunk_parser setting in CP to #{f}, content+type is #{content_type} "
         require 'canis/core/include/canisparser'
         @chunk_parser ||= CanisParser[content_type]
         raise "colorparser could not find a parser for #{content_type} " unless @chunk_parser
