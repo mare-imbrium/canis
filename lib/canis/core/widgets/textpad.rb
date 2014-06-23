@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-23 01:44
+#  Last update: 2014-06-23 15:55
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -239,10 +239,7 @@ module Canis
       # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
       @cp = FFI::NCurses.COLOR_PAIR(cp)
       # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
-      clear_pad
-
-      Ncurses::Panel.update_panels
-      render_all
+      @repaint_all = true
 
     end
 
@@ -428,6 +425,7 @@ module Canis
     # override this for better control
     def render_all
       _arr = _getarray
+      raise "textpad:render_all: array is nil " unless _arr
       @renderer.source ||= self
       @renderer.render_all @pad, _arr
     end
@@ -494,8 +492,13 @@ module Canis
     # This is so that repaint_all_widgets can work with textpad objects.
     def repaint_all tf
       super
-      clear_pad
-      render_all
+      # the next two lines were added recently for situations when default bg color etc were changed
+      #  and the entire textpad was not redrawing. however, this bombs in cases when document has not
+      #  yet drawn at all (native_text is nil since preprocess has not yet been called). This happened when
+      #  pressing BACKSPACE in viewer/help.
+      # trying to move this out of populate pad so it is called on repaint_all
+      #clear_pad
+      #render_all
     end
 
 
@@ -580,7 +583,7 @@ module Canis
             @content_type = val[1][:content_type]
             @stylesheet = val[1][:stylesheet]
             @title = val[1][:title] if val[1].key? :title
-            $log.debug "  creating TEXTDOC 2 with #{@content_type}, #{val[1]} "
+            $log.debug "  creating TEXTDOC 2 with ct=#{@content_type}, #{val[1]} "
             @document = TextDocument.new val[1]
             @document.text = @list
             @document.source = self
@@ -1273,6 +1276,11 @@ module Canis
 
       # creates pad and calls render_all
       populate_pad if !@pad or @_populate_needed
+      if @repaint_all
+        clear_pad
+        Ncurses::Panel.update_panels
+        render_all
+      end
 
       raise "PAD IS NIL -- populate_pad was not called ??" unless @pad
 
@@ -1745,7 +1753,14 @@ module Canis
       @stylesheet = hash[:stylesheet]
       @text = hash[:text]
       $log.debug "  TEXTDOCUMENT created with #{@content_type} , #{@stylesheet} "
-      raise "textpad has nil content_type " unless @content_type
+      raise "textdoc recieves nil content_type in constructor" unless @content_type
+    end
+    def native_text
+      return @native_text 
+      return @native_text if @native_text
+      preprocess_text @text
+      raise "Native_text is nil in TextDocument.native_text" unless @native_text
+      return @native_text 
     end
     def parse_required
       @parse_required = true
