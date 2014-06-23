@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-23 01:15
+  * Last update: 2014-06-23 13:49
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2303,7 +2303,9 @@ module Canis
           if link
             arr = read_help_file link
             if arr
-              t.add_content arr, :title => link
+              doc = TextDocument.new :text => arr, :content_type => :tmux, :stylesheet => stylesheet, :title => link
+              #t.add_content arr, :title => link
+              t.add_content doc
               #items[:header].text_center = "[#{link}]" 
               t.buffer_last
             else
@@ -2315,7 +2317,9 @@ module Canis
 
         # help was provided, so default help is provided in second buffer
         unless defhelp
-          t.add_content defarr, :title => ' General Help ', :stylesheet => stylesheet, :content_type => :tmux
+          doc = TextDocument.new :text => defarr, :content_type => :tmux, :stylesheet => stylesheet, :title => " General Help "
+          #t.add_content defarr, :title => ' General Help ', :stylesheet => stylesheet, :content_type => :tmux
+          t.add_content doc
         end
       end
     end
