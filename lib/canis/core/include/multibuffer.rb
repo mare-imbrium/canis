@@ -91,6 +91,7 @@ module Canis
       if l
         populate_buffer_from_filename x
         l = @_buffers[x]
+        $log.debug "bp calling set_content with #{l.class} "
         set_content l, @_buffers_conf[x]
         buffer_update_position
       end
