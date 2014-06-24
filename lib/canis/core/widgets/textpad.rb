@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-24 13:20
+#  Last update: 2014-06-24 18:17
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -579,6 +579,11 @@ module Canis
             @document = TextDocument.new hsh
             @document.source = self
           elsif val[1].is_a? Hash
+            # this is hack for those cases where ct is there, but the caller may not
+            # pass it in config
+            if val[1].key? :content_type and val[1][:content_type].nil?
+              ;
+            else
             # content type comes nil from viewer/help which sets it later using block yield
             @content_type = val[1][:content_type]
             @stylesheet = val[1][:stylesheet]
@@ -587,6 +592,7 @@ module Canis
             @document = TextDocument.new val[1]
             @document.text = @list
             @document.source = self
+            end
           else
           #raise "val_1 Unable to do anything with #{val[1].class} "
             $log.debug " val_1 Unable to do anything with #{val[1].class} in textpad text()"
