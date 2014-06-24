@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-23 15:55
+#  Last update: 2014-06-24 13:20
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1736,11 +1736,14 @@ module Canis
   class TextDocument
     attr_accessor :content_type
     attr_accessor :stylesheet
-    # options passed in constructor including content_type and stylesheet
+    # +hash+ of options passed in constructor including content_type and stylesheet
     attr_accessor :options
     # +text+ is the original Array<String> which contains markup of some sort
     #  which source will retrieve. Changes happen to this (row added, deleted, changed)
     attr_accessor :text
+
+    # returns the native or transformed format of original content. +text+ gets transformed into
+    #  native text. The renderer knows how to display native_text.
     attr_reader :native_text
     # specify a renderer if you do not want the DefaultRenderer to be installed.
     attr_accessor :renderer
@@ -1755,13 +1758,8 @@ module Canis
       $log.debug "  TEXTDOCUMENT created with #{@content_type} , #{@stylesheet} "
       raise "textdoc recieves nil content_type in constructor" unless @content_type
     end
-    def native_text
-      return @native_text 
-      return @native_text if @native_text
-      preprocess_text @text
-      raise "Native_text is nil in TextDocument.native_text" unless @native_text
-      return @native_text 
-    end
+    # declare that transformation of entire content is required. Currently called by fire_dimension_changed event
+    #  of textpad.
     def parse_required
       @parse_required = true
     end
@@ -1774,6 +1772,7 @@ module Canis
       end
       @source.bind :ROW_CHANGED  do | o, ix|  parse_line ix ; end
       @source.bind :DIMENSION_CHANGED do | o, _meth|  parse_required() ; end
+      @source.title = self.title() if self.title()
     end
     # if there is a content_type specfied but nothing to handle the content
     #  then we create a default handler.
@@ -1784,9 +1783,13 @@ module Canis
       cp = Chunks::ColorParser.new @source
       @content_type_handler = cp
     end
+    # called by textpad to do any parsing or conversion on data since a textdocument by default
+    # does some transformation on the content
     def preprocess_text data
       parse_formatted_text data
     end
+    # transform a given line number from original content to internal format.
+    # Called by textpad when a line changes (update)
     def parse_line(lineno)
       @native_text[lineno] = @content_type_handler.parse_line( @list[lineno]) 
     end
@@ -1807,6 +1810,14 @@ module Canis
       end
       @native_text = @content_type_handler.parse_text formatted_text
       @parse_required = false
+    end
+    # returns title of document
+    def title
+      return @options[:title]
+    end
+    # set title of document (to be displayed by textpad)
+    def title=(t)
+      @options[:title] = t
     end
   end
   end # mod
