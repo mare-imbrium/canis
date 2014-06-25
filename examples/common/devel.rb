@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-06-19 18:07
+#  Last update: 2014-06-25 13:06
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -79,6 +79,7 @@ module Canis
     end
   end
   def ruby_renderer
+    require 'canis/core/include/defaultfilerenderer'
       dr = DefaultFileRenderer.new
       dr.insert_mapping /^\s*## /, [:red, :black]
       dr.insert_mapping /^\s*#/, [:blue, :black]
