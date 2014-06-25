@@ -38,4 +38,5 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
 
 2014-06-19 - 17:16 
 - Still trying to simplify and refactor TextPad so there are no changes for a fairly long time.
+- Removed content_type complexity into TextDocument so Textpad can be dumb.
 
