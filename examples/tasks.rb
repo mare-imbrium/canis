@@ -1,4 +1,5 @@
 require 'canis/core/util/app'
+require 'canis/core/include/defaultfilerenderer'
 #require 'canis/core/widgets/rlist'
 
 App.new do 
