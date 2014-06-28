@@ -2,6 +2,8 @@
 
 ncurses library for ruby with essential components/controls only
 
+IN FLUX, boyz. Just wait for a couple of releases.
+
 ## Installation
 
     gem install canis
@@ -10,7 +12,7 @@ ncurses library for ruby with essential components/controls only
 
 TODO: Write usage instructions here
 
-Please note that the TextPad class which is a parent to all multi-line widgets is still in flux.
+Please note that the *TextPad* class which is a parent to all multi-line widgets is still in flux.
 I am still trying to simplify it, esp the colored chunk part , so that this class can be frozen.
 
 
