@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-25 17:13
+#  Last update: 2014-06-28 15:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -56,13 +56,9 @@ module Canis
     # the object that handles keys that are sent to this object by the form.
     # This widget creates its own default handler if not overridden by user.
     attr_accessor :key_handler
-    # the object that handles conversion of content in some format to what
-    # can be displayed by a handler or renderer. It handled one-time conversion
-    # of markup-up content to an internal format.
-    attr_accessor :content_type_handler
 
     # an array of 4 items for h w t and l which can be nil, padrefresh will check
-    # its bounds against this to ensure no caller messes up.
+    # its bounds against this to ensure no caller messes up. I don't use this any longer it was experimental.
     dsl_accessor :fixed_bounds
     # You may pass height, width, row and col for creating a window otherwise a fullscreen window
     # will be created. If you pass a window from caller then that window will be used.
@@ -116,7 +112,7 @@ module Canis
       @repaint_all = true
       @_populate_needed = true
       map_keys unless @mapped_keys
-      # FIXME wherer to put this.
+
     end
 
     # calculates the dimensions of the pad which will be used when the pad refreshes, taking into account
@@ -226,8 +222,9 @@ module Canis
     end
 
     private
-    # create and populate pad
-    # FIXME - coupling @content_row and @cp are used elsewhere.
+    # creates pad and sets repaint_all so populate happens
+    # FIXME - earlier used to create and populate, but now i have decoupled populate
+    #  since that was forcing create to happen.
     def populate_pad
       @_populate_needed = false
 
@@ -236,10 +233,11 @@ module Canis
       # clearstring is the string required to clear the pad to background color
       @clearstring = nil
       $log.debug "  populate pad color = #{@color} , bg = #{@bgcolor} "
-      cp = get_color($datacolor, color(), bgcolor())
+      #cp = get_color($datacolor, color(), bgcolor())
       # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
-      @cp = FFI::NCurses.COLOR_PAIR(cp)
+      #@cp = FFI::NCurses.COLOR_PAIR(cp)
       # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
+
       @repaint_all = true
 
     end
@@ -1074,15 +1072,6 @@ module Canis
     def create_default_keyhandler
       @key_handler = DefaultKeyHandler.new self
     end
-    # if there is a content_type specfied but nothing to handle the content
-    #  then we create a default handler.
-    def create_default_content_type_handler
-      require 'canis/core/include/colorparser'
-      # cp will take the content+type from self and select actual parser
-      cp = Chunks::ColorParser.new self
-      #cp.form = self
-      @content_type_handler = cp
-    end
     #
     def handle_key ch
       return :UNHANDLED unless @list
@@ -1129,6 +1118,7 @@ module Canis
       aev = text_action_event
       fire_handler :PRESS, aev
     end
+    # creates and returns a textactionevent object with current_value , line number and cursor position
     def text_action_event
       aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
     end
@@ -1536,6 +1526,7 @@ module Canis
   end  # class textpad 
 
 # renderer {{{
+# Very basic renderer that only prints based on color pair of the textpad
   class AbstractTextPadRenderer
     attr_accessor :attr, :color_pair, :cp
     attr_accessor :content_cols, :list, :source
@@ -1577,6 +1568,9 @@ module Canis
       FFI::NCurses.mvwaddstr(pad,lineno, 0, text)
     end
   end
+
+  # An extension of Abstracttextpadrenderer which takes care of AbstractChunkLine objects
+  #  calling their +print+ method.
   class DefaultRenderer < AbstractTextPadRenderer
 
     #
