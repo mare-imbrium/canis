@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-25 12:59
+#  Last update: 2014-06-25 17:13
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -490,19 +490,6 @@ module Canis
 =end
       @repaint_footer_required = false # 2010-01-23 22:55 
     end
-    # This is so that repaint_all_widgets can work with textpad objects.
-    def repaint_all tf
-      super
-      # the next two lines were added recently for situations when default bg color etc were changed
-      #  and the entire textpad was not redrawing. however, this bombs in cases when document has not
-      #  yet drawn at all (native_text is nil since preprocess has not yet been called). This happened when
-      #  pressing BACKSPACE in viewer/help.
-      # trying to move this out of populate pad so it is called on repaint_all
-      #clear_pad
-      #render_all
-    end
-
-
 
     # ---- Section render related  end ----- }}}
 # ---- Section data related start {{{
@@ -574,9 +561,9 @@ module Canis
           # Earlier this was what was used where the second arg was an optional hash
           @list = val[0]
           if val[1].is_a? Symbol
-            @content_type = val[1]
-            hsh = { :text => @list, :content_type => @content_type }
-            $log.debug "  creating TEXTDOC 1 with #{@content_type} "
+            content_type = val[1]
+            hsh = { :text => @list, :content_type => content_type }
+            $log.debug "  creating TEXTDOC 1 with #{content_type} "
             @document = TextDocument.new hsh
             @document.source = self
           elsif val[1].is_a? Hash
@@ -586,10 +573,10 @@ module Canis
               ;
             else
               # content type comes nil from viewer/help which sets it later using block yield
-              @content_type = val[1][:content_type]
-              @stylesheet = val[1][:stylesheet]
+              content_type = val[1][:content_type]
+              stylesheet = val[1][:stylesheet]
               @title = val[1][:title] if val[1].key? :title
-              $log.debug "  creating TEXTDOC 2 with ct=#{@content_type}, #{val[1]} "
+              $log.debug "  creating TEXTDOC 2 with ct=#{content_type}, #{val[1]} "
               @document = TextDocument.new val[1]
               @document.text = @list
               @document.source = self
@@ -621,6 +608,7 @@ module Canis
       fire_property_change :text, "dummmy", "text has changed"
       self
     end
+# old text {{{
     def ORIG_text(*val)
       if val.empty?
         return @list
@@ -678,7 +666,8 @@ module Canis
       # i don't want the whole thing going into the event 2014-06-04
       fire_property_change :text, "dummmy", "text has changed"
       self
-    end
+    end # ORIG_text
+# old text }}}
     alias :list :text
     # for compat with textview, FIXME keep one consistent name for this
     alias :set_content :text
@@ -694,7 +683,6 @@ module Canis
     # Rather than trying to synch list and native text for those who do not use the latter
     #  let us just use the correct array
     def _getarray
-      #if @content_type.nil? or @content_type == :none
       if @document.nil?
         return @list
       else
@@ -1089,9 +1077,7 @@ module Canis
     # if there is a content_type specfied but nothing to handle the content
     #  then we create a default handler.
     def create_default_content_type_handler
-      #@content_type_handler = DefaultContentTypeHandler.new self
       require 'canis/core/include/colorparser'
-      #config ||= { :content_type => @content_type, :stylesheet => @stylesheet }
       # cp will take the content+type from self and select actual parser
       cp = Chunks::ColorParser.new self
       #cp.form = self
