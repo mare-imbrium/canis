@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-28 15:54
+#  Last update: 2014-06-29 20:42
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
