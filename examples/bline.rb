@@ -2,6 +2,8 @@ require 'canis/core/util/app'
 require 'canis/core/util/rcommandwindow'
 require 'fileutils'
 require 'pathname'
+require 'canis/core/include/defaultfilerenderer'
+require './common/devel.rb'
 
 # this will go into top namespace so will conflict with other apps!
 def testnumberedmenu
@@ -116,6 +118,7 @@ App.new do
       F1       -   Help
       F10      -   Quit application
       qq       -   Quit application
+      =        -   file selection (interface like Ctrl-P, very minimal)
 
       Some commands for using bottom of screen as vim and emacs do.
       These may be selected by pressing ':'
@@ -161,9 +164,16 @@ App.new do
       menu.display_new :title => "Menu"
     end
   @form.bind_key(?:) { app_menu; }
+  @form.bind_key(?=) { 
+      @curdir ||= Dir.pwd
+      Dir.chdir(@curdir) if Dir.pwd != @curdir
+    #testdisplay_list; 
+    testchoosefile;
+  }
 
   stack :margin_top => 1, :margin_left => 0, :width => :expand , :height => FFI::NCurses.LINES-2 do
     tv = textview :height_pc => 100, :width_pc => 100, :name => "tv", :suppress_borders => true
+    tv.renderer ruby_renderer
   end # stack
     
   sl = status_line :row => Ncurses.LINES-1
