@@ -112,11 +112,11 @@ App.new do
 
       Alt-d    -   Select a database
       <Enter>      on a table, view data (q to close window)
-      <Space>      on a table, display columns in lower list
+      v            on a table, display columns in lower list
 
                 COLUMN LIST KEYS
-      <Space>      on a column for multiple select
-      <Ctrl-Space> on a column for range select/deselect from previous selection
+      v            on a column for multiple select
+      V            on a column for range select/deselect from previous selection
       <Enter>      on column table to view data for selected columns
              u     unselect all
              a     select all
@@ -246,13 +246,13 @@ App.new do
   flow :margin_top => 1 do
     col1w = 20
     stack :width_pc => 20 do
-      text = "No tables"
+      text = ["No tables"]
       if !$current_db
-        text = "Select DB first. Press Alt-D"
+        text = ["Select DB first.","Press Alt-D or ENTER"]
       end
-      tlist = listbox :name => "tlist", :list => [text], :title => "Tables", :height => 10,
+      tlist = listbox :name => "tlist", :list => text, :title => "Tables", :height => 10,
         :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
-        :help_text => "Enter to View complete table, Space to select table and view columns",
+        :help_text => "<ENTER> to View complete table, 'v' to select table and view columns",
         :should_show_focus => true,
         :selection_mode => :single
       tlist.bind(:PRESS) do |eve|
@@ -271,7 +271,7 @@ App.new do
       clist = listbox :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
         :selection_mode => :multiple,
         :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
-        :help_text => "Enter to View selected fields, Space to select columns, w - where, o-order"
+        :help_text => "Enter to View selected fields, 'v' to select columns, w - where, o-order"
       tlist.bind(:LIST_SELECTION_EVENT) do |eve|
         $selected_table = eve.source[eve.firstrow]
         $current_table = $selected_table
