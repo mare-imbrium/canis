@@ -8,7 +8,7 @@ App.new do
       menu = PromptMenu.new self do
         item :e, :edit
         item :o, :open_new
-        item :d, :delete
+        item :d, :delete_row
         item :u, :undo_delete
         #item :y, :yank
         #item :p, :paste
@@ -20,19 +20,33 @@ App.new do
   # to execute when app_menu is invoked
   # very tricky , this depends on the keys that have been mapped
   # Here we are pushing the mapped key to trigger a method.
+  # FIXME NOTE these have stopped working since I think i now clear keys 
+  #  after a key is processed, so unget will not work.
+  #  Use +handle_key+ instead of +ungetch+, although that won't work if multiple
+  #   keys involved.
   def execute_this *cmd
     cmd = cmd[0][0] # extract first letter of command
     cmdi = cmd.getbyte(0)
+    tw = @form.by_name["tab"]
     case cmd
     when 'e','o','p'
-      @window.ungetch cmdi
+      #@window.ungetch cmdi
+      tw.handle_key cmdi
+    when 'd'
+      tw.delete_row
     when 'y','d'
+      # won't work FIXME
+      tw.handle_key cmdi
+      #tw.handle_key cmdi
       @window.ungetch cmdi
-      @window.ungetch cmdi
+      #@window.ungetch cmdi
     when 'u'
-      @window.ungetch cmd.upcase.getbyte(0)
+      tw.undo_delete
+      #tw.handle_key cmd.upcase.getbyte(0)
+      #@window.ungetch cmd.upcase.getbyte(0)
     when 's'
-      @window.ungetch ?\/.getbyte(0)
+      tw.handle_key ?\/.getbyte(0)
+      #@window.ungetch ?\/.getbyte(0)
     when 'w'
       # this depends too much on mappings which can change
       #@window.ungetch ?\C-s.getbyte(0)
@@ -91,8 +105,11 @@ def insert_row tw
   row = []
   h.each { |e| row << "" }
   ret = _edit h, row, "Insert"
+  loc = tw.current_index
+  # don't insert above header
+  loc = 1 if loc == 0
   if ret
-    tw.insert tw.current_index, row
+    tw.insert loc, row
   end
 end
 
@@ -121,14 +138,16 @@ def _edit h, row, title
 end
 # delete current row
 # ideally one should include listeditable to get events also
-def delete_row tw
+def delete_row tw=nil
+  tw ||= @form.by_name["tab"]
   @undo_buffer = tw.current_value
   tw.delete_at tw.current_index
 end
 # very minimal undo, just for a demo
 # Keeps pasting undo buffer back. @see listeditable.rb
-def undo_delete tw
+def undo_delete tw=nil
   return unless @undo_buffer
+  tw ||= @form.by_name["tab"]
   tw.insert tw.current_index, @undo_buffer
 end
 def resize
@@ -158,7 +177,7 @@ lf.command_right(){ |comp|
   " [#{comp.size} tasks]"
 }
 =end
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"Fat-free !", 
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Table Demo", :text_right =>": menu", 
       :color => :black, :bgcolor => :green #, :attr => :bold 
   message "Press F10 to exit, F1 for help, : for menu"
   @form.help_manager.help_text = help_text()
