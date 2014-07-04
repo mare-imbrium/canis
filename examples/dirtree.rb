@@ -3,9 +3,12 @@ require 'fileutils'
 require 'canis/core/widgets/tree/treemodel'
 #require 'canis/common/file'
 require './common/file'
+require './common/devel'
 
 def _directories wd
-  $log.debug " directories got XXX: #{wd} "
+  $log.debug " directories got :#{wd}: "
+  wd ||= ""
+  return [] if wd == ""
   d = Dir.new(wd)
   ent = d.entries.reject{|e| !File.directory? File.join(wd,e)}
   $log.debug " directories got XXX: #{ent} "
@@ -15,27 +18,32 @@ end
 App.new do 
   def help_text
     ["Press <Enter> to expand/collapse directories. Press <v> to list a directory",
-      "Press <space> on filename to page it, or <ENTER> to view it in vi",
+      "Press 'v' on filename to page it, or <ENTER> to view it in vi",
       "At present the PWD may not be updated, so you'll just have to be in the correct",
       "dir to actually view the file"]
   end
   # print the dir list on the right listbox upon pressing ENTER or row_selector (v)
   # separated here so it can be called from two places.
   def lister node
+    path = File.join(*node.user_object_path)
+    populate path
+  end
+
+  def populate path
     ll = @form.by_name["ll"]
     return unless ll
-    path = File.join(*node.user_object_path)
     if File.exists? path
       files = Dir.new(path).entries
       files.delete(".")
       ll.clear_selection
       ll.list files 
+      ll.title path
       #TODO show all details in filelist
       @current_path = path
       return path
     end
   end
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Yet Another Dir Lister", :text_right =>"Directory Lister" , :color => :white, :bgcolor => :black #, :attr =>  Ncurses::A_BLINK
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Dorado", :text_right =>"Directory Lister" , :color => :white, :bgcolor => 242 #, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse, v to view in lister. <F1> Help"
   @form.help_manager.help_text = help_text()
 
@@ -51,6 +59,7 @@ App.new do
   last = nodes.last
   nodes.last.add entries
   model = DefaultTreeModel.new nodes.first
+  model.root_visible = false
      
 
 
@@ -84,9 +93,13 @@ App.new do
         lister node
       end
     end # select
+    $def_bg_color = :blue
     @t.expand_node last # 
     @t.mark_parents_expanded last # make parents visible
-    @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll'
+    @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll',
+      :left_margin => 1
+    @l.row_focussed_attr = REVERSE
+    @l.renderer directory_renderer(@l)
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       message ev.source.current_value #selected_value
@@ -98,7 +111,11 @@ App.new do
     # on pressing enter, we edit the file using vi or EDITOR
     @l.bind :PRESS  do |ev|
       _f = File.join(@current_path, ev.source.current_value)
-      file_edit _f if File.exists? _f
+      if File.directory? _f
+        populate _f
+      else
+        file_edit _f if File.exists? _f
+      end
     end
   end
   status_line :row => FFI::NCurses.LINES - 1
