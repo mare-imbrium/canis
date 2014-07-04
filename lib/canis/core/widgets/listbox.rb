@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-29 20:43
+#  Last update: 2014-07-02 17:51
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -81,6 +81,8 @@ module Canis
 
     # should focussed line be shown in a different way, currently BOLD, default true
     dsl_accessor :should_show_focus
+    # attribute for focussed row, if not set will use $row_focussed_attr
+    attr_writer :row_focussed_attr
 
     def initialize form = nil, config={}, &block
 
@@ -134,6 +136,10 @@ module Canis
     # This is called whenever user leaves a row
     # Fires handler for leave_row
     def on_leave_row arow
+      # leave this out, since we are not painting on exit of widget 2014-07-02 - 17:51 
+      #if @should_show_focus
+        #fire_row_changed arow
+      #end
       fire_handler :LEAVE_ROW, self
     end
     # This is called whenever user enters a row
@@ -147,6 +153,10 @@ module Canis
         fire_row_changed arow
       end
     end
+    #def on_leave
+      #super
+      #on_leave_row @current_index if @current_index
+    #end
     # get a char ensure it is a char or number
     # In this state, it could accept control and other chars.
     private
@@ -196,6 +206,10 @@ module Canis
       end
       return first
     end
+    # returns the attribute to be used when a row is focussed (under cursor)
+    def row_focussed_attr
+      return @row_focussed_attr || $row_focussed_attr
+    end
 
   end # class listbox
 
@@ -206,10 +220,11 @@ module Canis
   # A user wanting a different rendering of listboxes may either extend this class
   # or completely replace it and set it as the renderer.
   class ListRenderer < AbstractTextPadRenderer
+    # text to be placed in the left margin. This requires that a left margin be set in the source
+    # object.
+    attr_accessor :left_margin_text
     def initialize obj
       @obj = obj
-      @selected_indices = obj.selected_indices
-      @left_margin = obj.left_margin
       # internal width based on both borders - earlier internal_width which we need
       @int_w = 3 
       # 3 leaves a blank black in popuplists as in testlistbox.rb F4
@@ -217,6 +232,17 @@ module Canis
       #   gets overwritten with traversal
       #@int_w = 2 
     end
+    # This is called prior to render_all, and may not be called when a single row is rendered
+    #  as in fire_row_changed
+    def pre_render
+      super
+      @selected_indices = @obj.selected_indices
+      @left_margin = @obj.left_margin
+      @bg = @obj.bgcolor
+      @fg = @obj.color
+      @attr = NORMAL
+    end
+
     #
     # @param pad for calling print methods on
     # @param lineno the line number on the pad to print on
@@ -228,11 +254,17 @@ module Canis
     #++
     def render pad, lineno, text
       sele = false
+=begin
       bg = @obj.bgcolor
       fg = @obj.color
       att = NORMAL
-      #cp = $datacolor
       cp = get_color($datacolor, fg, bg)
+=end
+      bg = @bg || @obj.bgcolor
+      fg = @fg || @obj.color
+      att = @attr || NORMAL
+      cp = get_color($datacolor, fg, bg)
+
       if @selected_indices.include? lineno
         # print selected row in reverse
         sele = true
@@ -240,13 +272,21 @@ module Canis
         bg = @obj.selected_bgcolor || bg
         att = @obj.selected_attr || REVERSE
         cp = get_color($datacolor, fg, bg)
-      elsif lineno == @obj.current_index
-        # print focussed row in bold
-        att = BOLD if @obj.should_show_focus
+      elsif lineno == @obj.current_index 
+        # print focussed row in different attrib
+        if @obj.should_show_focus
+          # bold was supposed to be if the object loses focus, but although render is called
+          #  however, padrefresh is not happening since we do not paint on exiting a widget
+          att = BOLD
+          if @obj.focussed
+            att = @obj.row_focussed_attr 
+          end
+        end
         # take current index into account as BOLD
         # and oldindex as normal
       end
       FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, @left_margin_text) if @left_margin_text
       FFI::NCurses.mvwaddstr(pad, lineno, @left_margin, text)
       FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
 
