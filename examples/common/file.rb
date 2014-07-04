@@ -5,9 +5,10 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-11-15 - 19:54
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-27 20:36
+#  Last update: 2014-06-30 21:40
 # ----------------------------------------------------------------------------- #
-#
+# NOTE after calling shell_out you now need to call Window.refresh_all if you have
+# pads on the screen which are getting left black
 
 require 'canis/core/include/appmethods'
 module Canis
@@ -32,10 +33,13 @@ module Canis
       pager = ENV['PAGER'] || 'less'
       vimp = %x[which #{pager}].chomp
       shell_out "#{vimp} #{fp}"
+      Window.refresh_all
     elsif ft.index(/zip/i)
       shell_out "tar tvf #{fp} | less"
+      Window.refresh_all
     elsif ft.index(/directory/i)
       shell_out "ls -lh  #{fp} | less"
+      Window.refresh_all
     else
       alert "#{fp} is not text, not paging "
       #use_on_file "als", fp # only zip or archive
