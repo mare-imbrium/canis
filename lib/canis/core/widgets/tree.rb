@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-18 18:31
+#  Last update: 2014-07-04 11:56
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -276,7 +276,8 @@ module Canis
       unless @list
         $log.debug " XXX recreating _list"
         convert_to_list @treemodel
-        $log.debug " XXXX list: #{@list.size} : #{@list} "
+        #$log.debug " XXXX list: #{@list.size} : #{@list} "
+        $log.debug " XXXX list: #{@list.size} "
       end
       return @list
     end
@@ -605,7 +606,10 @@ module Canis
     end
     def get_expanded_descendants(node)
       nodes = []
-      nodes << node
+      # 2014-07-04 - 11:55 trying out making the root invisible, we don't insert it into the list
+      if @treemodel.root_visible
+        nodes << node
+      end
       traverse_expanded node, nodes
       $log.debug " def get_expanded_descendants(node) #{nodes.size} "
       return nodes
