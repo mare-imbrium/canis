@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-06-25 13:06
+#  Last update: 2014-07-02 17:22
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -88,6 +88,74 @@ module Canis
       dr.insert_mapping /^\s*(require|load)/, [:green, :black]
       dr.insert_mapping /^\s*(end|if |elsif|else|begin|rescue|ensure|include|extend|while|unless|case |when )/, [:magenta, :black]
       return dr
+  end
+  def directory_renderer obj
+    DirectoryRenderer.new obj
+  end
+
+  # the issue with a generic directory renderer is that it does not have 
+  # the full path, the dir name that is.
+  class DirectoryRenderer < ListRenderer
+    attr_accessor :hash
+    attr_accessor :prefix
+    def initialize obj
+      super
+      @hash = {}
+      @prefix = {}
+      create_mapping
+    end
+    def pre_render
+      super
+      # hack to get path
+      @path = @obj.title
+    end
+    def create_mapping
+      @hash[:dir] = [:white, nil, BOLD]
+      @hash[:file] = [:white, nil, nil]
+      @hash[:link] = [:red, nil, nil]
+      @hash[:executable] = [:red, nil, BOLD]
+      @hash[:text] = [:magenta, nil, nil]
+      @hash[:zip] = [:cyan, nil, nil]
+      @hash[:other] = [:blue, nil, nil]
+      ##
+      @prefix[:dir] = "/"
+      @prefix[:link] = "@"
+      @prefix[:executable] = "*"
+    end
+    def get_category t
+      text = File.join(@path, t)
+      if File.directory? text
+        return :dir
+      elsif File.executable? text
+        return :executable
+      elsif File.symlink? text
+        return :link
+      elsif File.exists? text
+        if text =~ /\.txt$/
+          return :text
+        elsif text =~ /\.zip$/ or text =~ /gz$/ 
+          return :zip
+        else
+          return :file
+        end
+      else
+        return :other
+      end
+    end
+
+    def render pad, lineno, text
+      klass = get_category text
+      @fg = @hash[klass][0]
+      bg = @hash[klass][1]
+      @bg = bg #if bg
+      bg = @hash[klass][2] 
+      @attr = bg # if bg 
+      prefix = @prefix[klass] || " "
+      @left_margin_text = prefix
+
+      
+      super
+    end
   end
 =begin
   def file_edit fp #=@current_list.filepath
