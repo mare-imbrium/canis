@@ -67,6 +67,7 @@ App.new do
   borderattrib = :normal
   flow :margin_top => 1, :margin_left => 0, :width => :expand, :height => ht do
     @t = tree :data => model, :width_pc => 30, :border_attrib => borderattrib
+    rend = @t.renderer # just test method out.
     @t.bind :TREE_WILL_EXPAND_EVENT do |node|
       path = File.join(*node.user_object_path)
       dirs = _directories path
