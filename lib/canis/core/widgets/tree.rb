@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-04 11:56
+#  Last update: 2014-07-04 12:26
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -50,6 +50,8 @@ module Canis
   # that way oter methods can be shared
     class DefaultTreeRenderer < AbstractTextPadRenderer
 
+      attr_accessor :icon_can_collapse, :icon_can_expand, :icon_not_visited, :icon_no_children
+
       PLUS_PLUS = "++"
       PLUS_MINUS = "+-"
       PLUS_Q     = "+?"
@@ -62,6 +64,11 @@ module Canis
         @color_pair = $datacolor
         @attrib = NORMAL
         @_check_coloring = nil
+        @icon_can_collapse = "+-"
+        @icon_can_expand = "++"
+        @icon_not_visited = "+?"
+        @icon_no_children = "+-"
+
         # adding setting column_model auto on 2014-04-10 - 10:53 why wasn;t this here already
         #tree_model(source.tree_model)
       end
@@ -83,14 +90,14 @@ module Canis
         level = treearraynode.level
         node = treearraynode
         if parent.node_expanded? node
-          icon = PLUS_MINUS  # can collapse
+          icon = @icon_can_collapse  # can collapse
         else
-          icon = PLUS_PLUS   # can expand
+          icon = @icon_can_expand   # can expand
         end
         if node.children.size == 0
-          icon = PLUS_Q # either no children or not visited yet
+          icon = @icon_not_visited # either no children or not visited yet
           if parent.has_been_expanded node
-            icon = PLUS_MINUS # definitely no children, we've visited
+            icon = @icon_no_children # definitely no children, we've visited
           end
         end
         # adding 2 to level, that's the size of icon
@@ -347,8 +354,11 @@ module Canis
     
     # supply a custom renderer that implements +render()+
     # @see render
-    def renderer r
-      @renderer = r
+    def renderer *val
+      if val.empty?
+        return @renderer
+      end
+      @renderer = val[0]
     end
 
 
