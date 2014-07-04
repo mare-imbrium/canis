@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-30 01:10
+#  Last update: 2014-07-02 17:27
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1537,18 +1537,19 @@ module Canis
     # have the renderer get the latest colors from the widget.
     # Override this if for some reason the renderer wishes to hardcode its own.
     # But then the widgets colors would be changed ?
-    def update_colors
+    def pre_render
       @attr = @source.attr
       cp = get_color($datacolor, @source.color(), @source.bgcolor())
       @color_pair = @source.color_pair || cp
       @cp = FFI::NCurses.COLOR_PAIR(cp)
     end
+    alias :update_colors :pre_render
 
     # derived classes may choose to override this.
     # However, they should set size and color and attrib at the start since these 
     # can change after the object has been created depending on the application.
     def render_all pad, arr
-      update_colors
+      pre_render
       @content_cols = @source.pad_cols
       @clearstring = " " * @content_cols
       @list = arr
