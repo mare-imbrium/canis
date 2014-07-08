@@ -6,7 +6,7 @@
   * Author: jkepler (http://github.com/mare-imbrium/canis/)
   * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2014-05-30 12:21
+  * Last update:  2014-07-08 16:59
 
   == CHANGES
      As of 1.5.0, this replaces the earlier TabbedPane which
@@ -376,8 +376,8 @@ module Canis
           row  r
           col col
           surround_chars ['','']
-          selected_background 'green'
-          selected_foreground 'white'
+          selected_bgcolor 'green'
+          selected_color 'white'
 
         end
         b = @buttons.last
@@ -511,7 +511,7 @@ module Canis
           row brow
           col bcol
           #underline underline
-          highlight_background $reversecolor 
+          highlight_bgcolor $reversecolor 
           color $datacolor
           bgcolor $datacolor
         end
