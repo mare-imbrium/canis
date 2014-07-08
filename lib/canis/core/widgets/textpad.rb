@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-02 17:27
+#  Last update: 2014-07-08 13:04
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -680,6 +680,9 @@ module Canis
     # internal method to return the correct list.
     # Rather than trying to synch list and native text for those who do not use the latter
     #  let us just use the correct array
+    # NOTE there are some cases where document can return a nil since native_text has not been
+    #  calculated yet. Happens in back button of help. Earlier preprocess was done from +text+
+    #  not it is only done from +repaint+
     def _getarray
       if @document.nil?
         return @list
@@ -1528,10 +1531,15 @@ module Canis
 # renderer {{{
 # Very basic renderer that only prints based on color pair of the textpad
   class AbstractTextPadRenderer
+    # attribute for row, color_pair, and the Ncurses int for the colorpair
     attr_accessor :attr, :color_pair, :cp
-    attr_accessor :content_cols, :list, :source
+    # content cols is the width in columns of pad
+    # list is the data array
+    attr_accessor :content_cols, :list
+    # the widget this is associated with. 
+    attr_accessor :source
 
-    def initialize source
+    def initialize source=nil
       @source = source
     end
     # have the renderer get the latest colors from the widget.
