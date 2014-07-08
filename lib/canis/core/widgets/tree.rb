@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-16 13:56
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-04 12:26
+#  Last update: 2014-07-05 16:09
 # ----------------------------------------------------------------------------- #
 #   tree.rb  Copyright (C) 2012-2014 kepler
 
@@ -51,6 +51,7 @@ module Canis
     class DefaultTreeRenderer < AbstractTextPadRenderer
 
       attr_accessor :icon_can_collapse, :icon_can_expand, :icon_not_visited, :icon_no_children
+      attr_accessor :row_selected_attr
 
       PLUS_PLUS = "++"
       PLUS_MINUS = "+-"
@@ -112,7 +113,7 @@ module Canis
         raise "color pair is nil in tree render 104" unless cp
         # added for selection, but will crash if selection is not extended !!! XXX
           if @source.is_row_selected? lineno
-            att = REVERSE
+            att = @row_selected_attr || $row_selected_attr
             # FIXME currentl this overflows into next row
           end
         
@@ -186,6 +187,7 @@ module Canis
       renderer( DefaultTreeRenderer.new(self) )
     end
     def init_vars
+      # show_selector and symbol etc unused
       if @show_selector
         @row_selected_symbol ||= '>'
         @row_unselected_symbol ||= ' '
