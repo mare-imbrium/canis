@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-25 - 12:52
 #      License: MIT
-#  Last update: 2014-06-25 12:54
+#  Last update: 2014-07-08 13:11
 # ----------------------------------------------------------------------------- #
 #  textdocument.rb  Copyright (C) 2012-2014 j kepler
 
@@ -26,7 +26,13 @@ module Canis
 
     # returns the native or transformed format of original content. +text+ gets transformed into
     #  native text. The renderer knows how to display native_text.
-    attr_reader :native_text
+    #attr_reader :native_text
+    def native_text
+      unless @native_text
+        preprocess_text @text
+      end
+      return @native_text
+    end
     # specify a renderer if you do not want the DefaultRenderer to be installed.
     attr_accessor :renderer
     attr_reader :source
@@ -90,8 +96,8 @@ module Canis
       unless @content_type_handler
         create_default_content_type_handler
       end
-      @native_text = @content_type_handler.parse_text formatted_text
       @parse_required = false
+      @native_text = @content_type_handler.parse_text formatted_text
     end
     # returns title of document
     def title
