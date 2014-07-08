@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-02 17:51
+#  Last update: 2014-07-07 00:36
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -81,8 +81,6 @@ module Canis
 
     # should focussed line be shown in a different way, currently BOLD, default true
     dsl_accessor :should_show_focus
-    # attribute for focussed row, if not set will use $row_focussed_attr
-    attr_writer :row_focussed_attr
 
     def initialize form = nil, config={}, &block
 
@@ -114,8 +112,11 @@ module Canis
       r = ListRenderer.new self
       renderer(r)
     end
-    def renderer r
-      @renderer = r
+    def renderer *val
+      if val.empty?
+        return @renderer
+      end
+      @renderer = val[0]
     end
     # create a default selection model
     # Widgets inheriting this may override this
@@ -206,10 +207,6 @@ module Canis
       end
       return first
     end
-    # returns the attribute to be used when a row is focussed (under cursor)
-    def row_focussed_attr
-      return @row_focussed_attr || $row_focussed_attr
-    end
 
   end # class listbox
 
@@ -223,8 +220,10 @@ module Canis
     # text to be placed in the left margin. This requires that a left margin be set in the source
     # object.
     attr_accessor :left_margin_text
-    def initialize obj
-      @obj = obj
+    attr_accessor :row_focussed_attr
+
+    def initialize source
+      @source = source
       # internal width based on both borders - earlier internal_width which we need
       @int_w = 3 
       # 3 leaves a blank black in popuplists as in testlistbox.rb F4
@@ -236,11 +235,12 @@ module Canis
     #  as in fire_row_changed
     def pre_render
       super
-      @selected_indices = @obj.selected_indices
-      @left_margin = @obj.left_margin
-      @bg = @obj.bgcolor
-      @fg = @obj.color
+      @selected_indices = @source.selected_indices
+      @left_margin = @source.left_margin
+      @bg = @source.bgcolor
+      @fg = @source.color
       @attr = NORMAL
+      @row_focussed_attr ||= $row_focussed_attr
     end
 
     #
@@ -255,31 +255,31 @@ module Canis
     def render pad, lineno, text
       sele = false
 =begin
-      bg = @obj.bgcolor
-      fg = @obj.color
+      bg = @source.bgcolor
+      fg = @source.color
       att = NORMAL
       cp = get_color($datacolor, fg, bg)
 =end
-      bg = @bg || @obj.bgcolor
-      fg = @fg || @obj.color
+      bg = @bg || @source.bgcolor
+      fg = @fg || @source.color
       att = @attr || NORMAL
       cp = get_color($datacolor, fg, bg)
 
       if @selected_indices.include? lineno
         # print selected row in reverse
         sele = true
-        fg = @obj.selected_color || fg
-        bg = @obj.selected_bgcolor || bg
-        att = @obj.selected_attr || REVERSE
+        fg = @source.selected_color || fg
+        bg = @source.selected_bgcolor || bg
+        att = @source.selected_attr || REVERSE
         cp = get_color($datacolor, fg, bg)
-      elsif lineno == @obj.current_index 
+      elsif lineno == @source.current_index 
         # print focussed row in different attrib
-        if @obj.should_show_focus
+        if @source.should_show_focus
           # bold was supposed to be if the object loses focus, but although render is called
           #  however, padrefresh is not happening since we do not paint on exiting a widget
           att = BOLD
-          if @obj.focussed
-            att = @obj.row_focussed_attr 
+          if @source.focussed
+            att = @row_focussed_attr 
           end
         end
         # take current index into account as BOLD
@@ -297,7 +297,7 @@ module Canis
       # so we have to make the entire line in current attrib
       sele = true
       if sele
-        FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @obj.width - @left_margin - @int_w, att, cp, nil)
+        FFI::NCurses.mvwchgat(pad, y=lineno, x=@left_margin, @source.width - @left_margin - @int_w, att, cp, nil)
       end
     end
     # clear row before writing so previous contents are erased and don't show through
@@ -311,10 +311,10 @@ module Canis
     # @param - line number (index of row to clear)
     def _clear_row pad, lineno
       raise "unused"
-      @color_pair ||= get_color($datacolor, @obj.color, @obj.bgcolor)
+      @color_pair ||= get_color($datacolor, @source.color, @source.bgcolor)
       cp = @color_pair
       att = NORMAL
-      @_clearstring ||= " " * (@obj.width - @left_margin - @int_w)
+      @_clearstring ||= " " * (@source.width - @left_margin - @int_w)
       # with int_w = 3 we get that one space in popuplist
       # added attr on 2014-05-02 - 00:16 otherwise a list inside a white bg messagebox shows
       # empty rows in black bg.
