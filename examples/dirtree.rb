@@ -68,6 +68,7 @@ App.new do
   flow :margin_top => 1, :margin_left => 0, :width => :expand, :height => ht do
     @t = tree :data => model, :width_pc => 30, :border_attrib => borderattrib
     rend = @t.renderer # just test method out.
+    rend.row_selected_attr = BOLD
     @t.bind :TREE_WILL_EXPAND_EVENT do |node|
       path = File.join(*node.user_object_path)
       dirs = _directories path
@@ -94,13 +95,14 @@ App.new do
         lister node
       end
     end # select
-    $def_bg_color = :blue
+    #$def_bg_color = :blue
+    @form.bgcolor = :blue
     @t.expand_node last # 
     @t.mark_parents_expanded last # make parents visible
     @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll',
       :left_margin => 1
-    @l.row_focussed_attr = REVERSE
     @l.renderer directory_renderer(@l)
+    @l.renderer().row_focussed_attr = REVERSE
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       message ev.source.current_value #selected_value
