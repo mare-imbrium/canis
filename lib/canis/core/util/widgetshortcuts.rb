@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-05-15 11:15
+#  Last update: 2014-07-08 17:00
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -217,8 +217,8 @@ module Canis
       require 'canis/core/widgets/rlink'
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
-      config[:highlight_foreground] = "yellow"
-      config[:highlight_background] = "red"
+      config[:highlight_color] = "yellow"
+      config[:highlight_bgcolor] = "red"
       toggle = Link.new nil, config
       _position(toggle)
       if block
@@ -235,8 +235,8 @@ module Canis
       require 'canis/core/widgets/rmenulink'
       events = [ :PRESS,  :LEAVE, :ENTER ]
       block_event = :PRESS
-      config[:highlight_foreground] = "yellow"
-      config[:highlight_background] = "red"
+      config[:highlight_color] = "yellow"
+      config[:highlight_bgcolor] = "red"
       #config[:hotkey] = true
       w = MenuLink.new nil, config
       _position(w)
