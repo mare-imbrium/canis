@@ -1,9 +1,10 @@
- 1. simplify Field. datatype and mask is overlapping
- 1. simplify field, two ways of creating a label
+ 1. simplify %Field. datatype and mask is overlapping
+ 1. simplify %field, two ways of creating a label
  2. how to override +- * a and others for listbox - need to call before super()
- 3. clear_row in textpad can overlap next row if data long
+ 3. clear_row in %textpad can overlap next row if data long
  4. app to contain window close and confirm close
- 4. redo menu bar -- current code is old and messy
+ 4. %menu - remove complex rare functionality from main code
+ 4. redo %menu bar -- current code is old and messy
  5. test out vieditable and listeditable with core
  6. when sorting cursor on old row but curr changed
 .3. Make keylabels more rubyesque - later
