@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-06-23 13:49
+  * Last update: 2014-07-08 16:58
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1074,7 +1074,7 @@ module Canis
 
     # foreground and background colors when focussed. Currently used with buttons and field
     # Form checks and repaints on entry if these are set.
-    dsl_property :highlight_foreground, :highlight_background  # FIXME use color_pair
+    dsl_property :highlight_color, :highlight_bgcolor  # FIXME use color_pair
 
     # FIXME is enabled used? is menu using it
     #dsl_accessor :focusable, :enabled # boolean
@@ -1767,7 +1767,7 @@ module Canis
       f.state = :HIGHLIGHTED
       # If the widget has a color defined for focussed, set repaint
       #  otherwise it will not be repainted unless user edits !
-      if f.highlight_background || f.highlight_foreground
+      if f.highlight_bgcolor || f.highlight_color
         f.repaint_required true
       end
 
@@ -2652,8 +2652,8 @@ module Canis
   
     acolor = @color_pair || get_color($datacolor, _color, _bgcolor)
     if @state == :HIGHLIGHTED
-      _bgcolor = @highlight_background || _bgcolor
-      _color = @highlight_foreground || _color
+      _bgcolor = @highlight_bgcolor || _bgcolor
+      _color = @highlight_color || _color
       acolor = get_color(acolor, _color, _bgcolor)
     end
     @graphic = @form.window if @graphic.nil? ## cell editor listbox hack 
@@ -3292,16 +3292,16 @@ module Canis
         r,c = @row, @col #rowcol include offset for putting cursor
         # NOTE: please override both (if using a string), or else it won't work 
         #  These are both colorpairs not colors ??? 2014-05-31 - 11:58 
-        _highlight_foreground = @highlight_foreground || $reversecolor
-        _highlight_background = @highlight_background || 0
+        _highlight_color = @highlight_color || $reversecolor
+        _highlight_bgcolor = @highlight_bgcolor || 0
         _bgcolor = bgcolor()
         _color = color()
         if @state == :HIGHLIGHTED
-          _bgcolor = @state==:HIGHLIGHTED ? _highlight_background : _bgcolor
-          _color = @state==:HIGHLIGHTED ? _highlight_foreground : _color
+          _bgcolor = @state==:HIGHLIGHTED ? _highlight_bgcolor : _bgcolor
+          _color = @state==:HIGHLIGHTED ? _highlight_color : _color
         elsif selected? # only for certain buttons lie toggle and radio
-          _bgcolor = @selected_background || _bgcolor
-          _color   = @selected_foreground || _color
+          _bgcolor = @selected_bgcolor || _bgcolor
+          _color   = @selected_color || _color
         end
         $log.debug "XXX: button #{text}   STATE is #{@state} color #{_color} , bg: #{_bgcolor} "
         if _bgcolor.is_a?( Fixnum) && _color.is_a?( Fixnum)
@@ -3452,8 +3452,8 @@ module Canis
     dsl_accessor :surround_chars 
     dsl_accessor :variable    # value linked to this variable which is a boolean
     # background to use when selected, if not set then default
-    dsl_accessor :selected_background 
-    dsl_accessor :selected_foreground 
+    dsl_accessor :selected_bgcolor 
+    dsl_accessor :selected_color 
 
     def initialize form, config={}, &block
       super
