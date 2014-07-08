@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-07-02 17:22
+#  Last update: 2014-07-05 20:48
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -107,7 +107,7 @@ module Canis
     def pre_render
       super
       # hack to get path
-      @path = @obj.title
+      @path = @source.title
     end
     def create_mapping
       @hash[:dir] = [:white, nil, BOLD]
