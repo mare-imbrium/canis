@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-19 18:16
+#  Last update: 2014-07-08 18:05
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -306,7 +306,7 @@ module Canis
           name bname
           row brow
           col bcol
-          highlight_background $reversecolor 
+          highlight_bgcolor $reversecolor 
           # commented off 2014-05-31 - 12:50 BUTTONCOLOR
           #color _color
           #bgcolor _bgcolor
