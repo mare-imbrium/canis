@@ -122,9 +122,6 @@ module Canis
     #puts "curses over"
   ensure
     return unless error = @last_error
-    #log = RbConfig[:logfile].value
-    #Kernel.warn "There may have been fatal errors logged to: #{log}."
-    #Kernel.warn "The most recent was:"
 
     $stderr.puts ''
     $stderr.puts @last_error_message if @last_error_message
