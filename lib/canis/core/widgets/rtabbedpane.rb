@@ -6,7 +6,7 @@
   * Author: jkepler (http://github.com/mare-imbrium/canis/)
   * Date: 2011-10-20 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2014-07-08 16:59
+  * Last update:  2014-07-10 00:29
 
   == CHANGES
      As of 1.5.0, this replaces the earlier TabbedPane which
@@ -608,8 +608,8 @@ if __FILE__ == $PROGRAM_NAME
       title "User Setup"
       button_type :ok_apply_cancel
       tab "&Profile" do
-        item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
-        item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
+        item LabeledField.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
+        item LabeledField.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
       end
       tab "&Settings" do
         item CheckBox.new nil, :row => 2, :col => 2, :text => "Use HTTPS", :mnemonic => 'u'
