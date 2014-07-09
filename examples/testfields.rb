@@ -15,8 +15,10 @@ This is some help text for |Fields|
 Use Alt (meta) with the highlighted character to jump to that field.
 <Alt-m> goes to line, <Alt-p> to password.
 
-Notice how the field label becomes red when focused (as in Pine/Alpine). This uses
-the event `:ENTER` and `:LEAVE`
+Notice how the field label (for first 3 fields) becomes red when focused (as in Pine/Alpine). This uses
+the event `:ENTER` and `:LEAVE` and +set_label+. The other fields use `LabeledField+. In the first 3, the 
+labels row and col have not been specified, so are calculated. In the last 3, label's lcol and lrow are 
+specified for custom placement.
 
 
 >
@@ -98,22 +100,22 @@ if $0 == __FILE__
         null_allowed true
 
     r += 3
-    l1 = Label.new @form, :name => "profile", :attr => 'bold', :text => "Profile", :row => r, :col => fc
+    l1 = Label.new @form, :name => "LabeledField", :attr => 'bold', :text => "Profile", :row => r, :col => fc
     r += 1
-    f1 = Field.new @form,  :name => "name1", :maxlen => 20, :width => 20, :bgcolor => :white, 
+    f1 = LabeledField.new @form,  :name => "name1", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => '    Name: ', :row => r, :col => fc
     r += 1
-    f2 = Field.new @form, :name => "email", :width => 20, :bgcolor => :white, 
+    f2 = LabeledField.new @form, :name => "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => '   Email: ', :row => r, :col => fc
     r += 3
-    f3 = Field.new @form
+    f3 = LabeledField.new @form
     f3.name("mobile").width(20).bgcolor(:white).color(:black).
       text("").label('  Mobile: ').
       row(r).col(fc).
       type(:integer)
     r += 2
 
-    Field.new(@form).
+    LabeledField.new(@form).
     name("landline").width(20).bgcolor(:white).color(:black).
       text("").label('Landline: ').
       row(r).col(fc).
@@ -121,6 +123,12 @@ if $0 == __FILE__
       # a form level event, whenever any widget is focussed, make the label red
     #
 
+    r += 2
+      %w[ profession title department].each_with_index do |w,i|
+        LabeledField.new(@form).label(w).width(20).text("").
+          bgcolor(:white).color(:black).
+          row(r+i).col(fc).lcol(01)
+      end
       @form.bind_key(FFI::NCurses::KEY_F3,'view log') { 
         require 'canis/core/util/viewer'
         Canis::Viewer.view(path || "canis14.log", :close_key => KEY_ENTER, :title => "<Enter> to close")
