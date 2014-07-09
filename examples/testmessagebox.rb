@@ -74,7 +74,7 @@ if $0 == __FILE__
       $log.debug "XXX:  got #{@mb.widget(1).text} "
       when 4
       mb = MessageBox.new :title => "HTTP Configuration" , :width => 50 do
-        add Field.new :label => 'User', :name => "user", :width => 30, :bgcolor => :cyan
+        add LabeledField.new :label => 'User', :name => "user", :width => 30, :bgcolor => :cyan
         add CheckBox.new :text => "No &frames", :onvalue => "Selected", :offvalue => "UNselected"
         add CheckBox.new :text => "Use &HTTP/1.0", :value => true
         add CheckBox.new :text => "Use &passive FTP"
