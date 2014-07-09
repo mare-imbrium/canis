@@ -121,7 +121,7 @@ def _edit h, row, title
   bw = get_color $datacolor, :black, :white
   mb = MessageBox.new config do
     h.each_with_index { |f, i| 
-      add Field.new :label => "%*s:" % [_w, f], :text => row[i].chomp, :name => i.to_s, 
+      add LabeledField.new :label => "%*s:" % [_w, f], :text => row[i].chomp, :name => i.to_s, 
         :bgcolor => :cyan,
         :width => 50,
         :label_color_pair => bw
