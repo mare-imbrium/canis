@@ -81,14 +81,10 @@ module Canis
     # TODO: i should be able to pass window coords here in config
     # :title
     def initialize config={}, &block
-      #$log.debug " inside constructor of APP #{config}  "
       @config = config
 
 
       widget_shortcuts_init
-      #@app_row = @app_col = 0
-      #@stack = [] # stack's coordinates
-      #@flowstack = []
       @variables = {}
       # if we are creating child objects then we will not use outer form. this object will manage
       @current_object = [] 
@@ -109,13 +105,8 @@ module Canis
       #@message_row = Ncurses.LINES-1
       #@prompt_row = @message_row # hope to use for ask etc # 2011-10-17 14:06:27
       unless $log
-        path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-        file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
-        $log = Logger.new(path)
-        # if not set, will default to 0 which is debug. Other values are 1 - info, 2 - warn
-        $log.level = ENV["CANIS_LOG_LEVEL"].to_i
-        colors = Ncurses.COLORS
-        $log.info "START #{colors} colors  --------- #{$0} win: #{@window} : log level: #{$log.level}"
+        logpath=ENV["CANIS_LOG_PATH"]
+        $log = create_logger(logpath || "/dev/null")
       end
     end
     def logger; return $log; end
@@ -124,13 +115,10 @@ module Canis
       @window.destroy if !@window.nil?
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       if @stop_ncurses_on_close
-        $tt.destroy if $tt  # added on 2011-10-9 since we created a window, but only hid it after use
         Canis::stop_ncurses
         $log.debug " CLOSING NCURSES"
       end
-      #p $error_message.value unless $error_message.value.nil?
       $log.debug " CLOSING APP"
-      #end
     end
     # not sure, but user shuld be able to trap keystrokes if he wants
     # but do i still call handle_key if he does, or give him total control.
