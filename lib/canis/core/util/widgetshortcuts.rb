@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-07-08 17:00
+#  Last update: 2014-07-10 00:40
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -112,7 +112,8 @@ module Canis
   def_widget "canis/core/widgets/rprogress", "Progress"
   def_widget "canis/core/widgets/scrollbar", "Scrollbar"
   def_widget nil, "Label"
-  def_widget nil, "Field"
+  #def_widget nil, "Field"
+  def_widget nil, "LabeledField", 'field'
   def_widget nil, :CheckBox, 'check'
   def_widget nil, :Button
   def_widget nil, :ToggleButton, 'toggle'
