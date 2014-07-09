@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-20 01:08
+#  Last update: 2014-07-10 00:13
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -528,6 +528,7 @@ module Canis
     public
     def printstring(r,c,string, color, att = Ncurses::A_NORMAL)
 
+      raise "printstring recvd nil row #{r} or col #{c} " if r.nil? || c.nil?
       #$log.debug " #{@name} inside window printstring r #{r} c #{c} #{string} "
       if att.nil? 
         att = Ncurses::A_NORMAL
