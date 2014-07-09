@@ -50,7 +50,7 @@ def _edit h, row, title
     txt = nil
     h.each_with_index { |f, i| 
       txt = row[i] || ""
-      add Field.new :label => "%*s:" % [_w, f], :text => txt.chomp, :name => i.to_s, 
+      add LabeledField.new :label => "%*s:" % [_w, f], :text => txt.chomp, :name => i.to_s, 
         :bgcolor => :cyan,
         :width => 50,
         :label_color_pair => bw
@@ -84,17 +84,19 @@ begin
     @window = Canis::Window.root_window
     @form = Form.new @window
 
-    header = app_header "0.0.1", :text_center => "Movie Database", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold 
+    #header = app_header "0.0.1", :text_center => "Movie Database", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold 
 
 
 
     _col = "#[fg=yellow]"
     $message = Variable.new
     $message.value = ""
+=begin
     @status_line = status_line :row => Ncurses.LINES-1 #, :bgcolor => :red, :color => :yellow
     @status_line.command {
       "#[bg=236, fg=black]#{_col}F1#[/end] Help | #{_col}?#[/end] Keys | #{_col}M-c#[/end] Ask | #{_col}M-d#[/end] History | #{_col}M-m#[/end] Methods | %20s" % [$message.value]
     }
+=end
 
     h = FFI::NCurses.LINES-4
     w = FFI::NCurses.COLS
