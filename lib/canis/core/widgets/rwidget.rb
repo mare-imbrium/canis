@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-07-08 20:57
+  * Last update: 2014-07-09 12:17
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -902,6 +902,18 @@ module Canis
       def view what, config={}, &block # :yields: textview for further configuration
         require 'canis/core/util/viewer'
         Canis::Viewer.view what, config, &block
+      end
+      # create a logger giving a path.
+      def create_logger path
+        #path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
+        file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+        logg = Logger.new(path)
+        raise "Could not create logger  " unless logg
+        # if not set, will default to 0 which is debug. Other values are 1 - info, 2 - warn
+        logg.level = ENV["CANIS_LOG_LEVEL"].to_i
+        colors = Ncurses.COLORS
+        logg.info "START #{colors} colors  -- #{$0} win: #{@window} : log level: #{logg.level}. To change log level, increase CANIS_LOG_LEVEL in your environment to 1 or 2 or 3."
+        return logg
       end
     end # module  }}}
 
@@ -3575,7 +3587,9 @@ module Canis
     end
   end # class radio # }}}
 
+  # unused to my knowledge
   def self.startup
+    raise "startup seems to be unused. remove this line if used, else remove method by next version"
     Canis::start_ncurses
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
     file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
