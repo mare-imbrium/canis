@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-07-09 13:52
+  * Last update: 2014-07-09 21:10
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2251,16 +2251,6 @@ module Canis
     dsl_accessor :maxlen             # maximum length allowed into field
     attr_reader :buffer              # actual buffer being used for storage
     #
-    # Unlike `set_label` which creates a separate +Label+
-    # object, this stores a +String+ and prints it before the string. This is less
-    # customizable, however, in some cases when a field is attached to some container
-    # the label gets left out. This label is gauranteed to print to the left of the field
-    # This label prints on +row+ and +col+ and the +Field+ after one space, so to align multiple
-    # fields and labels, pad the label appropriately to the longest label.
-    # 
-    dsl_accessor :label              # label of field  
-    dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
-    dsl_property :label_attr   # label of field  Unused earlier, now will print 
   
     dsl_accessor :values             # validate against provided list, (+include?+)
     dsl_accessor :valid_regex        # validate against regular expression (+match()+)
@@ -2279,7 +2269,10 @@ module Canis
     # +type+ is just a convenience over +chars_allowed+ and sets some basic filters 
     # @example:  :integer, :float, :alpha, :alnum
     # NOTE: we do not store type, only chars_allowed, so this won't return any value
-    attr_reader :type                          # datatype of field, currently only sets chars_allowed
+    #attr_reader :type                          # datatype of field, currently only sets chars_allowed
+
+    # this accesses the field created or passed with set_label
+    attr_reader :label
     # this is the class of the field set in +text()+, so value is returned in same class
     # @example : Fixnum, Integer, Float
     attr_accessor :datatype                    # crrently set during set_buffer
@@ -2416,7 +2409,7 @@ module Canis
     def restore_original_value
       @buffer = @original_value.dup
       # earlier commented but trying again, since i am getting IndexError in insert 2188
-      # Added next 3 lines to fix issue, now it comes back to beginning. FIX IN RBC
+      # Added next 3 lines to fix issue, now it comes back to beginning.
       cursor_home
 
       @repaint_required = true
@@ -2536,13 +2529,6 @@ module Canis
     #$log.debug " Field g:#{@graphic}. r,c,displen:#{@row}, #{@col}, #{@width} c:#{@color} bg:#{@bgcolor} a:#{@attr} :#{@name} "
     r = row
     c = col
-    if label.is_a? String
-      lcolor = @label_color_pair || $datacolor # this should be the same color as window bg XXX
-      lattr = @label_attr || NORMAL
-      @graphic.printstring row, col, label, lcolor, lattr
-      c += label.length + 2
-      @col_offset = c-@col            # required so cursor lands in right place
-    end
     @graphic.printstring r, c, sprintf("%-*s", width, printval), acolor, attr()
     @field_col = c
     @repaint_required = false
@@ -2791,6 +2777,34 @@ module Canis
   # ADD HERE FIELD
   end # }}}
         
+  # trying to take out the label thing from field to keep it as simple as possible.
+  # 2014-07-09
+  class LabeledField < Field
+    # Unlike `set_label` which creates a separate +Label+
+    # object, this stores a +String+ and prints it before the string. This is less
+    # customizable, however, in some cases when a field is attached to some container
+    # the label gets left out. This label is gauranteed to print to the left of the field
+    # This label prints on +lrow+ and +lcol+ if supplied, else it will print on the left of the field
+    # at +col+ minus the width of the label. 
+    # 
+    dsl_accessor :label              # label of field  
+    dsl_accessor :lrow, :lcol        # coordinates of the label
+    dsl_property :label_color_pair   # label of field  Unused earlier, now will print 
+    dsl_property :label_attr   # label of field  Unused earlier, now will print 
+
+    def repaint
+      return unless @repaint_required
+      _lrow = @lrow || @row
+      _lcol = @lcol || (@col - @label.length  - 2)
+      @graphic = @form.window if @graphic.nil?
+      lcolor = @label_color_pair || $datacolor # this should be the same color as window bg XXX
+      lattr = @label_attr || NORMAL
+      @graphic.printstring _lrow, _lcol, @label, lcolor, lattr
+      ##c += @label.length + 2
+      #@col_offset = c-@col            # required so cursor lands in right place
+      super
+    end
+  end
   ##
   # Like Tk's TkVariable, a simple proxy that can be passed to a widget. The widget 
   # will update the Variable. A variable can be used to link a field with a label or 
