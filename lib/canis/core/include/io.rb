@@ -79,7 +79,7 @@ module Canis
         _max = FFI::NCurses.COLS-1-prompt.size-4
         displen = config[:width] || [config[:maxlen] || 999, _max].min
         maxlen = config[:maxlen] || _max
-        field = Field.new form, :row => r, :col => c, :maxlen => maxlen, :default => default, :label => prompt,
+        field = LabeledField.new form, :row => r, :col => c, :maxlen => maxlen, :default => default, :label => prompt,
           :width => displen
         field.datatype(config[:datatype]) if config[:datatype]
         field.type(config[:type]) if config[:type]
