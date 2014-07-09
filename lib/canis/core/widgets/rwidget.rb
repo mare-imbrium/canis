@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-07-09 21:10
+  * Last update: 2014-07-10 00:07
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2272,7 +2272,7 @@ module Canis
     #attr_reader :type                          # datatype of field, currently only sets chars_allowed
 
     # this accesses the field created or passed with set_label
-    attr_reader :label
+    #attr_reader :label
     # this is the class of the field set in +text()+, so value is returned in same class
     # @example : Fixnum, Integer, Float
     attr_accessor :datatype                    # crrently set during set_buffer
@@ -2477,6 +2477,10 @@ module Canis
         @label_unplaced = true
       end
       label
+    end
+    def label *val
+      return @label if val.empty?
+      raise "Field does not allow setting of label. Please use LabeledField instead with lcol for label column"
     end
     # FIXME this may not work since i have disabled -1, now i do not set row and col
     def position_label
@@ -2795,7 +2799,15 @@ module Canis
     def repaint
       return unless @repaint_required
       _lrow = @lrow || @row
-      _lcol = @lcol || (@col - @label.length  - 2)
+      # the next was nice, but in some cases this goes out of screen. and the container
+      # only sets row and col for whatever is added, it does not know that lcol has to be 
+      # taken into account
+      #_lcol = @lcol || (@col - @label.length  - 2)
+      unless @lcol
+        @lcol = @col
+        @col = @lcol + @label.length + 2
+      end
+      _lcol = @lcol
       @graphic = @form.window if @graphic.nil?
       lcolor = @label_color_pair || $datacolor # this should be the same color as window bg XXX
       lattr = @label_attr || NORMAL
