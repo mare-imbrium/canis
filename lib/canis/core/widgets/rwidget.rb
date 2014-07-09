@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-07-09 12:17
+  * Last update: 2014-07-09 13:52
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2268,7 +2268,7 @@ module Canis
     # for numeric fields, specify lower or upper limit of entered value
     attr_accessor :below, :above
 
-    dsl_accessor :chars_allowed           # regex, what characters to allow entry, will ignore all else
+    #dsl_accessor :chars_allowed           # regex, what characters to allow entry, will ignore all else
     # character to show, earlier called +show+ which clashed with Widget method +show+
     dsl_accessor :mask                    # what charactr to show for each char entered (password field)
     dsl_accessor :null_allowed            # allow nulls, don't validate if null # added , boolean
@@ -2317,15 +2317,21 @@ module Canis
       @repaint_required = true
     end
 
-    # define a datatype, sets +chars_allowed+ with some predefined regex
-    # integer and float. what about allowing a minus sign? 
-    # These are pretty restrictive, so if you need an open field, use +chars_allowed+
-    # @param symbol :integer, :float, :alpha, :alnum
-    # NOTE: there is some confusion and duplication between chars_allowed, type and datatype.
-    #    +datatype+ is set by set_buffer and can be set manually and decides return type.
-    #    +type+ is merely a convenience over chars_allowed
-    def type dtype
-      return self if @chars_allowed # disallow changing
+    # NOTE: earlier there was some confusion over type, chars_allowed and datatype
+    # Now type and chars_allowed are merged into one.
+    # If you pass a symbol such as :integer, :float or Float Fixnum then some
+    #  standard chars_allowed will be used. Otherwise you may pass a regexp.
+    #
+    # @param symbol :integer, :float, :alpha, :alnum, Float, Fixnum, Numeric, Regexp
+    def type *val
+      return @chars_allowed if val.empty?
+
+      dtype = val[0]
+      #return self if @chars_allowed # disallow changing
+      if dtype.is_a? Regexp 
+        @chars_allowed = dtype
+        return self
+      end
       dtype = dtype.to_s.downcase.to_sym if dtype.is_a? String
       case dtype # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
       when :integer, Fixnum, Integer
@@ -2341,6 +2347,7 @@ module Canis
       end
       self
     end
+    alias :chars_allowed :type
 
     #
     # add a char to field, and validate
