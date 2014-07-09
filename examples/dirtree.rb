@@ -15,12 +15,31 @@ def _directories wd
   ent.delete(".");ent.delete("..")
   return ent
 end
+#$log = create_logger "canis.log"
 App.new do 
   def help_text
-    ["Press <Enter> to expand/collapse directories. Press <v> to list a directory",
-      "Press 'v' on filename to page it, or <ENTER> to view it in vi",
-      "At present the PWD may not be updated, so you'll just have to be in the correct",
-      "dir to actually view the file"]
+    <<-eos
+
+=========================================================================
+## Basic Usage
+
+### Left Window
+
+   <ENTER>    expand/collapse directories
+   v          select and list a directory in other window
+
+  See also [tree]
+
+### Right Window
+
+  <ENTER>    enter a directory
+  <ENTER>    open a file in 'EDITOR'
+  v          page a file using 'PAGER'
+
+  See also [list]
+
+[index]
+      eos
   end
   # print the dir list on the right listbox upon pressing ENTER or row_selector (v)
   # separated here so it can be called from two places.
