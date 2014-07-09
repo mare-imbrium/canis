@@ -12,7 +12,7 @@ TODO : make it only do layout, not behave like a container.
   * Date:  23.10.11 - 19:55
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
-  * Last update:  2014-05-08 01:01
+  * Last update:  2014-07-10 00:45
 
   == CHANGES
      Have moved most things out to a module ModStack, so this is sort of just 
@@ -451,7 +451,7 @@ if __FILE__ == $PROGRAM_NAME
     f5 = radio :group => :grp, :text => "green", :value => "GREEN", :color => :green
 =end
 
-    f1 = Field.new nil, :maxlen => 20, :width => 20, :bgcolor => :white, 
+    f1 = LabeledField.new nil, :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => " Name: ", :label_color_pair => @datacolor
     r = StackFlow.new @form, :row => 1, :col => 2, :width => 80, :height => 25, :title => "A container" do
       stack :margin_left => 1 do
