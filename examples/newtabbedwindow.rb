@@ -15,9 +15,9 @@ class SetupTabbedPane
 
     r = Container.new nil, :suppress_borders => true
     l1 = Label.new nil, :name => "profile", :attr => 'bold', :text => "Profile"
-    f1 = Field.new nil,  :name => "name", :maxlen => 20, :width => 20, :bgcolor => :white, 
+    f1 = LabeledField.new nil,  :name => "name", :maxlen => 20, :width => 20, :bgcolor => :white, 
       :color => :black, :text => "abc", :label => ' Name: '
-    f2 = Field.new nil, :name => "email", :width => 20, :bgcolor => :white, 
+    f2 = LabeledField.new nil, :name => "email", :width => 20, :bgcolor => :white, 
       :color => :blue, :text => "me@google.com", :label => 'Email: '
     f3 = RadioButton.new nil, :variable => $config_hash, :text => "red", :value => "RED", :color => :red
     f4 = RadioButton.new nil, :variable => $config_hash, :text => "blue", :value => "BLUE", :color => :blue
@@ -30,8 +30,8 @@ class SetupTabbedPane
       title "User Setup"
       button_type :ok_apply_cancel
       tab "&Profile" do
-        item Field.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
-        item Field.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
+        item LabeledField.new nil, :row => 2, :col => 2, :text => "enter your name", :label => ' Name: '
+        item LabeledField.new nil, :row => 3, :col => 2, :text => "enter your email", :label => 'Email: '
       end
       tab "&Settings" do
         item Label.new nil, :text => "Text", :row => 1, :col => 2, :attr => 'bold'
