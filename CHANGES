@@ -40,3 +40,13 @@ slight changes in button and label : when_form replaced by FORM_ATTACHED
 - Still trying to simplify and refactor TextPad so there are no changes for a fairly long time.
 - Removed content_type complexity into TextDocument so Textpad can be dumb.
 
+Built 0.0.2 but i did not release it.
+
+2014-07-09 - 22:48 
+- for 0.0.3
+  - removed label string from Field and moved to LabeledField
+    This change has an impact in many examples, and combo
+  - some changes in creation of $log so that if none specified then it can go to /dev/null
+    This way an app can have its own logger and not bother about canis' logging.
+    Or it can merge the two.
+  - Moved helpmanager from rwidgets to its own file. Needs to be refactored and cleaned up.
