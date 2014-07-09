@@ -61,9 +61,9 @@ end
     lb.bind_key(?a, "Add Record"){ 
 
       # ADD
-    task = Field.new :label => "    Task:", :width => 60, :maxlen => 80, :bgcolor => :cyan, :color => :black,
+    task = LabeledField.new :label => "    Task:", :width => 60, :maxlen => 80, :bgcolor => :cyan, :color => :black,
     :name => 'task'
-    pri = Field.new :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
+    pri = LabeledField.new :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
       :valid_range => 1..9, :bgcolor => :cyan, :color => :black , :default => "5", :name => 'pri'
     pri.overwrite_mode = true
     config = {}
