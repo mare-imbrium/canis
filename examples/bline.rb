@@ -163,8 +163,8 @@ App.new do
       end
       menu.display_new :title => "Menu"
     end
-  @form.bind_key(?:) { app_menu; }
-  @form.bind_key(?=) { 
+  @form.bind_key(?:, "App Menu") { app_menu; }
+  @form.bind_key(?=, "Choose File") { 
       @curdir ||= Dir.pwd
       Dir.chdir(@curdir) if Dir.pwd != @curdir
     #testdisplay_list; 
