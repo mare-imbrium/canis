@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-07-05 20:48
+#  Last update: 2014-07-10 18:33
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -90,14 +90,20 @@ module Canis
       return dr
   end
   def directory_renderer obj
-    DirectoryRenderer.new obj
+    #DirectoryRenderer.new obj
+    LongDirectoryRenderer.new obj
   end
 
   # the issue with a generic directory renderer is that it does not have 
   # the full path, the dir name that is.
+  # FIXME: this expects text to be only a filename, but what about long listings.
+  #  In long listings the left_margin char will print at start whereas the filename
+  #   comes later in last slot of array
   class DirectoryRenderer < ListRenderer
     attr_accessor :hash
     attr_accessor :prefix
+    # specify if long, short or full listing
+    attr_accessor :mode
     def initialize obj
       super
       @hash = {}
@@ -144,7 +150,7 @@ module Canis
     end
 
     def render pad, lineno, text
-      klass = get_category text
+      klass = get_category fullname
       @fg = @hash[klass][0]
       bg = @hash[klass][1]
       @bg = bg #if bg
@@ -156,6 +162,124 @@ module Canis
       
       super
     end
+  end
+  class LongDirectoryRenderer < ListRenderer
+    attr_accessor :hash
+    attr_accessor :prefix
+    # specify if long, short or full listing
+    attr_accessor :mode
+    attr_accessor :formatter
+    def initialize obj
+      super
+      @hash = {}
+      @prefix = {}
+      @default_formatter = Formatter.new
+      @formatter = nil
+      create_mapping
+    end
+    def format_message(fname, stat, prefix=nil)
+      (@formatter || @default_formatter).call(fname, stat, prefix)
+    end
+    # Set date-time format.
+    #
+    # +datetime_format+:: A string suitable for passing to +strftime+.
+    def datetime_format=(datetime_format)
+      @default_formatter.datetime_format = datetime_format
+    end
+
+    # Returns the date format being used.  See #datetime_format=
+    def datetime_format
+      @default_formatter.datetime_format
+    end
+    def pre_render
+      super
+      # hack to get path
+      @path = @source.title
+    end
+    def create_mapping
+      @hash[:dir] = [:white, nil, BOLD]
+      @hash[:file] = [:white, nil, nil]
+      @hash[:link] = [:red, nil, nil]
+      @hash[:executable] = [:red, nil, BOLD]
+      @hash[:text] = [:magenta, nil, nil]
+      @hash[:zip] = [:cyan, nil, nil]
+      @hash[:other] = [:blue, nil, nil]
+      ##
+      @prefix[:dir] = "/"
+      @prefix[:link] = "@"
+      @prefix[:executable] = "*"
+    end
+    # recieves the full path and returns a symbol for category
+    def get_category text
+      #text = File.join(@path, t)
+      if File.directory? text
+        return :dir
+      elsif File.executable? text
+        return :executable
+      elsif File.symlink? text
+        return :link
+      elsif File.exists? text
+        if text =~ /\.txt$/
+          return :text
+        elsif text =~ /\.zip$/ or text =~ /gz$/ 
+          return :zip
+        else
+          return :file
+        end
+      else
+        return :other
+      end
+    end
+
+    # long directory renderer
+    # text is only the file name without path
+    def render pad, lineno, text
+      fullname = File.join(@path, text)
+      klass = get_category fullname
+      $log.info "fullname is #{fullname}, #{klass} "
+      # some links throw up an error of no such file
+      _stat = File.stat(fullname) rescue File.lstat(fullname)
+      @fg = @hash[klass][0]
+      bg = @hash[klass][1]
+      @bg = bg #if bg
+      bg = @hash[klass][2] 
+      @attr = bg # if bg 
+      prefix = @prefix[klass] || " "
+      #@left_margin_text = prefix
+      ftext = format_message( text, _stat, prefix)
+
+      super pad, lineno, ftext
+    end
+    class Formatter
+      #Format = "%s, [%s#%d] %5s -- %s: %s\n"
+      Format = "%10s  %s  %s%s" 
+        # % [readable_file_size(stat.size,1), date_format(stat.mtime), f]
+
+      attr_accessor :datetime_format
+
+      def initialize
+        @datetime_format = nil
+      end
+
+      def call(fname, stat, prefix=nil)
+        #Format % [severity[0..0], format_datetime(time), $$, severity, progname,
+                  #msg2str(msg)]
+        Format % [stat.size, format_datetime(stat.mtime), prefix, fname]
+      end
+
+      private
+
+      def format_datetime(time)
+        if @datetime_format.nil?
+          #time.strftime("%Y-%m-%dT%H:%M:%S") << "%06d " % time.usec
+          time.strftime("%Y-%m-%d %H:%M")
+        else
+          time.strftime(@datetime_format)
+        end
+      end
+
+    end # class Formatter
+
   end
 =begin
   def file_edit fp #=@current_list.filepath
