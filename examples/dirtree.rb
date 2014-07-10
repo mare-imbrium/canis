@@ -15,7 +15,7 @@ def _directories wd
   ent.delete(".");ent.delete("..")
   return ent
 end
-#$log = create_logger "canis.log"
+$log = create_logger "canis14.log"
 App.new do 
   def help_text
     <<-eos
@@ -54,6 +54,7 @@ App.new do
     if File.exists? path
       files = Dir.new(path).entries
       files.delete(".")
+      #files = file_listing path, :mode => :LONG
       ll.clear_selection
       ll.list files 
       ll.title path
@@ -125,20 +126,52 @@ App.new do
 
     @l.bind :LIST_SELECTION_EVENT  do |ev|
       message ev.source.current_value #selected_value
-      _f = File.join(@current_path, ev.source.current_value)
+      # FIXME if ".." then remove basename
+      e = ev.source.current_value
+      if e == ".."
+        _f = File.dirname(@current_path)
+      else
+        _f = File.join(@current_path, e)
+      end
       file_page   _f if ev.type == :INSERT
       #TODO when selects drill down
       #TODO when selecting, sync tree with this
     end
     # on pressing enter, we edit the file using vi or EDITOR
     @l.bind :PRESS  do |ev|
-      _f = File.join(@current_path, ev.source.current_value)
+      # FIXME if ".." then remove basename
+      e = ev.source.current_value
+      if e == ".."
+        _f = File.dirname(@current_path)
+      else
+        _f = File.join(@current_path, e)
+      end
+      #_f = File.join(@current_path, ev.source.current_value)
       if File.directory? _f
         populate _f
       else
         file_edit _f if File.exists? _f
       end
     end
+    @form.bind_key([?\\, ?l, ?1]){ 
+      ll = @form.by_name["ll"]
+      ll.renderer.formatter = proc do | fname, stat, prefix|
+        "%s%-40s | %10d | %s " % [prefix, fname, stat.size, stat.mtime.strftime("%Y-%m-%d")]
+      end
+      # why is repaint all not enough ? is repaint not being called ?
+      ll.repaint_all
+      #ll.render_all
+      ll.repaint
+      #ll.fire_dimension_changed
+    }
+    @form.bind_key([?\\, ?l, ?2]){ 
+      ll = @form.by_name["ll"]
+      ll.renderer.formatter = nil
+      #ll.fire_dimension_changed
+      ll.repaint_all
+      #ll.render_all
+      ll.repaint
+    }
   end
   status_line :row => FFI::NCurses.LINES - 1
 end # app
