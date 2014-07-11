@@ -763,6 +763,8 @@ module Canis
     # application_header object whose text can be changed
     attr_accessor :header
     attr_accessor :key_map
+    # specify command to requery data
+    attr_accessor :command
     attr_reader :source
     attr_reader :keyint
     attr_reader :keychr
@@ -784,10 +786,10 @@ module Canis
     end
 
     # specify command to requery data
-    def command &block
-      @command = block
-    end
-    alias :command= :command
+    #def command &block
+      #@command = block
+    #end
+    #alias :command= :command
 
     # signal that the data has changed and should be redisplayed
     # with window resizing etc.
