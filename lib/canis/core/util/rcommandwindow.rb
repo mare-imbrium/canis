@@ -787,6 +787,7 @@ module Canis
     def command &block
       @command = block
     end
+    alias :command= :command
 
     # signal that the data has changed and should be redisplayed
     # with window resizing etc.
