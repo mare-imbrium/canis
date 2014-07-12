@@ -2,7 +2,8 @@
 
 ncurses library for ruby with essential components/controls only
 
-IN FLUX, boyz. Just wait for a couple of releases.
+Things are looking better now. Textpad seems to be more or less stable as far 
+as changes are concerned
 
 ## Installation
 
