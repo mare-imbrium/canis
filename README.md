@@ -13,9 +13,7 @@ as changes are concerned
 
 TODO: Write usage instructions here
 
-Please note that the *TextPad* class which is a parent to all multi-line widgets is still in flux.
-I am still trying to simplify it, esp the colored chunk part , so that this class can be frozen.
-
+Textpad is more or less frozen. I have also simplified Field a bit.
 
 ## Contributing
 
