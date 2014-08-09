@@ -28,6 +28,9 @@ module Canis
     # Maybe not be able to get your prompt correctly.
     # 
     public
+    #
+    # suspends current program and puts user on unix prompt
+    #
     def suspend
       _suspend(false) do
         system("tput cup 26 0")
@@ -70,6 +73,10 @@ module Canis
       # Earlier close key was ENTER but we need that to execute or fire
       Canis::Viewer.view(res.split("\n"), :close_key => 'q', :title => "<q> to close, M-l M-h to scroll")
     end
+    #
+    # takes a unix command (system) and executes the same. No output
+    # @return return value of system command
+    # 
     def shell_out command
       w = @window || @form.window
       w.hide
