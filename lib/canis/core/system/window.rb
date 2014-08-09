@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-09 20:25
+#  Last update: 2014-08-09 20:39
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -40,6 +40,14 @@ module Canis
   #
   #    layout = { :height => ht, :width => w, :top => t, :left => l }
   #    w = Canis::Window.new( layout )
+  #
+  # == Commonly used methods
+  #
+  #  - destroy
+  #  - printstring
+  #  - wrefresh
+  #  - getchar
+  #  - print_border
   #
   class Window 
     # dimensions of window
@@ -233,7 +241,9 @@ module Canis
     def wrefresh
       Ncurses.wrefresh(@window)
     end
-    def delwin # 2011-09-7 
+    #
+    # called by destroy()
+    def delwin 
       Ncurses.delwin(@window)
     end
     def attron *args
@@ -264,6 +274,8 @@ module Canis
     #end
     # since include FFI is taking over, i need to force it here. not going into
     # method_missing
+
+    # move window to row and col
     def wmove y,x
       #Ncurses.wmove @window, y, x
       FFI::NCurses.wmove @window, y, x
@@ -379,6 +391,7 @@ module Canis
 
     # Ncurses panel
 
+    # hide the window
     def hide
       #return unless visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.hide_panel @panel.pointer
@@ -387,6 +400,7 @@ module Canis
       @visible = false
     end
 
+    # show the window
     def show
       #return if visible? # added 2011-10-14 these 2 are not behaving properly
       Ncurses::Panel.show_panel @panel.pointer
@@ -426,7 +440,6 @@ module Canis
     end
 
     # 
-    # 2011-11-13 since 1.4.1
     # Widgets can get window to create a pad for them. This way when the window
     #  is destroyed, it will delete all the pads. A widget wold not be able to do this.
     # The destroy method of the widget will be called.
@@ -693,6 +706,7 @@ module Canis
     #           take some actions
     #        end
     #    end
+    # @see +command+ (alias)
     def close_command *args, &block
       @close_command ||= []
       @close_args ||= []
