@@ -358,18 +358,33 @@ class StatusWindow # --- {{{
 end # }}}
 # returns instance of a status_window for sending multiple
 # statuses during some process
+# TODO FIXME block got ignored
 def status_window aconfig={}, &block
-  return StatusWindow.new aconfig
+  sw = StatusWindow.new aconfig
+  return sw unless block_given?
+  begin
+    yield sw
+  ensure
+    sw.destroy if sw
+  end
 end
 # this is a popup dialog box on which statuses can be printed as a process is taking place.
 # I am reusing StatusWindow and so there's an issue since I've put a box, so in clearing 
 # the line, I might overwrite the box
 def progress_dialog aconfig={}, &block
   aconfig[:layout] = [10,60,10,20]
+  # since we are printing a border
+  aconfig[:row_offset] ||= 4
+  aconfig[:col_offset] ||= 5
   window = status_window aconfig
   height = 10; width = 60
   window.win.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
-  return window
+  return window unless block_given?
+  begin
+    yield window
+  ensure
+    window.destroy if window
+  end
 end
 # 
 # Display a popup and return the seliected index from list
