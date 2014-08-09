@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-25 - 12:32
 #      License: MIT
-#  Last update: 2014-04-27 00:10
+#  Last update: 2014-08-09 18:55
 # ----------------------------------------------------------------------------- #
 #  promptmenu.rb  Copyright (C) 2012-2014 j kepler
 #  Depends on rcommandwindow for display_menu
@@ -42,6 +42,7 @@ module Canis
   # and the rest are ordinary characters.
   # 
   #  == Example
+  #
   #    menu = PromptMenu.new self do
   #      item :s, :goto_start
   #      item :b, :goto_bottom
