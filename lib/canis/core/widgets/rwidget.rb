@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-09 13:11
+  * Last update: 2014-08-09 19:06
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1513,7 +1513,13 @@ module Canis
   end #  }}}
 
   ##
+  # Manages the controls/widgets on a screen. 
+  # Manages traversal, rendering and events of all widgets that are associated with it
+  # via the +add_widget+ method.
   #
+  # Passes keys pressed by user to the current field.
+  # Any keys that are not handled by the current field, are handled by the form if the application
+  # has bound the key via +bind_key+.    
   # TODO: we don't have an event for when form is entered and exited.
   class Form # {{{
     include EventHandler
