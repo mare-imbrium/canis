@@ -114,7 +114,7 @@ module Canis
       @repaint_required = false
     end
     # not used since not focusable
-    def handle_keys ch  #:nodoc:
+    def handle_keys ch 
       return :UNHANDLED
     end
     
