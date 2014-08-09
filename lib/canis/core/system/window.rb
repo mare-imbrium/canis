@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-10 00:13
+#  Last update: 2014-08-09 20:25
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -18,16 +18,6 @@
 #
 require 'canis/core/system/ncurses'
 require 'canis/core/system/panel'
-# this is since often windows are declared with 0 height or width and this causes
-# crashes in the most unlikely places. This prevceents me from having to write ternary
-# e.g.
-#     @layout[:width].ifzero(FFI::NCurses::LINES-2)
-class Fixnum
-  def ifzero v
-    return self if self != 0
-    return v
-  end
-end
 # This class is to be extended so that it can be called by anyone wanting to implement
 # chunks ot text with color and attributes. Chunkline consists of multiple chunks of colored text
 # and should implement a +each_with_color+.
@@ -36,21 +26,43 @@ end
 class AbstractChunkLine; end
 
 module Canis
+  # A Basic class of this library, all output is eventually done on a window.
+  # Root windows and dialogs use this class.
+  # A root window covers the entire screen, and is the basis of an application usually.
+  # 
+  # == Examples
+  #
+  #    w = Canis::Window.root_window
+  #
+  #    w = Canis::Window.create_window( ht, wid, top, left)
+  #    
+  #    w = Canis::Window.new( ht, wid, top, left)
+  #
+  #    layout = { :height => ht, :width => w, :top => t, :left => l }
+  #    w = Canis::Window.new( layout )
+  #
   class Window 
+    # dimensions of window
     attr_reader :width, :height, :top, :left
+    # hash containing dimensions
     attr_accessor :layout # hash containing hwtl
+    # panel related to window, used to delete it in the end
     attr_reader   :panel   # reader requires so he can del it in end
     attr_accessor :name  # more for debugging log files. 2010-02-02 19:58 
     #attr_accessor :modified # has it been modified and may need a refresh 2014-04-22 - 10:23 CLEANUP
+    #
     # for root windows we need to know the form so we can ask it to update when
     #   there are overlapping windows.
     attr_accessor :form
 
-    # creation and layout related {{{
+    # window init {{{
+    # creation and layout related.
     # @param [Array, Hash] window coordinates (ht, w, top, left)
+    #
     # or 
+    #
     # @param [int, int, int, int] window coordinates (ht, w, top, left)
-    # 2011-09-21 allowing array, or 4 ints,  in addition to hash @since 1.3.1
+    #
     def initialize(*args)
 
       case args.size
@@ -109,7 +121,8 @@ module Canis
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
     end
     ##
-    # this is an alternative constructor
+    # this is an alternative constructor, which by default creates a window that covers the entire
+    # screen
     def self.root_window(layout = { :height => 0, :width => 0, :top => 0, :left => 0 })
     
       @layout = layout
