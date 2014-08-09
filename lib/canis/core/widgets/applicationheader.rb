@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis-core/
 #         Date: 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2011-11-16 - 00:07
+#  Last update: 2014-08-09 18:29
 #
 #  CHANGES:
 #              For some terminals, like xterm-256color which were not printing spaces
@@ -19,13 +19,27 @@
 require 'canis/core/widgets/rwidget'
 include Canis
 module Canis
+  # Maintain an application header on the top of an application.
+  # Application related text may be placed in the left, center or right slots.
+  #
+  # == Example
+  # a = ApplicationHeader.new "MyApp v1.0", :text_center => "Application Name", :text_right => "module",
+  #    :color => :white, :bgcolor => :blue
+  #
+  # # Later as user traverses a list or table, update row number on app header
+  # a.text_right "Row #{n}"
+  #
   class ApplicationHeader < Widget
+    # text on left of header
     dsl_property :text1
+    # text on left of header, after text1
     dsl_property :text2
+    # text in center of header
     dsl_property :text_center
+    # text on right side of header
     dsl_property :text_right
 
-
+    # @param text1 String text on left of header
     def initialize form, text1, config={}, &block
 
       @name = "header"
@@ -47,6 +61,7 @@ module Canis
       @text_center ||= ""
       @text_right ||= ""
     end
+    # returns value of text1, i.e. text on left of header
     def getvalue
       @text1
     end
@@ -73,6 +88,7 @@ module Canis
       print_top_right(@text_right)
       @repaint_required = false
     end
+    # internal method, called by repain to print text1 and text2 on left side
     def print_header(htext, r = 0, c = 0)
       #win = @window
       #len = @window.width
@@ -81,6 +97,7 @@ module Canis
       #@form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
       @form.window.printstring r, c, htext, @color_pair, @attr
     end
+    # internal method, called by repaint to print text_center in the center
     def print_center(htext, r = 0, c = 0)
       win = @window
       len = win.getmaxx
@@ -89,6 +106,7 @@ module Canis
       #@form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
       win.printstring r, ((len-htext.length)/2).floor, htext, @color_pair, @attr
     end
+    # internal method to print text_right
     def print_top_right(htext)
       hlen = htext.length
       len = @window.getmaxx # width was not changing when resize happens
