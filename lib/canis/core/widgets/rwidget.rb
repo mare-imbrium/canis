@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-07-10 00:07
+  * Last update: 2014-08-09 13:11
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -1872,7 +1872,10 @@ module Canis
       end
       f = @widgets[@active_index]
       index = @focusables.index(f)
-      index += 1
+      # 2014-08-09 - 13:09 f may be status_line esp if ai is -1, so it is not found in focusables
+      # why are we first checking widgets and then focusables.
+      #index += 1
+      index = index ? index+1 : 0
       f = @focusables[index]
       if f
         select_field f 
