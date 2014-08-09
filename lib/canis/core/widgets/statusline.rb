@@ -4,8 +4,15 @@ module Canis
 
   #
   # A vim-like application status bar that can display time and various other statuses
-  #  at the bottom, typically above the dock (3rd line from last).
+  #  at the bottom, typically above the dock (3rd line from last), or else the last line.
   #
+  # == Example
+  #
+  #    require 'canis/core/widgets/statusline'
+  #    @status_line = Canis::StatusLine.new @form, :row => Ncurses.LINES-2
+  #    @status_line.command {
+  #       "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [message_label.text]
+  #    }
   class StatusLine < Widget
     #attr_accessor :row_relative # lets only advertise this when we've tested it out
 
@@ -36,9 +43,10 @@ module Canis
     #
     # command that returns a string that populates the status line (left aligned)
     # @see :right
-    # See dbdemo.rb
-    # e.g. 
-    #   @l.command { "%-20s [DB: %-s | %-s ]" % [ Time.now, $current_db || "None", $current_table || "----"] }  
+    # @see dbdemo.rb
+    # == Example
+    #
+    #    @l.command { "%-20s [DB: %-s | %-s ]" % [ Time.now, $current_db || "None", $current_table || "----"] }  
     #
     def command *args, &blk
       @command = blk
@@ -47,7 +55,7 @@ module Canis
     alias :left :command
 
     # 
-    # Procudure for text to be right aligned in statusline
+    # Procedure for text to be right aligned in statusline
     def right *args, &blk
       @right_text = blk
       @right_args = args
@@ -105,7 +113,8 @@ module Canis
 
       @repaint_required = false
     end
-    def handle_keys ch
+    # not used since not focusable
+    def handle_keys ch  #:nodoc:
       return :UNHANDLED
     end
     
