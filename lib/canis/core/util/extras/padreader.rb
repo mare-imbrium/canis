@@ -4,7 +4,7 @@
   * Author: jkepler (http://github.com/mare-imbrium/canis/)
   * Date: 22.10.11 - 20:35
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update:  2013-04-01 13:43
+  * Last update:  2014-08-09 20:25
 
   == CHANGES
   == TODO 
@@ -14,6 +14,17 @@
      NOTE: I have continued this in textpad which is a widget that uses pads to scroll.
            This is very rough, i may work on this more later.
 =end
+# this is since often windows are declared with 0 height or width and this causes
+# crashes in the most unlikely places. This prevceents me from having to write ternary
+# e.g.
+#     @layout[:width].ifzero(FFI::NCurses::LINES-2)
+class Fixnum
+  def ifzero v
+    return self if self != 0
+    return v
+  end
+end
+
 require 'canis'
 
 include Canis
