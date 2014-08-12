@@ -1,5 +1,20 @@
 require 'canis/core/system/ncurses'
 
+# 2014-08-11 - 09:54 
+# There is a limit to the number of color pairs one can make 0 .. COLOR_PAIRS - 1
+# which i why i get junk colors after 255. In my program, color_pairs is 32767 ???
+#
+# curses.init_pair(pair_number, fg, bg)
+# 
+ #    Change the definition of a color-pair. It takes three arguments: the
+# number of the color-pair to be changed, the foreground color number, and the
+# background color number. The value of pair_number must be between 1 and
+# COLOR_PAIRS - 1 (the 0 color pair is wired to white on black and cannot be
+# changed). The value of fg and bg arguments must be between 0 and COLORS. If the
+# color-pair was previously initialized, the screen is refreshed and all
+# occurrences of that color-pair are changed to the new definition.
+#   - https://docs.python.org/2/library/curses.html
+
 module Canis
   module ColorMap
     # 2010-09-20 12:22 changed colors from string to symbol
@@ -17,6 +32,8 @@ module Canis
     def ColorMap.install_color fgc, bgc
       #$log.debug " install_color found #{fgc} #{@bgc} "
       @color_id += 1
+      # testing to see, since i get junk after 255 or so
+      #@color_id = 255 if @color_id > 255
       fg = ColorMap.get_color_const fgc
       bg = ColorMap.get_color_const bgc
       FFI::NCurses.init_pair(@color_id, fg, bg);
@@ -92,6 +109,13 @@ module Canis
       $row_attr          = Ncurses::A_NORMAL
 
       #    $log.debug " colormap SETUP: #{$datacolor} #{$reversecolor} "
+    end
+    # reset the color_id to zero so one can create colors from scratch.
+    # This is only to be used in the case of a color demo when you don't want the colors
+    #  we originally made, since there seems to be a shortage of slots.
+    def ColorMap.reset_color_id
+      @color_id = 0
+      $color_map = {}
     end
 
   end # modul
