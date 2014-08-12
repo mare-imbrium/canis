@@ -62,7 +62,7 @@ if $0 == __FILE__
         str = keycode_tos ch if ch.is_a? Fixnum
         #str1 = @window.key_tos ch if ch.is_a? Fixnum
         str1 = $key_chr
-        $log.debug  "#{ch} got (#{str} #{str1})"
+        $log.debug  "#{ch} got (#{str} $key_chr:#{str1})"
         texta << "#{ch} got (#{str}) #{str1}"
         if ch == 99999
           name = get_string "Add a name for #{$key_chr}?"
