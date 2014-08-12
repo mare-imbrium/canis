@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis-core/
 #         Date: 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-09 18:29
+#  Last update: 2014-08-10 14:53
 #
 #  CHANGES:
 #              For some terminals, like xterm-256color which were not printing spaces
@@ -71,6 +71,8 @@ module Canis
     def repaint
       return unless @repaint_required
  
+      # 2014-08-10 - 14:53 changing bgcolor or color resets color_pair, so this must be reset if nil
+      @color_pair ||= get_color $bottomcolor, @color, @bgcolor
       #print_header(htext, posy = 0, posx = 0)
       att = get_attrib @attr
       len = @window.width
