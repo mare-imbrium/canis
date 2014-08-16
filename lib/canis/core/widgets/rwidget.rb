@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-09 19:06
+  * Last update: 2014-08-15 12:18
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -766,7 +766,7 @@ module Canis
         # so that if block does not handle, the key can still be handled
         # e.g. table last row, last col does not handle, so it will auto go to next field
         #  2010-02-24 13:45 handles 2 key combinations, copied from Form, must be identical in logic
-        #  except maybe for window pointer. TODO not tested
+        #  except maybe for window pointer. 
         def _process_key keycode, object, window
           return :UNHANDLED if @_key_map.nil?
           chr = nil
@@ -2127,8 +2127,7 @@ module Canis
           $log.debug " form RESIZE HK #{ch} #{self}, #{@name} "
           repaint_all_widgets
           return
-        #when Ncurses::KEY_RESIZE # SIGWINCH
-        when FFI::NCurses::KEY_RESIZE # SIGWINCH #  FFI
+        when FFI::NCurses::KEY_RESIZE # SIGWINCH 
           lines = Ncurses.LINES
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
