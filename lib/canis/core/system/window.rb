@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-09 20:39
+#  Last update: 2014-08-15 12:12
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -152,6 +152,11 @@ module Canis
     # NOTE : if there are too many root windows, this could get expensive since we are updating all.
     # We may need to have a way to specify which window to repaint.
     #  If there are non-root windows above, we may have manually refresh only the previous one.
+    # FIXME NOTE current our examples have lists and textpads that cover the root window so the 
+    #  refresh all is fine, but if there is screen area vacant then that will still be left black
+    #  Similarly in the case of a dialog below, the window and box will not be painted.
+    # We may need a key for refreshing the entire window, such as ^L in which the form and the window
+    #  is repainted.
     #
     def self.refresh_all current_win=nil
       #Ncurses.touchwin(FFI::NCurses.stdscr)
@@ -770,7 +775,7 @@ module Canis
   class DefaultKeyReader # --- {{{
     def initialize win
       @window = win
-      @stack = []
+      #@stack = []
     end
 
     # return an int for the key read. this is just a single int, and is not interpreted
