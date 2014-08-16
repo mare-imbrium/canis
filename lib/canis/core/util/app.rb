@@ -120,6 +120,9 @@ module Canis
       end
       $log.debug " CLOSING APP"
     end
+
+    # This method is called by run, and thus in most cases this is what is used.
+    # +run+ calls this without a block
     # not sure, but user shuld be able to trap keystrokes if he wants
     # but do i still call handle_key if he does, or give him total control.
     # But loop is already called by framework
@@ -142,9 +145,17 @@ module Canis
               break
             end
 
+            # execute a code block so caller program can handle keys from a hash or whatever.
+            # Currently this has the issue that the key is still evaluated again in the next block
+            # - A double evaluation can happen
+            # - these keys will not appear in help
+            # FIXME
             if @keyblock
               str = keycode_tos ch
-              @keyblock.call(str.gsub(/-/, "_").to_sym) # not used ever
+              # why did we ever want to convert to a symbol. why not just pass it as is.
+              #@keyblock.call(str.gsub(/-/, "_").to_sym) # not used ever
+              ret = @keyblock.call(str) 
+              @form.repaint if ret
             end
 
             yield ch if block # <<<----
@@ -191,6 +202,9 @@ module Canis
     # returns a symbol of the key pressed
     # e.g. :C_c for Ctrl-C
     # :Space, :bs, :M_d etc
+    # NOTE 2014-08-15  Trying with just string returned by keycode_tos
+    # This should allow for simpler apps that want to handle keys perhaps taken from a config file
+    #  rather than bind each key manually.
     def keypress &block
      @keyblock = block
     end
@@ -198,7 +212,6 @@ module Canis
     # a label so it can be printed.
     def message text
       $status_message.value = text # trying out 2011-10-9 
-      #@message.value = text # 2011-10-17 14:07:01
     end
 
     # used only by LiveConsole, if enables in an app, usually only during testing.
@@ -366,17 +379,6 @@ module Canis
       #colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, "color"=>"cyan", "mnemonic" => 'S'}
     alias :text :label
     
-    # print a title on first row -- this is so bad, not even a label
-    def title string, config={}
-      raise "don't use DELETE dead code"
-      ## TODO center it
-      @window.printstring 1, 30, string, $normalcolor, 'reverse'
-    end
-    # print a sutitle on second row, center and use a label, if this is even used.
-    def subtitle string, config={}
-      raise "don't use DELETE"
-      @window.printstring 2, 30, string, $datacolor, 'normal'
-    end
     # menu bar
 
     # displays a horizontal line
@@ -446,6 +448,7 @@ module Canis
       matches = opts.grep Regexp.new("^#{cmd}")
     end
 
+    # This is the method that is called by all apps usually that define an App block
     def run &block
       begin
 
