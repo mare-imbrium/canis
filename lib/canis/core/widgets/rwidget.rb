@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-15 12:18
+  * Last update: 2014-08-18 14:58
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -576,9 +576,13 @@ module Canis
             $log.debug  " got node #{n} with #{e} "
             # instead of just nil, we need to go back up, but since not recursive ...
             #return nil unless n
-            $log.debug  "push unconsumed:#{unconsumed} " unless n
-            unconsumed.each {|e| window.ungetch(e)} unless n
-            return actions.last unless n
+            unless n
+              # testing shift otherwise it seems current key evaluated twice
+              unconsumed.shift
+              $log.debug  "push unconsumed:#{unconsumed} " unless n
+              unconsumed.each {|e| window.ungetch(e)} unless n
+              return actions.last unless n
+            end
             mp = n.map
             # there are no more keys, only an action
             if mp.nil? or mp.empty?
