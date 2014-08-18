@@ -50,3 +50,8 @@ Built 0.0.2 but i did not release it.
     This way an app can have its own logger and not bother about canis' logging.
     Or it can merge the two.
   - Moved helpmanager from rwidgets to its own file. Needs to be refactored and cleaned up.
+
+2014-08-18 - 17:11 
+- for 0.0.5
+  - fixed a bug in handling of multiple key assignments due to which extra keys pushed onto stack
+  - App keyblock yields string of key without changing or converting to symbol
