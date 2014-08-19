@@ -68,6 +68,7 @@ end
 # @yield [Field] field created by messagebox
 def get_string label, config={} # yield Field
   config[:title] ||= "Entry"
+  config[:title_color] ||= $reversecolor
   label_config = config[:label_config] || {}
   label_config[:row] ||= 2
   label_config[:col] ||= 2
@@ -76,7 +77,9 @@ def get_string label, config={} # yield Field
   field_config = config[:field_config] || {}
   field_config[:row] ||= 3
   field_config[:col] ||= 2
-  field_config[:attr] = :reverse
+  #field_config[:attr] = :reverse
+  field_config[:color] ||= :black
+  field_config[:bgcolor] ||= :cyan
   field_config[:maxlen] ||= config[:maxlen]
   field_config[:default] ||= config[:default]
   field_config[:default] = field_config[:default].chomp if field_config[:default]
@@ -410,20 +413,23 @@ def popuplist list, config={}, &block
     col += layout[:left]
   end
   config.delete :relative_to
-  width = config[:width] || longest_in_list(list)+2 # borders take 2
+  extra = 2 # trying to space the popup slightly, too narrow
+  width = config[:width] || longest_in_list(list)+4 # borders take 2
   if config[:title]
-    width = config[:title].size + 2 if width < config[:title].size
+    width = config[:title].size + 4 if width < config[:title].size + 4
   end
   height = config[:height]
   height ||= [max_visible_items || 10+2, list.length+2].min 
   #layout(1+height, width+4, row, col) 
   layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
   window = Canis::Window.new(layout)
+  window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
   form = Canis::Form.new window
 
+  less = 0 # earlier 0
   listconfig = config[:listconfig] || {}
   listconfig[:list] = list
-  listconfig[:width] = width
+  listconfig[:width] = width - less
   listconfig[:height] = height
   listconfig[:selection_mode] ||= :single
   listconfig.merge!(config)
@@ -436,7 +442,6 @@ def popuplist list, config={}, &block
   # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
   # 2011-11-11 
   #yield lb if block_given? # No it won't work since this returns
-  window.bkgd(Ncurses.COLOR_PAIR($reversecolor));
   window.wrefresh
   Ncurses::Panel.update_panels
   form.repaint
