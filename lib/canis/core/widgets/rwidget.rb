@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-18 14:58
+  * Last update: 2014-08-18 21:59
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -2084,17 +2084,19 @@ module Canis
   # this forces a repaint of all visible widgets and has been added for the case of overlapping
   # windows, since a black rectangle is often left when a window is destroyed. This is internally
   # triggered whenever a window is destroyed, and currently only for root window.
+  # NOTE: often the window itself or spaces between widgets also gets cleared, so basically
+  # the window itself may need recreating ? 2014-08-18 - 21:03 
   def repaint_all_widgets
-    #$log.debug "  REPAINT ALL in FORM called "
+    $log.debug "  REPAINT ALL in FORM called "
     @widgets.each do |w|
       next if w.visible == false
       next if w.class.to_s == "Canis::MenuBar"
-      #$log.debug "   ---- REPAINT ALL #{w.name} "
+      $log.debug "   ---- REPAINT ALL #{w.name} "
       #w.repaint_required true
       w.repaint_all true
       w.repaint
     end
-    #$log.debug "  REPAINT ALL in FORM complete "
+    $log.debug "  REPAINT ALL in FORM complete "
     #  place cursor on current_widget 
     setpos
   end
@@ -2127,11 +2129,16 @@ module Canis
         case ch
         when -1
           return
-        when 1000
-          $log.debug " form RESIZE HK #{ch} #{self}, #{@name} "
+        when 1000, 12
+          # NOTE this works if widgets cover entire screen like text areas and lists but not in 
+          #  dialogs where there is blank space. only widgets are painted.
+          # testing out 12 is C-l
+          $log.debug " form RESIZE repaint_all HK #{ch} #{self}, #{@name} "
           repaint_all_widgets
           return
-        when FFI::NCurses::KEY_RESIZE # SIGWINCH 
+        when FFI::NCurses::KEY_RESIZE  # SIGWINCH 
+          # note that in windows that have dialogs or text painted on window such as title or 
+          #  box, the clear call will clear it out. these are not redrawn.
           lines = Ncurses.LINES
           cols = Ncurses.COLS
           x = Ncurses.stdscr.getmaxy
