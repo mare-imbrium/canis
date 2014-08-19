@@ -181,6 +181,7 @@ module Canis
     end
     # if calling loop separately better to call this, since it will shut off ncurses
     # and print error on screen.
+    # UNUSED
     def safe_loop &block
       begin
         loop &block
