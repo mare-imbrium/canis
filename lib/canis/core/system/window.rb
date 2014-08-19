@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-15 12:12
+#  Last update: 2014-08-19 20:37
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -97,7 +97,7 @@ module Canis
       # trying out refreshing underlying window.
       $global_windows ||= []
       # this causes issues padrefresh failing when display_list does a resize.
-      #$global_windows << self
+      $global_windows << self
       @panel = Ncurses::Panel.new(@window) # added FFI 2011-09-6 
       #$error_message_row = $status_message_row = Ncurses.LINES-1
       $error_message_row ||= Ncurses.LINES-1
@@ -440,6 +440,7 @@ module Canis
       # added here to hopefully take care of this issue once and for all. 
       # Whenever any window is destroyed, the root window is repainted.
       #
+      # 2014-08-18 - 20:35 trying out without refresh  all since lower dialog gets erased
       Window.refresh_all
       #$log.debug "win destroy end"
     end
