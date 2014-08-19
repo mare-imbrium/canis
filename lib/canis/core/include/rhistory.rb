@@ -9,7 +9,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-11-27 - 18:10
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2011-11-27 - 20:11
+#  Last update: 2014-08-19 00:02
 # ----------------------------------------------------------------------------- #
 #
 # supply history for this object, at least give an empty array
@@ -83,7 +83,7 @@ module Canis
       #end
       r = @_history_config[:row] || r
       c = @_history_config[:col] || c
-      ret = popuplist(list, :row => r, :col => c, :title  => " History ")
+      ret = popuplist(list, :row => r, :col => c, :title  => " History ", :color => :white, :bgcolor => :cyan)
       if ret
         self.text = list[ret] 
         self.set_form_col 
