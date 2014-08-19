@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-08 18:05
+#  Last update: 2014-08-19 01:27
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -74,6 +74,8 @@ module Canis
 
     end
     def item widget
+      # # normalcolor gives a white on black stark title like links and elinks
+      # You can also do 'acolor' to give you a sober title that does not take attention away, like mc
       # remove from existing form if set, problem with this is mnemonics -- rare situation.
       if widget.form
         f = widget.form
@@ -134,8 +136,11 @@ module Canis
       @window.print_border_mb 1,2, @height, @width, bordercolor, borderatt
       @window.wattroff(Ncurses.COLOR_PAIR(bordercolor) | (borderatt || FFI::NCurses::A_NORMAL))
       @title ||= "+-+"
+      @title_color ||= $normalcolor
       title = " "+@title+" "
-      @window.printstring(@row=1,@col=(@width-title.length)/2,title, color=$normalcolor)
+      # normalcolor gives a white on black stark title like links and elinks
+      # You can also do 'acolor' to give you a sober title that does not take attention away, like mc
+      @window.printstring(@row=1,@col=(@width-title.length)/2,title, color=@title_color)
       #print_message if @message
       create_action_buttons unless @action_buttons
     end
@@ -235,6 +240,10 @@ module Canis
         while((ch = @window.getchar()) != FFI::NCurses::KEY_F10 )
           break if ch == ?\C-q.getbyte(0) || ch == 2727 # added double esc
           begin
+            # trying out repaint of window also if repaint all asked for. 12 is C-l
+            if ch == 1000 or ch == 12
+              repaint
+            end
             @form.handle_key(ch)
             @window.wrefresh
           rescue => err
