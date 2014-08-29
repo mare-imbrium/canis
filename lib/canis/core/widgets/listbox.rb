@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-06 - 19:37 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-07 00:36
+#  Last update: 2014-08-28 17:05
 # ----------------------------------------------------------------------------- #
 #   listbox.rb Copyright (C) 2012-2014 kepler
 
@@ -272,6 +272,7 @@ module Canis
         bg = @source.selected_bgcolor || bg
         att = @source.selected_attr || REVERSE
         cp = get_color($datacolor, fg, bg)
+
       elsif lineno == @source.current_index 
         # print focussed row in different attrib
         if @source.should_show_focus
