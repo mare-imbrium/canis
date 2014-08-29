@@ -82,8 +82,8 @@ module Canis
       $color_map = {}
       FFI::NCurses.start_color();
       # Initialize few color pairs 
-      $def_fg_color = :white   # pls set these 2 for your application
-      $def_bg_color = :black
+      $def_fg_color ||= :white   # pls set these 2 for your application
+      $def_bg_color ||= :black
       #COLORS = [COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW, COLOR_BLUE, 
       #     COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE]
       @@colors = [:black, :red, :green, :yellow, :blue, :magenta, :cyan, :white]
@@ -100,7 +100,7 @@ module Canis
       $errorcolor = ColorMap.get_color :white, :red
       #$promptcolor = $selectedcolor = ColorMap.get_color(:yellow, :red)
       $promptcolor = ColorMap.get_color(:yellow, :red)
-      $normalcolor = $datacolor = ColorMap.get_color(:white, :black)
+      $normalcolor = $datacolor = ColorMap.get_color($def_fg_color, $def_bg_color)
       $bottomcolor = $topcolor = ColorMap.get_color(:white, :blue)
       $selectedcolor = $datacolor # since we now use reverse attr in list
 
