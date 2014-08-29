@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-07-08 13:04
+#  Last update: 2014-08-27 20:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -751,7 +751,7 @@ module Canis
     def clear
       return unless @list
       @list.clear
-      @native_text.clear
+      @native_text.clear if @native_text # check this line, should it be removed 2014-08-27 - 20:54 
       fire_dimension_changed :clear
       init_vars
     end
