@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-04-10 - 21:04
 #      License: Same as ruby license
-#  Last update: 2014-07-07 00:36
+#  Last update: 2014-08-28 18:30
 # ----------------------------------------------------------------------------- #
 #  listselectionmodel.rb  Copyright (C) 2012-2014 j kepler
 # ----------------------------------------------------------------------------- #
@@ -43,7 +43,7 @@ module Canis
       # selection modes may be :multiple, :single or :none
       dsl_accessor :selection_mode
       # color of selected rows, and attribute of selected rows
-      dsl_accessor :selected_color, :selected_bgcolor, :selected_attr
+      dsl_property :selected_color, :selected_bgcolor, :selected_attr
       # indices of selected rows
       dsl_accessor :selected_indices
       # model that takes care of selection operations
