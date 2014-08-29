@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-18 21:59
+  * Last update: 2014-08-28 16:58
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -477,8 +477,7 @@ module Canis
         case keycode
         when String
           # single assignment
-          keycode = keycode.getbyte(0) #if keycode.class==String ##    1.9 2009-10-05 19:40 
-          #@_key_map[keycode] = blk
+          keycode = keycode.getbyte(0) 
         when Array
           # double assignment
           # this means that all these keys have to be pressed in succession for this block, like "gg" or "C-x C-c"
@@ -545,7 +544,7 @@ module Canis
         $log.debug " composite contains #{key} : #{val} "
       end
       def check_composite_mapping key, window
-        $log.debug  "inside check with #{key} "
+        #$log.debug  "inside check with #{key} "
         return nil if !@_key_composite_map
         return nil if !@_key_composite_map.key? key
         $log.debug "  composite has #{key} "
@@ -577,7 +576,7 @@ module Canis
             # instead of just nil, we need to go back up, but since not recursive ...
             #return nil unless n
             unless n
-              # testing shift otherwise it seems current key evaluated twice
+              # testing shift otherwise it seems current key evaluated twice 2014-08-17
               unconsumed.shift
               $log.debug  "push unconsumed:#{unconsumed} " unless n
               unconsumed.each {|e| window.ungetch(e)} unless n
@@ -1244,7 +1243,7 @@ module Canis
         fire_handler :ENTER, self
       end
     end
-    ## got left out by mistake 2008-11-26 20:20 
+    ## Called when user exits a widget
     def on_leave
       @state = :NORMAL    # duplicating since often these are inside containers
       @focussed = false
@@ -1609,7 +1608,8 @@ module Canis
       # what kind of key-bindings do you want, :vim or :emacs
       $key_map_type ||= :vim ## :emacs or :vim, keys to be defined accordingly. TODO
 
-      bind_key(KEY_F1, 'help') { hm = help_manager(); hm.display_help }
+      #bind_key(KEY_F1, 'help') { hm = help_manager(); hm.display_help }
+      map_keys unless @keys_mapped
     end
     ##
     # set this menubar as the form's menu bar.
@@ -2064,6 +2064,7 @@ module Canis
   #
   def map_keys
     return if @keys_mapped
+    bind_key(KEY_F1, 'help') { hm = help_manager(); hm.display_help }
     bind_keys([?\M-?,?\?], 'show field help') { 
       #if get_current_field.help_text 
         #textdialog(get_current_field.help_text, 'title' => 'Help Text', :bgcolor => 'green', :color => :white) 
@@ -2109,7 +2110,8 @@ module Canis
   # NOTE : please rescue exceptions when you use this in your main loop and alert() user
   #
   def handle_key(ch)
-    map_keys unless @keys_mapped
+    # 2014-08-19 - 21:10 moving to init, so that user may override or remove
+    #map_keys unless @keys_mapped
     handled = :UNHANDLED # 2011-10-4 
         if ch ==  ?\C-u.getbyte(0)
           ret = universal_argument
@@ -2133,7 +2135,7 @@ module Canis
           # NOTE this works if widgets cover entire screen like text areas and lists but not in 
           #  dialogs where there is blank space. only widgets are painted.
           # testing out 12 is C-l
-          $log.debug " form RESIZE repaint_all HK #{ch} #{self}, #{@name} "
+          $log.debug " form REFRESH_ALL repaint_all HK #{ch} #{self}, #{@name} "
           repaint_all_widgets
           return
         when FFI::NCurses::KEY_RESIZE  # SIGWINCH 
@@ -2585,7 +2587,6 @@ module Canis
   # 
   def handle_key ch
     @repaint_required = true 
-    #map_keys unless @keys_mapped # moved to init
     case ch
     when 32..126
       #$log.debug("FIELD: ch #{ch} ,at #{@curpos}, buffer:[#{@buffer}] bl: #{@buffer.to_s.length}")
