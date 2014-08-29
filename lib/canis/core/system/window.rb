@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-19 20:37
+#  Last update: 2014-08-20 15:08
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -88,7 +88,7 @@ module Canis
       @visible = true
       set_layout(layout)
 
-      #$log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
+      $log.debug "XXX:WINDOW got h #{@height}, w #{@width}, t #{@top}, l #{@left} "
 
       @height = FFI::NCurses.LINES if @height == 0   # 2011-11-14 added since tired of checking for zero
       @width = FFI::NCurses.COLS   if @width == 0
@@ -125,6 +125,7 @@ module Canis
       #Ncurses::wtimeout(@window, $ncurses_timeout || 500) # will wait a second on wgetch so we can get gg and qq
       #@stack = [] # since we have moved to handler 2014-04-20 - 11:15 
       @name ||="#{self}"
+      $log.debug "  WINDOW NAME is #{@name} "
       @modified = true
       $catch_alt_digits ||= false # is this where is should put globals ? 2010-03-14 14:00 XXX
     end
@@ -163,6 +164,7 @@ module Canis
       # above blanks out entire screen
       # in case of multiple root windows lets just do last otherwise too much refreshing.
       gw = $global_windows
+      $log.debug " REFRESH_ALL windows count = #{gw.count} "
       if current_win
         gw = $global_windows.select {|e| e != current_win }
       end
@@ -177,6 +179,8 @@ module Canis
         if f
           # send hack to root windows form if passed. 
           f.handle_key 1000
+        else
+          $log.warn " REFRESH_ALL on #{w.name} (#{i}) NO FORM so could not send 1000 #{f}"
         end
         #w.ungetch(1000)
       # below blanks out entire screen too
