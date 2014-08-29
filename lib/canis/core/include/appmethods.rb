@@ -77,14 +77,20 @@ module Canis
     # takes a unix command (system) and executes the same. No output
     # @return return value of system command
     # 
-    def shell_out command
-      w = @window || @form.window
-      w.hide
+    def shell_out command=nil
+      $shell_history ||= []
+      command ||= get_string("Enter system command:", :maxlen => 50) do |f|
+        require 'canis/core/include/rhistory'
+        f.extend(FieldHistory)
+        f.history($shell_history)
+      end
+      ##w = @window || @form.window
+      #w.hide
       Ncurses.endwin
       ret = system command
       Ncurses.refresh
       #Ncurses.curs_set 0  # why ?
-      w.show
+      #w.show
       return ret
     end
   end # utils
