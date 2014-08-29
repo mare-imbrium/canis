@@ -47,7 +47,11 @@ module Canis
     end
     def repaint
       acolor = get_color($reversecolor, @color, @bgcolor)
-      @parent.window.printstring( @row, 0, "|%s|" % ("-"*@width), acolor)
+      #@parent.window.printstring( @row, 0, "|%s|" % ("-"*@width), acolor)
+      @parent.window.mvwhline( @row, 1, Ncurses::ACS_HLINE, @width)
+      # these 2 are probably overwritten by the borders
+      @parent.window.mvaddch( @row, 0, Ncurses::ACS_LTEE)
+      @parent.window.mvaddch( @row, @width+1, Ncurses::ACS_RTEE)
     end
     def destroy
     end
@@ -133,14 +137,8 @@ module Canis
         #$log.debug "HL XXX #{self} - > #{@parent} parent nil"
       end
       if tf
-        #color = $datacolor
-        #@parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_NORMAL, color, nil)
-        # above line did not work in vt100, 200 terminals, next works.
-#        @parent.window.mvchgat(y=@row, x=1, @width, Ncurses::A_REVERSE, $reversecolor, nil) # changed 2011 dts  2011-09-24  multicolumn, 1 skips the border
         @color_pair  ||= get_color($reversecolor, @color, @bgcolor)
         @parent.window.mvchgat(y=@row, x=@col+1, @width, Ncurses::A_REVERSE, @color_pair, nil)
-        #@parent.window.mvaddch @row, @col, "*".ord
-        #@parent.window.wmove @row, @col # 2011-09-25 V1.3.1  NO EFFECT
       else
         repaint
       end
@@ -148,7 +146,6 @@ module Canis
     end
     def repaint # menuitem.repaint
       if @parent.nil? or @parent.window.nil?
-        $log.debug "repaint #{self} parent nil"
       #  return
       end
       r = @row
@@ -168,16 +165,18 @@ module Canis
       elsif !@mnemonic.nil?
         m = @mnemonic
         ix = text.index(m) || text.index(m.swapcase)
-        charm = text[ix,1]
-        #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
-        # prev line changed since not working in vt100 and vt200
-        @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+        if ix
+          charm = text[ix,1]
+          #@parent.window.printstring( r, ix+1, charm, $datacolor) if !ix.nil?
+          # prev line changed since not working in vt100 and vt200
+          @parent.window.printstring( r, ix+1, charm, $reversecolor, 'reverse') if !ix.nil?
+        end
       end
       #@parent.window.wmove r, c # NO EFFECT
       end
     end
     def destroy
-     $log.debug "DESTROY menuitem #{@text}"
+     #$log.debug "DESTROY menuitem #{@text}"
     end
   end
   ## class Menu. Contains menuitems, and can be a menuitem itself.
@@ -495,6 +494,7 @@ module Canis
       @layout = { :height => h-1, :width => ww, :top => t, :left => @coffset } 
       @win = Canis::Window.new(@layout)
       @window = @win
+      @window.name = "WINDOW:menu"
       @color_pair ||= get_color($datacolor, @color, @bgcolor)
       @rev_color_pair ||= get_color($reversecolor, @color, @bgcolor)
       @win.bkgd(Ncurses.COLOR_PAIR(@color_pair));
@@ -532,18 +532,22 @@ module Canis
         @window.printstring( h-2, 0, "+%s+" % ("-"*(ww1)), @rev_color_pair)
         # in case of multiple rows
         @window.printstring( r, c, "+%s+" % ("-"*(ww1)), @rev_color_pair)
+        # added box with proper ncurses extended char set 2014-08-27 - 14:30 
+        @window.print_border_only 0,0,h-2, ww, @rev_color_pair
         select_item 0
       @window.refresh
       return @window
     end
     # private
+    # returns length of longest item in array
     def array_width a
       longest = a.max {|a,b| a.to_s.length <=> b.to_s.length }
       #$log.debug "array width #{longest}"
       longest.to_s.length
     end
+    # destroys windows and each item within (submenus)
     def destroy
-      $log.debug "DESTRY menu #{@text}"
+      $log.debug "DESTROY menu #{@text}"
       return if @window.nil?
       @visible = false
       #2014-05-12 - 20:53 next 3 replaced with destroy since destroy refreshes root window.
@@ -552,7 +556,6 @@ module Canis
       #@window.delwin if !@window.nil?
       @window.destroy
       @items.each do |item|
-        #next if item == :SEPARATOR
         item.destroy
       end
       @window = nil
@@ -689,13 +692,13 @@ module Canis
       @active_index = 0
       @repaint_required = true
     end
+    # is this widget focusable, always returns false
     def focusable
       false
     end
     alias :focusable? focusable
-    # add a precreated menu
+    # add a precreated menu, returning self
     def add menu
-      #$log.debug "YYYY inside MB: add #{menu.text}  "
       @items << menu
       return self
     end
@@ -705,13 +708,13 @@ module Canis
     # 2010-09-10 12:07 added while simplifying the interface
     # this calls add so you get the MB back, not a ref to the menu created NOTE
     def menu text, &block
-      #$log.debug "YYYY inside MB: menu text #{text} "
       m = Menu.new text, &block 
       m.color = @color
       m.bgcolor = @bgcolor
       add m
       return m
     end
+    # move focus to next menu
     def next_menu
       #$log.debug "next meu: #{@active_index}  " 
       if @active_index < @items.length-1
@@ -720,6 +723,7 @@ module Canis
         set_menu 0
       end
     end
+    # move focus to previous menu
     def prev_menu
       #$log.debug "prev meu: #{@active_index} " 
       if @active_index > 0
@@ -728,18 +732,29 @@ module Canis
         set_menu @items.length-1
       end
     end
+
+    # set the given menu index as the current or active menu
+    #  after closing the active menu.
+    # @param Fixnum index of menu to activate, starting 0
     def set_menu index
       #$log.debug "set meu: #{@active_index} #{index}" 
+      # first leave the existing window
       menu = @items[@active_index]
       menu.on_leave # hide its window, if open
+      # now move to given menu
       @active_index = index
       menu = @items[@active_index]
       menu.on_enter #display window, if previous was displayed
+      # move cursor to selected menu option on top, not inside list
       @window.wmove menu.row, menu.col
 #     menu.show
 #     menu.window.wrefresh # XXX we need this
     end
 
+    # keep the menu bar visible at all times. 
+    # If not, then it appears only on using the toggle key.
+    # In any case, control only goes to the menubar when you use the toggle key,
+    # so it is best NOT to keep it visible.
     def keep_visible flag=nil
       return @keep_visible unless flag
       @keep_visible = flag
@@ -760,7 +775,7 @@ module Canis
         when -1
           next
         when KEY_DOWN
-          #$log.debug "insdie keyDOWN :  #{ch}" 
+    
           if !@selected
             current_menu.fire
           else
@@ -770,28 +785,20 @@ module Canis
           @selected = true
         when KEY_ENTER, 10, 13, 32
           @selected = true
-            #$log.debug " mb insdie ENTER :  #{current_menu}" 
-            ret = current_menu.handle_key ch
-            #$log.debug "ret = #{ret}  mb insdie ENTER :  #{current_menu}" 
-            #break; ## 2008-12-29 18:00  This will close after firing
-            #anything
-            break if ret == :CLOSE
+          ret = current_menu.handle_key ch
+          #break; ## 2008-12-29 18:00  This will close after firing anything
+          break if ret == :CLOSE
         when KEY_UP
-          #$log.debug " mb insdie keyUPP :  #{ch}" 
           current_menu.handle_key ch
         when KEY_LEFT
-          #$log.debug " mb insdie KEYLEFT :  #{ch}" 
           ret = current_menu.handle_key ch
           prev_menu if ret == :UNHANDLED
-          #display_items if @selected
         when KEY_RIGHT
-          #$log.debug " mb insdie KEYRIGHT :  #{ch}" 
           ret = current_menu.handle_key ch
           next_menu if ret == :UNHANDLED
         when ?\C-g.getbyte(0) # abort
           throw :menubarclose
         else
-          #$log.debug " mb insdie ELSE :  #{ch}" 
           ret = current_menu.handle_key ch
           if ret == :UNHANDLED
             Ncurses.beep 
@@ -808,11 +815,13 @@ module Canis
       ensure
         #ensure is required becos one can throw a :close
         $log.debug " DESTROY IN ENSURE"
-        current_menu.clear_menus #@@menus = [] # added 2009-01-23 13:21 
+        current_menu.clear_menus
         @repaint_required = false
         destroy  # Note that we destroy the menu bar upon exit
       end
     end
+
+    # returns current_menu
     def current_menu
       @items[@active_index]
     end
@@ -877,8 +886,13 @@ module Canis
     end
     def create_window_menubar
       @layout = { :height => 1, :width => 0, :top => 0, :left => 0 } 
+      $log.debug "create window menu bar "
       @win = Canis::Window.new(@layout)
+      @win.name = "WINDOW:menubar"
       @window = @win
+      # hack since we put all windows in there, and this should not be coming after Root.
+      # This should not have been a window in the first place.
+      $global_windows.delete @win
       att = get_attrib @attr
       @win.bkgd(Ncurses.COLOR_PAIR(5)); # <---- FIXME
       len = @window.width
