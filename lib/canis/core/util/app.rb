@@ -42,6 +42,8 @@ module Canis
   #  
   
   # 2014-04-17 - 13:15 XXX are these used. required ???
+=begin
+  # 2014-08-19 - 20:48 trying to remove excess convenience code
   class Widget
     def changed *args, &block
       bind :CHANGED, *args, &block
@@ -57,9 +59,11 @@ module Canis
       bind :PRESS, *args, &block
     end
   end
+=end
   class CheckBox
     # a little dicey XXX 
     def text(*val)
+      raise "FIXME this is being used Checkbox app.rb text(), otherwise delete this. 2014-08-19 - 21:01 "
       if val.empty?
         @value ? @onvalue : @offvalue
       else
@@ -102,8 +106,6 @@ module Canis
         init_ncurses
       end
       $lastline = Ncurses.LINES - 1
-      #@message_row = Ncurses.LINES-1
-      #@prompt_row = @message_row # hope to use for ask etc # 2011-10-17 14:06:27
       unless $log
         logpath=ENV["CANIS_LOG_PATH"]
         $log = create_logger(logpath || "/dev/null")
@@ -138,39 +140,39 @@ module Canis
       while true
         catch :close do
           while((ch = @window.getchar()) != 999 )
-            #break if ch == @break_key
             if ch == @break_key || ch == @quit_key
-              #stopping = @window.fire_close_handler
-              #break if stopping.nil? || stopping
               break
             end
 
-            # execute a code block so caller program can handle keys from a hash or whatever.
-            # Currently this has the issue that the key is still evaluated again in the next block
-            # - A double evaluation can happen
-            # - these keys will not appear in help
-            # FIXME
-            if @keyblock
-              str = keycode_tos ch
-              # why did we ever want to convert to a symbol. why not just pass it as is.
-              #@keyblock.call(str.gsub(/-/, "_").to_sym) # not used ever
-              ret = @keyblock.call(str) 
-              @form.repaint if ret
-            end
 
-            yield ch if block # <<<----
+            # 2014-08-19 - 22:51 commented next line, too much choice. keep it simple. delete in a month FIXME
+            #yield ch if block # <<<----
+
             # this is what the user should have control ove. earlier we would put this in
             # a try catch block so user could do what he wanted with the error. Now we
             # need to get it to him somehow, perhaps through a block or on_error event
             begin
+              # execute a code block so caller program can handle keys from a hash or whatever.
+              # NOTE: these keys will not appear in help
+              # FIXME : ideally if its just a hash, we should allow user to give it to form
+              #  or widget which it will use, or merge, and be able to print help from
+              if @keyblock
+                str = keycode_tos ch
+                # why did we ever want to convert to a symbol. why not just pass it as is.
+                #@keyblock.call(str.gsub(/-/, "_").to_sym) # not used ever
+                ret = @keyblock.call(str) 
+                if ret
+                  @form.repaint 
+                  next
+                end
+              end
               @form.handle_key ch
             rescue => err
-              $log.debug( "handle_key rescue reached ")
+              $log.debug( "app.rb handle_key rescue reached ")
               $log.debug( err.to_s) 
               $log.debug(err.backtrace.join("\n")) 
               textdialog [err.to_s, *err.backtrace], :title => "Exception"
             end
-            #@form.repaint # was this duplicate ?? handle calls repaint not needed
             @window.wrefresh
           end
         end # catch
@@ -296,14 +298,6 @@ module Canis
         #@form.bind_key(key, cmd.to_sym) # not finding it, getting called by that comp
         @form.bind_key(key){ send(cmd.to_sym) }
       end
-    end
-    def bind_component
-      #rb_puts "Todo. ", :color_pair => get_color($promptcolor, :red, :black)
-      print_error_message "Todo this. "
-      # the idea here is to get the current component
-      # and bind some keys to some methods.
-      # however, how do we divine the methods we can map to
-      # and also in some cases the components itself has multiple components
     end
     # displays help_text associated with field. 2011-10-15 
     def field_help_text
@@ -525,7 +519,7 @@ module Canis
           #$error_message.update_command { @message.set_value($error_message.value) }
           if block
             begin
-              yield_or_eval &block if block_given? # modified 2010-11-17 20:36 
+              yield_or_eval &block if block_given? 
               # how the hell does a user trap exception if the loop is hidden from him ? FIXME
               loop
             rescue => ex
@@ -552,6 +546,7 @@ module Canis
     end
     # process args, all widgets should call this
     def _process_args args, config, block_event, events  #:nodoc:
+      raise "FIXME seems uncalled _process_args, remove it this does not come up within a month 2014-08-19 "
       args.each do |arg| 
         case arg
         when Array
