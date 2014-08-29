@@ -198,6 +198,7 @@ def _print_message type, text, aconfig={}, &block  #:nodoc:
   color = aconfig[:color]
   bgcolor = aconfig[:bgcolor]
   ewin = _create_footer_window #*@layout
+  ewin.name = "WINDOW::_print_message"
   r = 0; c = 1;
   case type 
   when :error
@@ -249,6 +250,7 @@ def rb_confirm text, aconfig={}, &block
     text = text.to_s
   end
   ewin = _create_footer_window
+  ewin.name = "WINDOW::rb_confirm"
   r = 0; c = 1;
   #aconfig.each_pair { |k,v| instance_variable_set("@#{k}",v) }
   # changed on 2011-12-6 
@@ -364,6 +366,7 @@ end # }}}
 # TODO FIXME block got ignored
 def status_window aconfig={}, &block
   sw = StatusWindow.new aconfig
+  window.name = "WINDOW::status_window"
   return sw unless block_given?
   begin
     yield sw
@@ -380,6 +383,7 @@ def progress_dialog aconfig={}, &block
   aconfig[:row_offset] ||= 4
   aconfig[:col_offset] ||= 5
   window = status_window aconfig
+  window.name = "WINDOW::progress_dialog"
   height = 10; width = 60
   window.win.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
   return window unless block_given?
@@ -423,6 +427,7 @@ def popuplist list, config={}, &block
   #layout(1+height, width+4, row, col) 
   layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
   window = Canis::Window.new(layout)
+  window.name = "WINDOW:popuplist"
   window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
   form = Canis::Form.new window
 
@@ -507,6 +512,236 @@ def display_app_help form=@form
   else
     raise "Form needed by display_app_help. Use form.help_manager instead"
   end
+end
+
+## this is a quick dirty menu/popup menu thing, hopnig to replace the complex menubar with something simpler.
+# However, the cursor visually is confusing. since the display takes over the cursor visually. When we display on the right
+# it looks as tho the right menu is active. When we actually move into it with RIGHT, it looks like the left on is active.
+# OKAY, we temporarily fixed that by not opening it until you actually press RIGHT
+# FIXME : there is the issue of when one level is destroyed then the main one has a blank. all need to be 
+#   repainted.
+# FIXME : when diong a LEFT, cursor shows at last row of previous , we need a curpos or setrow for that lb
+def popupmenu hash, config={}, &block
+  if hash.is_a? Hash
+    list = hash.keys
+  else
+    list = hash
+  end
+  raise ArgumentError, "Nil list received by popuplist" unless list
+  #require 'canis/core/widgets/rlist'
+
+  max_visible_items = config[:max_visible_items]
+  # FIXME have to ensure that row and col don't exceed FFI::NCurses.LINES and cols that is the window
+  # should not FINISH outside or padrefresh will fail.
+  row = config[:row] || 5
+  col = config[:col] || 5
+  relative_to = config[:relative_to]
+  if relative_to
+    layout = relative_to.form.window.layout
+    row += layout[:top]
+    col += layout[:left]
+  end
+  config.delete :relative_to
+  extra = 2 # trying to space the popup slightly, too narrow
+  width = config[:width] || longest_in_list(list)+4 # borders take 2
+  if config[:title]
+    width = config[:title].size + 4 if width < config[:title].size + 4
+  end
+  height = config[:height]
+  height ||= [max_visible_items || 10+2, list.length+2].min 
+  #layout(1+height, width+4, row, col) 
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  window = Canis::Window.new(layout)
+  window.name = "WINDOW:popuplist"
+  window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
+  form = Canis::Form.new window
+
+  right_actions = config[:right_actions] || {}
+  config.delete(:right_actions)
+  less = 0 # earlier 0
+  listconfig = config[:listconfig] || {}
+  listconfig[:list] = list
+  listconfig[:width] = width - less
+  listconfig[:height] = height
+  listconfig[:selection_mode] ||= :single
+  listconfig.merge!(config)
+  listconfig.delete(:row); 
+  listconfig.delete(:col); 
+  # trying to pass populists block to listbox
+  lb = Canis::Listbox.new form, listconfig, &block
+  #lb.should_show_focus = true
+  #$row_focussed_attr = REVERSE
+
+  
+  # added next line so caller can configure listbox with 
+  # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
+  # 2011-11-11 
+  #yield lb if block_given? # No it won't work since this returns
+  window.wrefresh
+  Ncurses::Panel.update_panels
+  form.repaint
+  window.wrefresh
+          display_on_enter = false
+  begin
+    windows = []
+    lists = []
+    hashes = []
+    choices = []
+    unentered_window = nil
+    _list = nil
+    while((ch = window.getchar()) != 999 )
+      case ch
+      when -1
+        next
+      when ?\C-q.getbyte(0)
+        break
+      else
+        lb.handle_key ch
+        lb.form.repaint
+        if ch == Ncurses::KEY_DOWN or ch == Ncurses::KEY_UP
+          if unentered_window
+            unentered_window.destroy
+            unentered_window = nil
+          end
+          # we need to update hash as we go along and back it up.
+          if display_on_enter
+            # removed since cursor goes in
+          end
+        elsif ch == Ncurses::KEY_RIGHT
+          if hash.is_a? Hash
+            val = hash[lb.current_value]
+            if val.is_a? Hash or val.is_a? Array
+              unentered_hash = val
+              choices << lb.current_value
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+                :bgcolor => :cyan
+            end
+          else
+            x = right_actions[lb.current_value]
+            val = nil
+            if x.respond_to? :call
+              val = x.call
+            elsif x.is_a? Symbol
+              val = send(x)
+            end
+            if val
+              choices << lb.current_value
+              unentered_hash = val
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+                :bgcolor => :cyan
+            end
+
+          end
+          # move into unentered
+          if unentered_window
+            lists << lb
+            hashes << hash
+            hash = unentered_hash
+            lb = _list
+            windows << unentered_window
+            unentered_window = nil
+            _list = nil
+          end
+        elsif ch == Ncurses::KEY_LEFT
+          if unentered_window
+            unentered_window.destroy
+            unentered_window = nil
+          end
+          # close current window
+          curr = nil
+          curr = windows.pop unless windows.empty?
+          curr.destroy if curr
+          lb = lists.pop unless lists.empty?
+          hash = hashes.pop unless hashes.empty?
+          choices.pop unless choices.empty?
+          unless windows.empty?
+            #form = windows.last
+            #lb - lists.pop
+          end
+        end
+        if ch == 13 || ch == 10
+          val = lb.current_value
+          if hash.is_a? Hash
+            val = hash[val]
+            if val.is_a? Symbol
+              #alert "got #{val}"
+              #return val
+              choices << val
+              return choices
+            end
+          else
+            #alert "got value #{val}"
+            #return val
+            choices << val
+            return choices
+          end
+          break
+        end
+      end
+    end
+  ensure
+    window.destroy   if window
+    windows.each do |w| w.destroy if w ; end
+  end
+  return nil
+end
+def display_submenu hash, config={}, &block
+  raise ArgumentError, "Nil list / hash received by popuplist" unless hash
+  if hash.is_a? Hash
+    list = hash.keys
+  else
+    list = hash
+  end
+  raise ArgumentError, "Nil list received by popuplist" unless list
+
+  max_visible_items = config[:max_visible_items]
+  # FIXME have to ensure that row and col don't exceed FFI::NCurses.LINES and cols that is the window
+  # should not FINISH outside or padrefresh will fail.
+  row = config[:row] || 1
+  col = config[:col] || 0
+  relative_to = config[:relative_to]
+  if relative_to
+    layout = relative_to.form.window.layout
+    row += layout[:top]
+    col += layout[:left]
+  end
+  config.delete :relative_to
+  extra = 2 # trying to space the popup slightly, too narrow
+  width = config[:width] || longest_in_list(list)+4 # borders take 2
+  if config[:title]
+    width = config[:title].size + 4 if width < config[:title].size + 4
+  end
+  height = config[:height]
+  height ||= [max_visible_items || 10+2, list.length+2].min 
+  #layout(1+height, width+4, row, col) 
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  window = Canis::Window.new(layout)
+  window.name = "WINDOW:popuplist"
+  window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
+  form = Canis::Form.new window
+
+  less = 0 # earlier 0
+  listconfig = config[:listconfig] || {}
+  listconfig[:list] = list
+  listconfig[:width] = width - less
+  listconfig[:height] = height
+  listconfig[:selection_mode] ||= :single
+  listconfig.merge!(config)
+  listconfig.delete(:row); 
+  listconfig.delete(:col); 
+  # trying to pass populists block to listbox
+  lb = Canis::Listbox.new form, listconfig, &block
+
+  
+  # added next line so caller can configure listbox with 
+  # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
+  # 2011-11-11 
+  #yield lb if block_given? # No it won't work since this returns
+  window.wrefresh
+  Ncurses::Panel.update_panels
+  form.repaint
+  window.wrefresh
+  return window, lb
 end
 #
 =begin  
