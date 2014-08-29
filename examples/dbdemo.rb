@@ -1,8 +1,228 @@
 require 'canis/core/util/app'
 require 'sqlite3'
-#require 'canis/experimental/resultsettextview.rb'
-#require 'canis/experimental/widgets/undomanager'
 
+def menu_bar hash, config={}, &block
+  if hash.is_a? Hash
+    list = hash.keys
+  else
+    list = hash
+  end
+  raise ArgumentError, "Nil list received by popuplist" unless list
+
+  max_visible_items = config[:max_visible_items]
+  # FIXME have to ensure that row and col don't exceed FFI::NCurses.LINES and cols that is the window
+  # should not FINISH outside or padrefresh will fail.
+  row = config[:row] || 5
+  col = config[:col] || 5
+  relative_to = config[:relative_to]
+  if relative_to
+    layout = relative_to.form.window.layout
+    row += layout[:top]
+    col += layout[:left]
+  end
+  config.delete :relative_to
+  extra = 2 # trying to space the popup slightly, too narrow
+  width = config[:width] || longest_in_list(list)+4 # borders take 2
+  if config[:title]
+    width = config[:title].size + 4 if width < config[:title].size + 4
+  end
+  height = config[:height]
+  height ||= [max_visible_items || 10+2, list.length+2].min 
+  #layout(1+height, width+4, row, col) 
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  window = Canis::Window.new(layout)
+  window.name = "WINDOW:popuplist"
+  window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
+  form = Canis::Form.new window
+
+  right_actions = config[:right_actions] || {}
+  config.delete(:right_actions)
+  less = 0 # earlier 0
+  listconfig = config[:listconfig] || {}
+  listconfig[:list] = list
+  listconfig[:width] = width - less
+  listconfig[:height] = height
+  listconfig[:selection_mode] ||= :single
+  listconfig.merge!(config)
+  listconfig.delete(:row); 
+  listconfig.delete(:col); 
+  # trying to pass populists block to listbox
+  lb = Canis::Listbox.new form, listconfig, &block
+  #lb.should_show_focus = true
+  #$row_focussed_attr = REVERSE
+
+  
+  # added next line so caller can configure listbox with 
+  # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
+  # 2011-11-11 
+  #yield lb if block_given? # No it won't work since this returns
+  window.wrefresh
+  Ncurses::Panel.update_panels
+  form.repaint
+  window.wrefresh
+          display_on_enter = false
+  begin
+    windows = []
+    lists = []
+    hashes = []
+    choices = []
+    unentered_window = nil
+    _list = nil
+    while((ch = window.getchar()) != 999 )
+      case ch
+      when -1
+        next
+      when ?\C-q.getbyte(0)
+        break
+      else
+        lb.handle_key ch
+        lb.form.repaint
+        if ch == Ncurses::KEY_DOWN or ch == Ncurses::KEY_UP
+          if unentered_window
+            unentered_window.destroy
+            unentered_window = nil
+          end
+          # we need to update hash as we go along and back it up.
+          if display_on_enter
+            # removed since cursor goes in
+          end
+        elsif ch == Ncurses::KEY_RIGHT
+          if hash.is_a? Hash
+            val = hash[lb.current_value]
+            if val.is_a? Hash or val.is_a? Array
+              unentered_hash = val
+              choices << lb.current_value
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+                :bgcolor => :cyan
+            end
+          else
+            x = right_actions[lb.current_value]
+            val = nil
+            if x.respond_to? :call
+              val = x.call
+            elsif x.is_a? Symbol
+              val = send(x)
+            end
+            if val
+              choices << lb.current_value
+              unentered_hash = val
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+                :bgcolor => :cyan
+            end
+
+          end
+          # move into unentered
+          if unentered_window
+            lists << lb
+            hashes << hash
+            hash = unentered_hash
+            lb = _list
+            windows << unentered_window
+            unentered_window = nil
+            _list = nil
+          end
+        elsif ch == Ncurses::KEY_LEFT
+          if unentered_window
+            unentered_window.destroy
+            unentered_window = nil
+          end
+          # close current window
+          curr = nil
+          curr = windows.pop unless windows.empty?
+          curr.destroy if curr
+          lb = lists.pop unless lists.empty?
+          hash = hashes.pop unless hashes.empty?
+          choices.pop unless choices.empty?
+          unless windows.empty?
+            #form = windows.last
+            #lb - lists.pop
+          end
+        end
+        if ch == 13 || ch == 10
+          val = lb.current_value
+          if hash.is_a? Hash
+            val = hash[val]
+            if val.is_a? Symbol
+              #alert "got #{val}"
+              #return val
+              choices << val
+              return choices
+            end
+          else
+            #alert "got value #{val}"
+            #return val
+            choices << val
+            return choices
+          end
+          break
+        end
+      end
+    end
+  ensure
+    window.destroy   if window
+    windows.each do |w| w.destroy if w ; end
+  end
+  return nil
+end
+def display_submenu hash, config={}, &block
+  if hash.is_a? Hash
+    list = hash.keys
+  else
+    list = hash
+  end
+  raise ArgumentError, "Nil list received by popuplist" unless list
+
+  max_visible_items = config[:max_visible_items]
+  # FIXME have to ensure that row and col don't exceed FFI::NCurses.LINES and cols that is the window
+  # should not FINISH outside or padrefresh will fail.
+  row = config[:row] || 1
+  col = config[:col] || 0
+  relative_to = config[:relative_to]
+  if relative_to
+    layout = relative_to.form.window.layout
+    row += layout[:top]
+    col += layout[:left]
+  end
+  config.delete :relative_to
+  extra = 2 # trying to space the popup slightly, too narrow
+  width = config[:width] || longest_in_list(list)+4 # borders take 2
+  if config[:title]
+    width = config[:title].size + 4 if width < config[:title].size + 4
+  end
+  height = config[:height]
+  height ||= [max_visible_items || 10+2, list.length+2].min 
+  #layout(1+height, width+4, row, col) 
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  window = Canis::Window.new(layout)
+  window.name = "WINDOW:popuplist"
+  window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
+  form = Canis::Form.new window
+
+  less = 0 # earlier 0
+  listconfig = config[:listconfig] || {}
+  listconfig[:list] = list
+  listconfig[:width] = width - less
+  listconfig[:height] = height
+  listconfig[:selection_mode] ||= :single
+  listconfig.merge!(config)
+  listconfig.delete(:row); 
+  listconfig.delete(:col); 
+  # trying to pass populists block to listbox
+  lb = Canis::Listbox.new form, listconfig, &block
+
+  
+  # added next line so caller can configure listbox with 
+  # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
+  # 2011-11-11 
+  #yield lb if block_given? # No it won't work since this returns
+  window.wrefresh
+  Ncurses::Panel.update_panels
+  form.repaint
+  window.wrefresh
+  return window, lb
+end
+# TODO : if no data give an alert
+#
 # @return array of table names from selected db file
 def get_table_names
   raise "No database file selected." unless $current_db
@@ -24,7 +244,7 @@ end
 def get_data sql
   $log.debug "SQL: #{sql} "
   $columns, *rows = $db.execute2(sql)
-  $log.debug "XXX COLUMNS #{sql}  "
+  $log.debug "XXX COLUMNS #{sql}, #{rows.count}  "
   content = rows
   return nil if content.nil? or content[0].nil?
   $datatypes = content[0].types #if @datatypes.nil?
@@ -58,7 +278,54 @@ def create_popup array, selection_mode=:single,  &blk
     end
   end
 end
+# this is just a dead simple attenpt at a menu sans all the complexity of a menubar,
+#  but issue is that we need to select, and the menu disappears.
+#  We need to see the submenu as we traverse, and the tree should not disappear.
+#  # get actions working
+#  # accelerator
+#  # hotkey
+#  # separator
+#  # enabled disabled
+#  # > to come automatically at end if hash
+#  # work with horizlist
+def create_menu
+  items = Hash.new
+  # action shd be a hash
+  # menu should have array of hashes (or just a string)
+  #db = { :name => "Databases", :accelerator => "M-d", :enabled = true, :on_right => :get_databases }
+  #or = { :name => "Open Recent", :accelerator => "M-o", :enabled = true, :on_right => :get_recent }
+  #find_array = {"Find ..." => :find, "Find Next" => :find_next, "Find Previous" => :find_prev} 
+  items["File    >"] = ["Open ...       C-o" , "Open Recent",  "Databases" , "Tables", "Exit"]
+  items["Window  >"] = { "Tile" => nil, "Find   >" => {"Find ..." => :find, "Find Next" => :find_next, "Find Previous" => :find_prev},
+   "Edit" => nil, "Whatever" => nil}
+  items["Others  >"] = { "Shell Output ..." => :shell_output, "Suspend ..." => :suspend , "View File" => :choose_file_and_view}
 
+  # in the case of generated names how will call back know that it is a db name or a table name
+  # We get back an array containing the entire path of selections
+  right_actions = {}
+  right_actions["Databases"] = Proc.new { Dir.glob("**/*.{sqlite,db}") }
+  right_actions["Tables"] = :get_table_names
+
+  ret = popupmenu items, :row => 1, :col => 0, :bgcolor => :cyan, :color => :white, :right_actions => right_actions
+  # ret can be nil, or have a symbol to execute, or a String for an item with no leaf/symbol
+  if ret
+    alert "Got #{ret}"
+    last = ret.last
+    if last.is_a? Symbol
+      if respond_to?(last, true)
+        send(last)
+      end
+    end
+  end
+
+  return
+  r = 1
+  ix = popuplist( top , :title => " Menu " , :row => r, :col => 0, :bgcolor => :cyan, :color => :white)
+  if ix
+    value = top[ix]
+    ix = popuplist( items[value] , :row => r + 2 + ix, :col => 10, :bgcolor => :cyan, :color => :white)
+  end
+end
 # 
 # changed order of name and fields, thanks hramrach
 def view_data name, fields="*"
@@ -69,10 +336,21 @@ def view_data name, fields="*"
   view_sql stmt
   @form.by_name['tarea'] << stmt if @form # nil when called from menu
 end
+def view_schema tablename
+  string = `sqlite3 #{$current_db}  ".schema #{tablename}"`
+  string = $db.get_first_value "select sql from sqlite_master where name = '#{tablename}'"
+
+  string =  string.split("\n")
+  if string.size == 1
+    string = string.first.split(",")
+  end
+  view string
+end
 def view_sql stmt
   begin
   content = get_data stmt
   if content.nil?
+    alert "No data for query"
   else
     require 'canis/core/widgets/tabular'
     t = Tabular.new do |t|
@@ -89,6 +367,7 @@ def view_sql stmt
 end
 
 App.new do 
+  $log = create_logger "canisdb.log"
   #header = app_header "canis #{Canis::VERSION}", :text_center => "Database Demo", :text_right =>"enabled"
   form = @form
   mylabel = "a field"
@@ -154,11 +433,14 @@ App.new do
   def ask_databases
       names = Dir.glob("*.{sqlite,db}")
       if names
-        ix = popuplist( names )
+        ix = popuplist( names , :row => 1, :col => 0, :bgcolor => :cyan, :color => :white, :title => "Databases")
         if ix
           value = names[ix]
           connect(value);
           @form.by_name["tlist"].list(get_table_names)
+          @form.by_name["tlist"].clear_selection
+          @form.by_name["clist"].clear_selection
+          @form.by_name["clist"].remove_all
         end
         
       else
@@ -185,6 +467,9 @@ App.new do
         command do |menuitem, text|
           connect text
           form.by_name["tlist"].list(get_table_names)
+          form.by_name["tlist"].clear_selection
+          form.by_name["clist"].clear_selection
+          form.by_name["clist"].remove_all
         end
       end
       menu "Tables" do
@@ -202,6 +487,7 @@ App.new do
       item "New", "N" 
       separator
       item "Exit", "x"  do 
+        accelerator "F10"
         command do
           throw(:close)
         end
@@ -211,36 +497,50 @@ App.new do
       end
 
     end # menu
-    menu "Window" do
-      item "Tile", "T"
+    menu "Edit" do
+      item "Paste", "P"
+      menu "Paste Special" do
+        item "Paste Slowly"
+        separator
+        item "Paste Faster"
+        item "Paste Slower"
+      end
       menu "Find" do
-        item "More", "M"
-        $x = item "Less", "L" do
+        item "Find ...", "F"
+        $x = item "Find Next", "N" do
           #accelerator "Ctrl-X"
           command do
-            alert "You clickses on Less"
+            alert "You clicked on Find Next "
           end
         end
-        menu "Size" do
+        item "Find Previous", "P"
+        menu "Window" do
           item "Zoom", "Z"
           item "Maximize", "X"
           item "Minimize", "N"
         end
       end
     end
-    menu "Others" do
+    menu "Shell" do
       require 'canis/core/include/appmethods.rb'
-      item "Shell Output" do
+      require './common/devel.rb'
+      item "Shell Output ..." do
         command { shell_output }
       end
-      item "Suspend" do
+      item "Suspend ..." do
         command { suspend }
+      end
+      item "System ..." do
+        command { shell_out }
+      end
+      item "View File ..." do
+        command { choose_file_and_view }
       end
     end
   end # menubar
   mb.toggle_key = FFI::NCurses::KEY_F2
   mb.color = :white
-  mb.bgcolor = :blue
+  mb.bgcolor = :magenta
   @form.set_menu_bar mb
   tv = nil
   flow :margin_top => 1 do
@@ -251,7 +551,7 @@ App.new do
         text = ["Select DB first.","Press Alt-D or ENTER"]
       end
       tlist = listbox :name => "tlist", :list => text, :title => "Tables", :height => 10,
-        :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
+        :selected_color => :cyan, :selected_bgcolor => :white , :selected_attr => Ncurses::A_REVERSE,
         :help_text => "<ENTER> to View complete table, 'v' to select table and view columns",
         :should_show_focus => true,
         :selection_mode => :single
@@ -270,11 +570,23 @@ App.new do
       #end
       clist = listbox :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
         :selection_mode => :multiple,
-        :selected_color => 'cyan', :selected_bgcolor => 'black' , :selected_attr => Ncurses::A_REVERSE,
+        :selected_color => :cyan, :selected_bgcolor => :white , :selected_attr => Ncurses::A_REVERSE,
         :help_text => "Enter to View selected fields, 'v' to select columns, w - where, o-order"
+
+
+      # change focus color when user enters or exits
+      [clist , tlist].each do |o|
+        o.bind(:ENTER) do 
+          o.selected_color = :cyan
+        end
+        o.bind(:LEAVE) do 
+          o.selected_color = :blue
+        end
+      end
       tlist.bind(:LIST_SELECTION_EVENT) do |eve|
         $selected_table = eve.source[eve.firstrow]
         $current_table = $selected_table
+        clist.clear_selection
         clist.list( get_column_names $selected_table)
       end
       clist.bind(:PRESS) do |eve|
@@ -288,7 +600,7 @@ App.new do
           end
           view_data $selected_table, cols
         else
-          alert "Select a table first." 
+          alert "Select a table first ('v' selects)." 
         end
       end
       clist.bind_key('w', 'add to where condition') {
@@ -341,9 +653,9 @@ App.new do
         ["M-d", "Database"], ["M-t", "Table"],
         ["M-x", "Command"], nil
       ]
-      tlist_keyarray = keyarray + [ ["Sp", "Select"], nil, ["Enter","View"] ]
+      tlist_keyarray = keyarray + [ ["v", "Select"], nil, ["Enter","View"] ]
 
-      clist_keyarray = keyarray + [ ["Sp", "Select"], ["C-sp", "Range Sel"], 
+      clist_keyarray = keyarray + [ ["v", "Select"], ["V", "Range Sel"], 
         ["Enter","View"], ['w', 'where'],
         ["o","order by"], ['O', 'order desc']
       ]
@@ -395,6 +707,12 @@ App.new do
       end
       @form.bind_key(?\M-d, 'select database') do
         ask_databases
+      end
+      @form.bind_key(FFI::NCurses::KEY_F3, 'Menu') do
+        create_menu
+      end
+      @form.bind_key(FFI::NCurses::KEY_F5, 'view data') do
+        view_schema $current_table
       end
       @form.bind_key(FFI::NCurses::KEY_F4, 'view data') do
         $where_string = nil
