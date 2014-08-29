@@ -64,7 +64,7 @@ module Canis
 
       v_window = Canis::Window.new(layout)
       v_form = Canis::Form.new v_window
-      v_window.name = "Viewer"
+      v_window.name = "WINDOW::Viewer"
       if wbg
         v_window.wbkgd(Ncurses.COLOR_PAIR(wbg)); #  does not work on xterm-256color
       end
