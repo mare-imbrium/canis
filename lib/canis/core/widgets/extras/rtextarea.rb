@@ -269,6 +269,7 @@ module Canis
     ### FOR scrollable ###
     def repaint # textarea
       #return unless @repaint_required # 2010-02-12 19:08  TRYING - won't let footer print if only col move
+      @graphic = @form.window unless @graphic # print_border not getting it 2014-08-30 - 20:41 
       paint if @repaint_required
       print_foot if @print_footer && !@suppress_borders && (@repaint_footer_required || @repaint_required)
     end
@@ -839,7 +840,8 @@ module Canis
       # not sure where to put this, once for all or repeat 2010-02-12 RFED16
       #my_win = @form? @form.window : @target_window
       #$log.warn "neither form not target window given!!! TA paint 751" unless my_win
-      raise "Height or width nil h:#{@height} , w: #{@width} " if @height.nil? || @width.nil?
+      raise "height or width nil h:#{@height} , w: #{@width} " if @height.nil? || @width.nil?
+      raise "graphic is nil in textarea paint()" unless @graphic
       print_borders if (@suppress_borders == false && @repaint_all) # do this once only, unless everything changes
       rc = row_count
       _maxlen = @maxlen || @width-@internal_width # TODO fix in other branches remove ||= 
