@@ -19,20 +19,20 @@ folder. This gives a good idea of what the library does. Now you can open the so
 structure of the code and what to study. One can also select an example that is close to the application one has in mind
 and use the source as a starting point.
 
-That said, all applications will use a Window, typically a root_window which covers the entire screen.
-A Window contains a Form, which manages all the widgets or controls inside it. It manages traversal, as well
+That said, all applications will use a `Window`, typically a `root_window` which covers the entire screen.
+A Window contains a `Form`, which manages all the widgets or controls inside it. It manages traversal, as well
 as calling events on them and setting their state.
-So you may be interested in reading up on the controls you need such as a listbox or a textpad (a multiline readonly
+So you may be interested in reading up on the controls you need such as a `Listbox` or a `Textpad` (a multiline readonly
 textarea). Pay attention to the events that they handle such as row_selection, or entering and leaving a row, etc.
 
-Of interest is also the App class which wraps some basic boilerplate code such as starting and shutting ncurses, setting
+Of interest is also the `App` class which wraps some basic boilerplate code such as starting and shutting ncurses, setting
 colors, and creating a root_window and its form.
 
 Each widget has a large number of properties which can be changed at any time. Unfortunately these may not show up
-in the generated documentation since they are not created using +attr_accessor+. It is necessary for a widget to be repainted whenever
-a property is changed, thus +dsl_property+ has been used in place of +attr_accessor+.
+in the generated documentation since they are not created using `attr_accessor`. It is necessary for a widget to be repainted whenever
+a property is changed, thus `dsl_property` has been used in place of `attr_accessor`.
 
-Canis (from rbcurse) provides all the small utlities you need for user interfaces such as dialogs to get a string from the user, confirmation dialogs, dialogs to display running text or exceptions, alerts, statuslines (like vim), an application header (like alpine). dialogs to select one or more rows from a list, menus etc. It borrows features from other text applications such as vim or emacs such as multiple key mappings (e.g., 'gg'). All multiline widgets have vim keybindings for traversal including numeric prefixes.
+Canis (from rbcurse) provides all the small utilities you need for user interfaces such as dialogs to get a string from the user, confirmation dialogs, dialogs to display running text or exceptions, alerts, statuslines (like vim), an application header (like alpine). dialogs to select one or more rows from a list, menus etc. It borrows features from other text applications such as vim or emacs such as multiple key mappings (e.g., 'gg'). All multiline widgets have vim keybindings for traversal including numeric prefixes.
 
 There are routines for accessing the OS, such as shelling out to the shell, or running a shell command and seeing the results in a Viewer, or editing a file externally in your EDITOR. These can be seen in the examples.
 
@@ -80,11 +80,11 @@ is changed, although these layout objects are quite simple compared to the earli
 and flow allowed any number of recursive layers.
 
 Currently there are three layout objects:
-- StackLayout : does only stacking of objects (vertical placement)
-- FlowLayout : does only horizontal placement of obects
-- SplitLayout : allows for multiple stacks and flows by means of splitting a split either horizontally or vertically
+- `StackLayout` : does only stacking of objects (vertical placement)
+- `FlowLayout` : does only horizontal placement of obects
+- `SplitLayout` : allows for multiple stacks and flows by means of splitting a split either horizontally or vertically
   and either placing an object in it, or splitting it further. 
-These are based on an AbstractLayout which can be used to derive further layouts.
+These are based on an `AbstractLayout` which can be used to derive further layouts.
 
 It is my intention to move usage over to these layouts since they are simpler, and allow for resizing (and to abandon
 stacks and flows at some stage, unless people find them easier to use).
@@ -95,8 +95,8 @@ Issues canis would like to address:
   I would like to do this before reaching 1.0.
 
 - Keymapping. Currently, takes codes as integers, but i would have liked moving to strings as in vim.
-  Currently we have to map +?\C-a.getbytes(0)+ or +[?g, ?g]+, whereas a string would allow us to map +"<C-x>s"+ 
-  or +"<F1>"+ or +"gg"+. The issue is that there is too much rework within the library since each widget uses integer mappings.
+  Currently we have to map `?\C-a.getbytes(0)` or `[?g, ?g]`, whereas a string would allow us to map `"<C-x>s"` 
+  or `"<F1>"` or `"gg"`. The issue is that there is too much rework within the library since each widget uses integer mappings.
   Mapping and matching multiple keys would be a lot easier if stored internally as a string, currently multiple
   mappings require a hash or tree at each level.
 
