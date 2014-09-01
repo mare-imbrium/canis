@@ -55,5 +55,6 @@ Built 0.0.2 but i did not release it.
 - for 0.0.5
   - fixed a bug in handling of multiple key assignments due to which extra keys pushed onto stack
   - App keyblock yields string of key without changing or converting to symbol
-  - Statuline location defaults to -1 from bottom, earlier -3
+  - Statusline location defaults to -1 from bottom, earlier -3
   - Statusline attrib was A_REVERSE earlier, now defaults to A_NORMAL.
+  - bugs and omissions in parse_format, and in DefaultColorParser fixed.
