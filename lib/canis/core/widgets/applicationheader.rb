@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis-core/
 #         Date: 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-10 14:53
+#  Last update: 2014-09-01 13:09
 #
 #  CHANGES:
 #              For some terminals, like xterm-256color which were not printing spaces
@@ -96,7 +96,6 @@ module Canis
       #len = @window.width
       #len = Ncurses.COLS-0 if len == 0
       #
-      #@form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
       @form.window.printstring r, c, htext, @color_pair, @attr
     end
     # internal method, called by repaint to print text_center in the center
@@ -105,7 +104,6 @@ module Canis
       len = win.getmaxx
       len = Ncurses.COLS-0 if len == 0 || len > Ncurses.COLS
       #
-      #@form.window.printstring r, c, "%-*s" % [len, htext], @color_pair, @attr
       win.printstring r, ((len-htext.length)/2).floor, htext, @color_pair, @attr
     end
     # internal method to print text_right
@@ -113,7 +111,7 @@ module Canis
       hlen = htext.length
       len = @window.getmaxx # width was not changing when resize happens
       len = Ncurses.COLS-0 if len == 0 || len > Ncurses.COLS
-      $log.debug " def print_top_right(#{htext}) #{len} #{Ncurses.COLS} "
+      #$log.debug " def print_top_right(#{htext}) #{len} #{Ncurses.COLS} "
       @form.window.printstring 0, len-hlen, htext, @color_pair, @attr
     end
     ##
