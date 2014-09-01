@@ -1,3 +1,5 @@
+# Some methods an application may like to use such as the ability to suspend cooked mode
+#  and go to shell, or run a command and view output without leaving the app.
 module Canis
   module Utils
     private
@@ -94,6 +96,7 @@ module Canis
       return ret
     end
   end # utils
+
   class PrefixCommand
     attr_accessor :object
     def initialize _symbol, calling, config={}, &block
