@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-23 01:43
+#  Last update: 2014-09-01 11:57
 # ------------------------------------------------------------ #
 #
 
@@ -236,8 +236,8 @@ module Canis
           self.form = cp
         end
         @attr     ||= FFI::NCurses::A_NORMAL
-        @color      ||= :white
-        @bgcolor    ||= :black
+        @color      ||= $def_fg_color
+        @bgcolor    ||= $def_bg_color
         @color_pair = get_color($datacolor, @color, @bgcolor)
         @color_array = [@color]
         @bgcolor_array = [@bgcolor]
@@ -345,6 +345,7 @@ module Canis
         res = ChunkLine.new
         # stack the values, so when user issues "/end" we can pop earlier ones
 
+        _color, _bgcolor = ColorMap.get_colors_for_pair colorp # 2014-08-31 - 13:31 
         newblockflag = false
         @chunk_parser.parse_format(s) do |p|
           case p
@@ -358,26 +359,32 @@ module Canis
             if ls
               #sc, sb, sa = resolve_style ls
               map = resolve_style ls
-              $log.debug "  STYLLE #{ls} : #{map} "
+              #$log.debug "  STYLLE #{ls} : #{map} "
               lc ||= map[:color]
               lb ||= map[:bgcolor]
               la ||= map[:attr]
             end
+            # 2014-09-01 should i set these to _color and _bgcolor if nil. NOTE
             @_bgcolor = lb
             @_color = lc
             if la
               @attr = get_attrib la
             end
             @_color_pair = nil
+            @_color_pair = colorp # 2014-08-31 - 13:20 
+            # 2014-09-01 - 11:52 if only one of the two is given we were ignoring, now we 
+            #  need to derive the other one
             if lc && lb
               # we know only store color_pair if both are mentioned in style or tag
-              @_color_pair = get_color(nil, lc, lb)
+              @_color_pair = get_color(colorp, lc, lb)
+              # added next two conditions on 2014-09-01 - 11:56 to take care of only one mentioned in
+              # #{ block.
+            elsif lc
+              @_color_pair = get_color(colorp, lc, _bgcolor)
+            elsif lb
+              @_color_pair = get_color(colorp, _color, lb)
             end
 
-            #@color_pair_array << @color_pair
-            #@attrib_array << @attr
-            #$log.debug "XXX: CHUNK start cp=#{@color_pair} , a=#{@attr} :: c:#{lc} b:#{lb} : @c:#{@color} @bg: #{@bgcolor} "
-            #$log.debug "XXX: CHUNK start arr #{@color_pair_array} :: #{@attrib_array} ::#{@color_array} ::: #{@bgcolor_array} "
 
           when :endcolor
 
@@ -386,6 +393,11 @@ module Canis
             @_bgcolor = @_color = nil
             @_color_pair = nil
             @attr = nil
+
+            # trying out 2014-08-31 - 13:09 since we have to respect passed in colors
+            @_color ,  @_bgcolor = _color, _bgcolor
+            @_color_pair = colorp
+            @attr = att
 
             #$log.debug "XXX: CHUNK end parents:#{@parents.count}, last: #{@parents.last} "
           when :reset   # ansi has this
@@ -396,6 +408,11 @@ module Canis
             @_bgcolor = @_color = nil
             @_color_pair = nil
             @attr = nil
+            
+            # trying out 2014-08-31 - 13:09 since we have to respect passed in colors
+            @_color, @_bgcolor = _color, _bgcolor
+            @_color_pair = colorp
+            @attr = att
 
 
           when String
@@ -403,7 +420,11 @@ module Canis
             ## create the chunk
             #$log.debug "XXX:  CHUNK     using on #{p}  : #{@_color_pair} , #{@attr}, fg: #{@_color}, #{@_bgcolor}, parent: #{@parents.last} " # 2011-12-10 12:38:51
 
-            #chunk =  [color_pair, p, attr] 
+            # trying out 2014-08-31 - 13:09 since we have to respect passed in colors
+            @_color ||= _color
+            @_bgcolor ||= _bgcolor
+            @color_pair ||= colorp
+            @attr ||= att
             chunk = Chunk.new @_color_pair, p, @attr
             chunk.color = @_color
             chunk.bgcolor = @_bgcolor
