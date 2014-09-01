@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 13:17
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-05-19 12:56
+#  Last update: 2014-09-01 11:47
 # ----------------------------------------------------------------------------- #
 # == TODO
 #    - perhaps we can compile the regexp once and reuse
@@ -30,8 +30,12 @@ module Canis
     # 187compat 2013-03-20 - 19:33 not working in 187 so added ,1 in some cases for string
     def parse_format s  # yields attribs or text
       ## set default colors
-      color   = :white
-      bgcolor = :black
+      # 2014-09-01 - 11:46 setting default fg and bg is wrong, it should either set the 
+      #  objects default (which we do not know in case of statusline, or maybe remain nil)
+      color   = $def_fg_color
+      bgcolor = $def_bg_color
+      color   = nil
+      bgcolor = nil
       attrib  = FFI::NCurses::A_NORMAL
       text    = ""
 
