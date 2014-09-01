@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-19 01:27
+#  Last update: 2014-08-30 17:47
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -231,6 +231,46 @@ module Canis
 
     end
     alias :text= :text
+
+    # similar to +text+ but to view a hash using a tree object, so one can
+    #  drill down.
+    # Added on 2014-08-30 - 17:39 to view an objects instance_variables and public_methods.
+    def tree message
+      require 'canis/core/widgets/tree'
+      @suggested_w = @width || (FFI::NCurses.COLS * 0.80).floor
+      @suggested_h = @height || (FFI::NCurses.LINES * 0.80).floor
+
+      message_col = 3
+      r = 2
+      display_length = @suggested_w-4
+      display_length -= message_col
+      clr = @color || :white
+      bgclr = @bgcolor || :black
+
+      # now that we have moved to textpad that +8 was causing black lines to remain after the text
+      #message_height = message.size #+ 8
+      message_height = 20
+      # reduce if possible if its not required.
+      #
+      r1 = (FFI::NCurses.LINES-@suggested_h)/2
+      r1 = r1.floor
+      w = @suggested_w
+      c1 = (FFI::NCurses.COLS-w)/2
+      c1 = c1.floor
+      @suggested_row = r1
+      @suggested_col = c1
+      brow = @button_row || @suggested_h-4
+      available_ht = brow - r + 1
+      message_height = [message_height, available_ht].min
+      # replaced 2014-04-14 - 23:51 
+      tree = Canis::Tree.new @form, {:name=>"treedialogtree", :data => message,
+        :row => r, :col => message_col, :width => display_length, :suppress_borders => true,
+        :height => message_height, :bgcolor => bgclr , :color => clr}
+      #message_label.set_content message
+      tree.treemodel.root_visible = false
+      yield tree if block_given?
+
+    end
 
     # returns button index (or in some cases, whatever value was thrown
     # if user did not specify any button_type but gave his own and did throw (:close, x)
