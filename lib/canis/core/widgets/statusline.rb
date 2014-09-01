@@ -13,15 +13,23 @@ module Canis
   #    @status_line.command {
   #       "F1 Help | F2 Menu | F3 View | F4 Shell | F5 Sh | %20s" % [message_label.text]
   #    }
+  #
+  # == Changes
+  #  Earlier, the color of teh status line was REVERSED while printing which can be confusing 
+  #  and surprising. We should use normal, or use whatever attribute the user gives.
+  #  Also, using the row as -3 is assuming that a dock is used, which may not be the case,
+  #  so -1 should be used.
+  #
   class StatusLine < Widget
+    @@negative_offset = -1 # 2014-08-31 - 12:18 earlier -3
     #attr_accessor :row_relative # lets only advertise this when we've tested it out
 
     def initialize form, config={}, &block
-      @row_relative = -3
+      @row_relative = @@negative_offset
       if form.window.height == 0
-        @row = Ncurses.LINES-3 # fix, what about smaller windows, use window dimensions and watch out for 0,0
+        @row = Ncurses.LINES + @@negative_offset
       else
-        @row = form.window.height-3 # fix, what about smaller windows, use window dimensions and watch out for 0,0
+        @row = form.window.height + @@negative_offset
       end
        # in root windows FIXME
       @col = 0
@@ -65,6 +73,8 @@ module Canis
     #   rather whenever form.repaint is called.
     def repaint
       @color_pair ||= get_color($datacolor, @color, @bgcolor) 
+      # earlier attrib defaulted to REVERSE which was surprising.
+      _attr = @attr || Ncurses::A_NORMAL
       len = @form.window.getmaxx # width does not change upon resizing so useless, fix or do something
       len = Ncurses.COLS if len == 0 || len > Ncurses.COLS
       # this should only happen if there's a change in window
@@ -73,7 +83,7 @@ module Canis
       end
 
       # first print dashes through
-      @form.window.printstring @row, @col, "%s" % "-" * len, @color_pair, Ncurses::A_REVERSE
+      @form.window.printstring @row, @col, "%s" % "-" * len, @color_pair, _attr
 
       # now call the block to get current values
       if @command
@@ -87,19 +97,19 @@ module Canis
       # what if user wants to change attrib ?
       if ftext =~ /#\[/
         # hopefully color_pair does not clash with formatting
-        @form.window.printstring_formatted @row, @col, ftext, @color_pair, Ncurses::A_REVERSE
+        @form.window.printstring_formatted @row, @col, ftext, @color_pair, _attr
       else
-        @form.window.printstring @row, @col, ftext, @color_pair, Ncurses::A_REVERSE
+        @form.window.printstring @row, @col, ftext, @color_pair, _attr
       end
 
       if @right_text
         ftext = @right_text.call(self, @right_args) 
         if ftext =~ /#\[/
           # hopefully color_pair does not clash with formatting
-          @form.window.printstring_formatted_right @row, nil, ftext, @color_pair, Ncurses::A_REVERSE
+          @form.window.printstring_formatted_right @row, nil, ftext, @color_pair, _attr
         else
           c = len - ftext.length
-          @form.window.printstring @row, c, ftext, @color_pair, Ncurses::A_REVERSE
+          @form.window.printstring @row, c, ftext, @color_pair, _attr
         end
       else
         t = Time.now
@@ -108,7 +118,7 @@ module Canis
         # somehow the bg defined here affects the bg in left text, if left does not define
         # a bg. The bgcolor defined of statusline is ignored in left or overriden by this
         #ftext = "#[fg=white,bg=blue] %-20s#[/end]" % [tt] # print a default
-        @form.window.printstring_formatted_right @row, nil, tt, @color_pair, Ncurses::A_REVERSE
+        @form.window.printstring_formatted_right @row, nil, tt, @color_pair, _attr
       end
 
       @repaint_required = false
