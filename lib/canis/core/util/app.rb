@@ -1,7 +1,8 @@
 =begin
   * Name: App
-  * Description: Experimental Application class
-  * Author: jkepler (ABCD)
+  * Description: Application class that wraps starting and shutting ncurses and creating a root window
+    and form.
+  * Author: jkepler 
   * file created 2010-09-04 22:10 
 Todo: 
 
@@ -34,7 +35,6 @@ module Canis
   # - box / rect
   # - para looks like a label that is more than one line, and calculates rows itself based on text
   # - multicontainer
-  # - multitextview, multisplit
   # - tabbedpane
   # / table - more work regarding vim keys, also editable
   # - margin - is left offset
@@ -79,8 +79,6 @@ module Canis
     attr_reader :form
     attr_reader :window
     attr_writer :quit_key
-    # the row on which to prompt user for any inputs
-    #attr_accessor :prompt_row # 2011-10-17 14:06:22
 
     # TODO: i should be able to pass window coords here in config
     # :title
@@ -91,7 +89,7 @@ module Canis
       widget_shortcuts_init
       @variables = {}
       # if we are creating child objects then we will not use outer form. this object will manage
-      @current_object = [] 
+      #@current_object = []  # 2014-08-29 - 17:35 unused
       @_system_commands = %w{ bind_global bind_component field_help_text }
 
       init_vars
@@ -114,7 +112,7 @@ module Canis
     def logger; return $log; end
     def close
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
-      @window.destroy if !@window.nil?
+      @window.destroy if @window
       $log.debug " INSIDE CLOSE, #{@stop_ncurses_on_close} "
       if @stop_ncurses_on_close
         Canis::stop_ncurses
@@ -384,6 +382,7 @@ module Canis
     # @example
     #    hline :width => 55  
     def hline config={}
+      raise "I think this is unused. removed if this does not raise 2014-08-29 - 12:43 "
       row = config[:row] || @app_row
       width = config[:width] || 20
       _position config
@@ -452,63 +451,6 @@ module Canis
         awin = @window
         catch(:close) do
           @form = Form.new @window
-          @form.bind_key([?\C-x, ?c], 'suspend') { suspend(false) do
-            system("tput cup 26 0")
-            system("tput ed")
-            system("echo Enter C-d to return to application")
-            system (ENV['PS1']='\s-\v\$ ')
-            system(ENV['SHELL']);
-          end
-          }
-          # this is a very rudimentary default command executer, it does not 
-          # allow tab completion. App should use M-x with names of commands
-          # as in appgmail
-          # NOTE: This is gonna change very soon - 2012-01-8 
-          @form.bind_key(?:, 'prompt') { 
-            str = get_command_from_user
-          }
-
-          # this M-x stuff has to be moved out so it can be used by all. One should be able
-          # to add_commands properly to this, and to C-x. I am thinking how to go about this,
-          # and what function M-x actually serves.
-
-          @form.bind_key(?\M-x, 'M-x commands'){
-            # TODO previous command to be default
-            opts = get_all_commands()
-            @_command_history ||= Array.new
-            # previous command should be in opts, otherwise it is not in this context
-            cmd = rb_gets("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
-            if cmd.nil? || cmd == ""
-            else
-              @_command_history << cmd unless @_command_history.include? cmd
-              cmdline = cmd.split
-              cmd = cmdline.shift
-              # check if command is a substring of a larger command
-              if !opts.include?(cmd)
-                rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
-                if rcmd.size == 1
-                  cmd = rcmd.first
-                elsif !rcmd.empty?
-                  rb_puts "Cannot resolve #{cmd}. Matches are: #{rcmd} "
-                end
-              end
-              if respond_to?(cmd, true)
-                @_previous_command = cmd
-                begin
-                  send cmd, *cmdline
-                rescue => exc
-                  $log.error "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
-                  if exc
-                    $log.debug( exc) 
-                    $log.debug(exc.backtrace.join("\n")) 
-                    rb_puts exc.to_s
-                  end
-                end
-              else
-                rb_puts("Command [#{cmd}] not supported by #{self.class} ", :color_pair => $promptcolor)
-              end
-            end
-          }
           #@form.bind_key(KEY_F1, 'help'){ display_app_help } # NOT REQUIRED NOW 2012-01-7 since form does it
           @form.bind_key([?q,?q], 'quit' ){ throw :close } if $log.debug?
 
@@ -543,6 +485,69 @@ module Canis
           end #if block
         end # :close
       end
+    end
+    # Some bindings that were earlier part of App (in the run block), but now optional for an 
+    #  app. I would like to move it out, so they can be mapped separately to whatever a user wants
+    #  and be improved. these are very experimental and bare as yet.
+    # They should also be usable outside of App.
+    def app_bindings
+      @form.bind_key([?\C-x, ?c], 'suspend') { suspend(false) do
+        system("tput cup 26 0")
+        system("tput ed")
+        system("echo Enter C-d to return to application")
+        system (ENV['PS1']='\s-\v\$ ')
+        system(ENV['SHELL']);
+      end
+      }
+      # this is a very rudimentary default command executer, it does not 
+      # allow tab completion. App should use M-x with names of commands
+      # as in appgmail
+      # NOTE: This is gonna change very soon - 2012-01-8 
+      @form.bind_key(?:, 'prompt') { 
+        str = get_command_from_user
+      }
+
+      # this M-x stuff has to be moved out so it can be used by all. One should be able
+      # to add_commands properly to this, and to C-x. I am thinking how to go about this,
+      # and what function M-x actually serves.
+
+      @form.bind_key(?\M-x, 'M-x commands'){
+        # TODO previous command to be default
+        opts = get_all_commands()
+        @_command_history ||= Array.new
+        # previous command should be in opts, otherwise it is not in this context
+        cmd = rb_gets("Command: ", opts){ |q| q.default = @_previous_command; q.history = @_command_history }
+        if cmd.nil? || cmd == ""
+        else
+          @_command_history << cmd unless @_command_history.include? cmd
+          cmdline = cmd.split
+          cmd = cmdline.shift
+          # check if command is a substring of a larger command
+          if !opts.include?(cmd)
+            rcmd = _resolve_command(opts, cmd) if !opts.include?(cmd)
+            if rcmd.size == 1
+              cmd = rcmd.first
+            elsif !rcmd.empty?
+              rb_puts "Cannot resolve #{cmd}. Matches are: #{rcmd} "
+            end
+          end
+          if respond_to?(cmd, true)
+            @_previous_command = cmd
+            begin
+              send cmd, *cmdline
+            rescue => exc
+              $log.error "ERR EXC: send throwing an exception now. Duh. IMAP keeps crashing haha !! #{exc}  " if $log.debug? 
+              if exc
+                $log.debug( exc) 
+                $log.debug(exc.backtrace.join("\n")) 
+                rb_puts exc.to_s
+              end
+            end
+          else
+            rb_puts("Command [#{cmd}] not supported by #{self.class} ", :color_pair => $promptcolor)
+          end
+        end
+      }
     end
     # process args, all widgets should call this
     def _process_args args, config, block_event, events  #:nodoc:
