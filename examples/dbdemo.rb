@@ -574,13 +574,15 @@ App.new do
         :help_text => "Enter to View selected fields, 'v' to select columns, w - where, o-order"
 
 
-      # change focus color when user enters or exits
+      # change selected color when user enters or exits
       [clist , tlist].each do |o|
         o.bind(:ENTER) do 
-          o.selected_color = :cyan
+          # reduce flicker by only modifying if necesssary
+          o.selected_color = :cyan if o.selected_color != :cyan
         end
         o.bind(:LEAVE) do 
-          o.selected_color = :blue
+          # reduce flicker by only modifying if necesssary
+          o.selected_color = :blue unless o.selected_indices.empty?
         end
       end
       tlist.bind(:LIST_SELECTION_EVENT) do |eve|
@@ -626,24 +628,17 @@ App.new do
         message "order: #{$order_columns.last}"
         $log.debug "XXX: ORDER: #{$order_columns}. Press F4 when done"
       }
-      @statusline = status_line
-      #wg = get_color($datacolor, 'white','green')
-      #wb = get_color($datacolor, 'white','blue')
+      @statusline = status_line :row => -3, :bgcolor => :magenta, :color => :black
       @statusline.command { 
         # trying this out. If you want a persistent message that remains till the next on
         #  then send it in as $status_message
         text = $status_message.value || ""
         if !$current_db
-          #"[%-s] %s" % [ "Select a Database", text]
-          "[%-s] %s" % [ "#[bg=red,fg=yellow]Select a Database#[end]", text]
-          #[ [nil, "%-22s" % Time.now, nil], [$errorcolor, " [Select a Database ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+          "[%-s] %s" % [ "#[bg=red,fg=white,bold]Select a Database#[end]", text]
         elsif !$current_table
-          "[DB: #[fg=white,bg=blue]%-s#[end] | %-s ] %s" % [ $current_db || "None", $current_table || "#[bg=red,fg=yellow]Select a table#[end]", text] 
-          #[ [nil, "%-22s [DB: %-s | " % [Time.now, $current_db || "None" ],nil], [$errorcolor, " Select a Table ]", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+          "[DB: #[fg=white,bg=blue]%-s#[end] | %-s ] %s" % [ $current_db || "None", $current_table || "#[bg=red,fg=white]Select a table#[end]", text] 
         else
-          "DB: #[fg=white,bg=green,bold]%-s#[end] | #[bold]%-s#[end] ] %s" % [ $current_db || "None", $current_table || "----", text] 
-          #[ [nil, "%-22s [DB: " % Time.now, nil], [wb, " #{$current_db} ", FFI::NCurses::A_BOLD],
-          #[wg, $current_table || "----", FFI::NCurses::A_BOLD], [nil, text, nil] ]
+          "DB: #[fg=white,bg=green,bold]%-s#[end] | #[fg=white,bold]%-s#[end] ] %s" % [ $current_db || "None", $current_table || "----", text] 
         end
       }
       @adock = nil
@@ -708,11 +703,24 @@ App.new do
       @form.bind_key(?\M-d, 'select database') do
         ask_databases
       end
+      @form.bind_key(?\M-s, 'Enter SQL') do
+        str = get_text "Enter SQL"
+        if str
+          str = str.join " "
+          view_sql str
+        end
+      end
       @form.bind_key(FFI::NCurses::KEY_F3, 'Menu') do
         create_menu
       end
-      @form.bind_key(FFI::NCurses::KEY_F5, 'view data') do
+      @form.bind_key(FFI::NCurses::KEY_F5, 'view schema') do
         view_schema $current_table
+      end
+      @form.bind_key(FFI::NCurses::KEY_F6, 'view properties') do
+        view_properties @form.get_current_field
+      end
+      @form.bind_key(FFI::NCurses::KEY_F7, 'view properties as tree') do
+        view_properties_as_tree @form.get_current_field
       end
       @form.bind_key(FFI::NCurses::KEY_F4, 'view data') do
         $where_string = nil
