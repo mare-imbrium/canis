@@ -60,6 +60,23 @@ def textdialog mess, config={}
   tv.unbind_key(KEY_ENTER)
   tp.run
 end
+
+# Used to popup and view a hash in a dialog. User may press ENTER or o to expand nodes
+#  and other keys such as "x" to close nodes.
+def treedialog hash, config={}
+  config[:title] ||= "Alert"
+  tp = MessageBox.new config do
+    button_type :ok
+    tree hash
+  end
+  # Not having as default means i can only press SPACE and that is confusing since we are used to pressing
+  #  ENTER on textdialog
+  #tp.default_button = 10  # i don't want a default since ENTER is trapped by tree
+  #tv = tp.form.by_name["message_label"]
+  # 2014-04-15 so that ENTER can hit okay without tabbing to button. FIX IN RBC
+  #tv.unbind_key(KEY_ENTER)
+  tp.run
+end
 # 
 # This uses the new messagebox 2011-11-19 v 1.5.0
 # NOTE: The earlier get_string had only an OK button, this seems to have a CANCEL
@@ -115,6 +132,69 @@ def get_string label, config={} # yield Field
     ## added field history 2013-03-06 - 14:24 
     t = tp.form.by_name[:name].text
     $get_string_history << t if t && !$get_string_history.include?(t)
+    return t
+  else # CANCEL
+    # Should i use nil or blank. I am currently opting for nil, as this may imply to caller
+    # that user does not wish to override whatever value is being prompted for.
+    return nil
+  end
+end
+# @param [String] a label such as "Enter name:"
+# @return [Array] value entered by user, nil if cancel pressed
+# @yield [textarea] field created by messagebox
+def get_text label, config={} # yield TextArea
+  config[:title] ||= "Entry"
+  config[:title_color] ||= $reversecolor
+  label_config = config[:label_config] || {}
+  label_config[:row] ||= 1
+  label_config[:col] ||= 2
+  label_config[:text] = label
+
+  # I am not changing the name from field to text in case user wishes to swtch between the two
+  field_config = config[:field_config] || {}
+  field_config[:row] ||= 2
+  field_config[:col] ||= 2
+  #field_config[:attr] = :reverse
+  field_config[:color] ||= :black
+  field_config[:bgcolor] ||= :cyan
+  #field_config[:maxlen] ||= config[:maxlen]
+  #field_config[:text] ||= config[:default]
+  #field_config[:default] = field_config[:default].chomp if field_config[:default]
+  field_config[:name] = :name
+  #field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
+  #field_config[:width] ||= 50  # i want it to extend since i don't know the actual width
+
+  defwid = config[:default].nil? ? 30 : config[:default].size + 13
+  #w = [label.size + 8, defwid, field_config[:width]+13 ].max
+  #config[:width] ||= w
+  w = config[:width] = Ncurses.COLS - 5
+  h = config[:height] = Ncurses.LINES - 5
+  row = ((FFI::NCurses.LINES-h)/2).floor
+  col = ((FFI::NCurses.COLS-w)/2).floor
+  config[:row] = row
+  config[:col] = col
+  field_config[:width] ||= w - 7
+  field_config[:height] ||= h - 6
+  field_config[:suppress_borders] = true
+  ## added history 2013-03-06 - 14:25 : we could keep history based on prompt
+  $get_string_history ||= []
+  #$log.debug "XXX:  FIELD SIZE #{w} "
+  #$log.debug "XXX:  FIELD CONFIG #{field_config} "
+  tp = MessageBox.new config do
+    button_type :ok_cancel
+    default_button 0
+    item Label.new nil, label_config
+    fld = TextArea.new nil, field_config
+    item fld
+    ## added field history 2013-03-06 - 14:24 
+  end
+  # added yield to override settings
+  yield tp.form.by_name[:name] if block_given?
+  index = tp.run
+  if index == 0 # OK
+    ## added field history 2013-03-06 - 14:24 
+    t = tp.form.by_name[:name].text
+    #$get_string_history << t if t && !$get_string_history.include?(t)
     return t
   else # CANCEL
     # Should i use nil or blank. I am currently opting for nil, as this may imply to caller
