@@ -4,7 +4,7 @@
 #               Also, stacks and flows objects
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 05.11.11 - 15:13 
-#  Last update: 2014-07-10 00:40
+#  Last update: 2014-08-29 16:16
 #
 #  I hope this slowly does not become an unmaintainable maze like vimsplit
 #
@@ -26,8 +26,6 @@
 # what is the real purpose of the shortcuts, is it to avoid putting nil
 # for form there if not required.
 # Or is it positioning, such as in a stack. or just a method ?
-#require 'canis/core/widgets/rlist'
-## trying out new list based on textpad 2014-04-07 - 00:02 CANIS
 module Canis
   module WidgetShortcuts
     class Ws
@@ -366,6 +364,8 @@ module Canis
     end
     # make it as simple as possible, don't try to be intelligent or
     # clever, put as much on the user 
+    #
+    # shortcut for a stack.
     def stack config={}, &block
       s = WsStack.new config
       @_ws_active ||= []
