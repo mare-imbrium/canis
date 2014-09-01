@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-07-10 18:33
+#  Last update: 2014-08-30 17:50
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -77,6 +77,89 @@ module Canis
     if str and str != ""
       code_browse str
     end
+  end
+  # for the current field, display the instance variables and their values
+  #  as well as the public methods.
+  # (We can do this in a tree format too)
+  def view_properties field=@form.get_current_field
+    alert "Nil field" unless field
+    return unless field
+    text = ["Instance Variables"]
+    text << "------------------"
+    #iv = field.instance_variables.map do |v| v.to_s; end
+    field.instance_variables.each do |v|
+      val = field.instance_variable_get(v)
+      klass = val.class
+      if val.is_a? Array 
+        val = val.size
+      elsif val.is_a? Hash
+        val = val.keys
+      end
+      case val
+      when String, Fixnum, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
+        ;
+      else
+        val = "Not shown"
+      end
+      text << "%20s  %10s  %s" % [v, klass, val]
+    end
+    text << " "
+    text << "Public Methods"
+    text << "--------------"
+    pm = field.public_methods(false).map do |v| v.to_s; end
+    text +=  pm
+    text << " "
+    text << "Inherited Methods"
+    text << "-----------------"
+    pm = field.public_methods(true) - field.public_methods(false)
+    pm = pm.map do |v| v.to_s; end
+    text +=  pm
+
+    #$log.debug "  view_properties #{s.size} , #{s} "
+    textdialog text, :title => "Properties"
+  end
+
+  # place instance_vars of current or given object into a hash
+  #  and view in a treedialog.
+  def view_properties_as_tree field=@form.get_current_field
+    alert "Nil field" unless field
+    return unless field
+    text = []
+    tree = {}
+    #iv = field.instance_variables.map do |v| v.to_s; end
+    field.instance_variables.each do |v|
+      val = field.instance_variable_get(v)
+      klass = val.class
+      if val.is_a? Array 
+        #tree[v.to_s] = val
+        text << { v.to_s => val }
+        val = val.size
+      elsif val.is_a? Hash
+        #tree[v.to_s] = val
+        text << { v.to_s => val }
+        if val.size <= 5
+          val = val.keys
+        else
+          val = val.keys.size.to_s + " [" + val.keys.first(5).join(", ") + " ...]"
+        end
+      end
+      case val
+      when String, Fixnum, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
+        ;
+      else
+        val = "Not shown"
+      end
+      text << "%-20s  %10s  %s" % [v, klass, val]
+    end
+    tree["Instance Variables"] = text
+    pm = field.public_methods(false).map do |v| v.to_s; end
+    tree["Public Methods"] = pm
+    pm = field.public_methods(true) - field.public_methods(false)
+    pm = pm.map do |v| v.to_s; end
+    tree["Inherited Methods"] = pm
+
+    #$log.debug "  view_properties #{s.size} , #{s} "
+    treedialog tree, :title => "Properties"
   end
   def ruby_renderer
     require 'canis/core/include/defaultfilerenderer'
