@@ -446,7 +446,7 @@ end # }}}
 # TODO FIXME block got ignored
 def status_window aconfig={}, &block
   sw = StatusWindow.new aconfig
-  window.name = "WINDOW::status_window"
+  sw.win.name = "WINDOW::status_window"
   return sw unless block_given?
   begin
     yield sw
@@ -463,7 +463,7 @@ def progress_dialog aconfig={}, &block
   aconfig[:row_offset] ||= 4
   aconfig[:col_offset] ||= 5
   window = status_window aconfig
-  window.name = "WINDOW::progress_dialog"
+  window.win.name = "WINDOW::progress_dialog"
   height = 10; width = 60
   window.win.print_border_mb 1,2, height, width, $normalcolor, FFI::NCurses::A_REVERSE
   return window unless block_given?
