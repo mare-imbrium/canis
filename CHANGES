@@ -61,3 +61,7 @@ Built 0.0.2 but i did not release it.
   - Statusline location defaults to -1 from bottom, earlier -3
   - Statusline attrib was A_REVERSE earlier, now defaults to A_NORMAL.
   - bugs and omissions in parse_format, and in DefaultColorParser fixed.
+
+2014-09-02
+- for 0.0.7
+  rdialog.rb introduced a syntax error while adding names to windows, had to yank 0.0.6
