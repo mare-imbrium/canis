@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-27 20:54
+#  Last update: 2014-09-03 17:54
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -553,6 +553,7 @@ module Canis
 
           @document = val[0]
           @document.source ||= self
+          @document.parse_required # added 2014-09-03 - 17:54 
           @list = @document.text
         when Array
           # This is the complex case which i would like to phase out.
@@ -596,6 +597,7 @@ module Canis
 
         @document = val
         @document.source ||= self
+        @document.parse_required # added 2014-09-03 - 17:54 
         @list = @document.text
       end
       @_populate_needed = true
@@ -683,6 +685,8 @@ module Canis
     # NOTE there are some cases where document can return a nil since native_text has not been
     #  calculated yet. Happens in back button of help. Earlier preprocess was done from +text+
     #  not it is only done from +repaint+
+    # NOTE: native_text is currently Chunklines - chunks of text with information of color, whereas
+    #  list contains whatever the user set, which can include markup for coloring (ansi/tmux).
     def _getarray
       if @document.nil?
         return @list
