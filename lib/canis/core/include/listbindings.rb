@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-03 14:10
+#  Last update: 2014-09-03 17:50
 # ----------------------------------------------------------------------------- #
 #
 module Canis
@@ -84,6 +84,80 @@ module Canis
       bind_key([?\C-x, ?e], :edit_external)
       
     end # def
+    # adding here so that textpad can also use. Earlier in textarea only
+    # Test out with textarea too TODO 
+    # 2014-09-03 - 12:49 
+    def saveas name=nil, config={}
+      unless name
+        name = rb_gets "File to save as: "
+        return if name.nil? || name == ""
+      end
+      overwrite_if_exists = config[:overwrite_if_exists] || false
+      unless overwrite_if_exists
+        exists = File.exists? name
+        if exists # need to prompt
+          return unless rb_confirm("Overwrite existing file? ")
+        end
+      end
+      # if it has been set do not prompt. or ask only if value is :ask
+      # But this should only be if there is someformatting provided, that is there 
+      # is a @document
+      l = @list
+      # the check for document is to see if it is some old widget like textarea that is calling this.
+      if @document
+        if config.key? :save_with_formatting
+          save_with_formatting = config[:save_with_formatting] 
+        else
+          save_with_formatting = rb_confirm("Save with formatting?")
+        end
+        if save_with_formatting
+          l = @list
+        else
+          l = @document.native_text().map do |w| w.to_s ; end
+        end
+      end
+      #l = getvalue
+      File.open(name, "w"){ |f|
+        l.each { |line| f.puts line }
+        #l.each { |line| f.write line.gsub(/\r/,"\n") }
+      }
+      rb_puts "#{name} written."
+    end
+    # save content of textpad overwriting if name exists
+    def saveas! name=nil, config={}
+      config[:overwrite_if_exists] = true
+      saveas name, config
+    end
+
+    # Edit the content of the textpad using external editor defaulting to EDITOR.
+    # copied from textarea, modified for textpad and document, needs to be tested TODO
+    # This should not be allowed as a default, some objects may not want to allow it.
+    # It should be enabled, or programmer should bind it to a key
+    def edit_external
+      require 'canis/core/include/appmethods'
+      require 'tempfile'
+      f = Tempfile.new("canis")
+      l = self.text
+      l.each { |line| f.puts line }
+      fp = f.path
+      f.flush
+
+      editor = ENV['EDITOR'] || 'vi'
+      vimp = %x[which #{editor}].chomp
+      ret = shell_out "#{vimp} #{fp}"
+      if ret
+        lines = File.open(f,'r').readlines
+        if @document
+          @document.text = lines
+          @document.parse_required
+          self.text(@document)
+          # next line works
+          #self.text(lines, :content_type => :tmux)
+        else
+          set_content(lines)
+        end
+      end
+    end
   end
 end
 include Canis::ListBindings
