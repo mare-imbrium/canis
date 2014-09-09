@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-25 - 12:52
 #      License: MIT
-#  Last update: 2014-07-08 13:11
+#  Last update: 2014-09-03 17:55
 # ----------------------------------------------------------------------------- #
 #  textdocument.rb  Copyright (C) 2012-2014 j kepler
 
@@ -26,7 +26,7 @@ module Canis
 
     # returns the native or transformed format of original content. +text+ gets transformed into
     #  native text. The renderer knows how to display native_text.
-    #attr_reader :native_text
+    # NOTE: native_text is currently Chunklines - chunks of text with information of color
     def native_text
       unless @native_text
         preprocess_text @text
@@ -35,6 +35,7 @@ module Canis
     end
     # specify a renderer if you do not want the DefaultRenderer to be installed.
     attr_accessor :renderer
+    # the source object using this document
     attr_reader :source
 
     def initialize hash
@@ -47,7 +48,7 @@ module Canis
       raise "textdoc recieves nil content_type in constructor" unless @content_type
     end
     # declare that transformation of entire content is required. Currently called by fire_dimension_changed event
-    #  of textpad.
+    #  of textpad. NOTE: not called from event, now called in text()
     def parse_required
       @parse_required = true
     end
