@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2011-12-11 - 12:58
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-09-03 17:50
+#  Last update: 2014-09-11 19:09
 # ----------------------------------------------------------------------------- #
 #
 module Canis
