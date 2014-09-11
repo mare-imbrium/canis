@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-25 - 12:52
 #      License: MIT
-#  Last update: 2014-09-03 17:55
+#  Last update: 2014-09-11 19:48
 # ----------------------------------------------------------------------------- #
 #  textdocument.rb  Copyright (C) 2012-2014 j kepler
 
@@ -98,7 +98,8 @@ module Canis
         create_default_content_type_handler
       end
       @parse_required = false
-      @native_text = @content_type_handler.parse_text formatted_text
+      # 2014-09-11 - 19:47 sending in color from here, otherwise the wrong default is picked. TEST 
+      @native_text = @content_type_handler.parse_text formatted_text, @source.color_pair, @source.attr
     end
     # returns title of document
     def title
