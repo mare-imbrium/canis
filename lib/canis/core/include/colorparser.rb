@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-09-01 11:57
+#  Last update: 2014-09-11 19:51
 # ------------------------------------------------------------ #
 #
 
@@ -320,10 +320,12 @@ module Canis
       # parse array of Strings into array of Chunks (Chunklines)
       # @param [Array<String>] formatted text to be parsed into chunks
       # @return [Array<Abstractchunkline>] array of text in our native format (chunklines)
-      def parse_text formatted_text
+      # 2014-09-11 - 19:48 added colorp and attr so that incorrect default is not picked
+      #     object such as textpad can send in default, textdocument not does so.
+      def parse_text formatted_text, colorp=nil, attr=nil
         l = []
         formatted_text.each { |e| 
-          l << convert_to_chunk(e) 
+          l << convert_to_chunk(e, colorp, attr)
         }
         return l
       end
