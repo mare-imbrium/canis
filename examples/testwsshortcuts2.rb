@@ -35,7 +35,7 @@ class SetupMessagebox
             field :label => "%15s" % ["Address: "], :width => 15, :attr => :reverse
             blank
             check :text => "Using version control", :value => true, :onvalue => "yes", :offvalue => "no" do |eve|
-              unless eve.item.value 
+              unless eve.item.value
                 alert "NO VC! We need to talk"
               end
             end
@@ -53,7 +53,7 @@ class SetupMessagebox
             radio :text => "Window", :value => "Win", :group => :os
             blank
           flow  :item_width => 15 do
-            button :text => "Install" do 
+            button :text => "Install" do
               # you can avoid this by giving the radio buttons your own Variable (see test2.rb)
               choice = @variables[:os].value
               case choice
@@ -72,7 +72,7 @@ class SetupMessagebox
         end
       end # flow
       #button :text => "Execute"
-      text = ["      #[reverse]Unix Philosophy #[end]  ", 
+      text = ["      #[reverse]Unix Philosophy #[end]  ",
         "#[fg=green, underline]Eric Raymond#[end] in his book, #[fg=green, underline]The Art of Unix Programming#[end] summarized the Unix philosophy.",
       "  ",
         "Rule of #[fg=yellow]Modularity#[end]: Write simple parts connected by clean interfaces.",
@@ -91,7 +91,7 @@ class SetupMessagebox
         #t.formatted_text(text, :tmux)
         t.text(text, :content_type => :tmux)
         t1 = textview :title => 'ansi formatted document'
-        text = File.open("data/color.2","r").readlines
+        text = File.open(File.expand_path("../data/color.2", __FILE__),"r").readlines
         #text = `ri -f bs String`.split("\n")
         #t1.formatted_text(text, :ansi)
         t1.text(text, :content_type => :ansi)
