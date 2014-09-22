@@ -527,7 +527,7 @@ App.new do
     end
     menu "Shell" do
       require 'canis/core/include/appmethods.rb'
-      require './common/devel.rb'
+      require_relative './common/devel.rb'
       item "Shell Output ..." do
         command { shell_output }
       end
