@@ -1,9 +1,8 @@
 require 'canis/core/util/app'
 require 'fileutils'
 require 'canis/core/widgets/tree/treemodel'
-#require 'canis/common/file'
-require './common/file'
-require './common/devel'
+require_relative './common/file'
+require_relative './common/devel'
 
 def _directories wd
   $log.debug " directories got :#{wd}: "
@@ -16,7 +15,7 @@ def _directories wd
   return ent
 end
 $log = create_logger "canis14.log"
-App.new do 
+App.new do
   def help_text
     <<-eos
 
@@ -56,7 +55,7 @@ App.new do
       files.delete(".")
       #files = file_listing path, :mode => :LONG
       ll.clear_selection
-      ll.list files 
+      ll.list files
       ll.title path
       #TODO show all details in filelist
       @current_path = path
@@ -73,14 +72,14 @@ App.new do
   # we have an array of path, to add recursively, one below the other
   nodes = []
   nodes <<  TreeNode.new(patharray.shift)
-  patharray.each do |e| 
+  patharray.each do |e|
     nodes <<  nodes.last.add(e)
   end
   last = nodes.last
   nodes.last.add entries
   model = DefaultTreeModel.new nodes.first
   model.root_visible = false
-     
+
 
 
   ht = FFI::NCurses.LINES - 2
@@ -93,7 +92,7 @@ App.new do
       path = File.join(*node.user_object_path)
       dirs = _directories path
       ch = node.children
-      ch.each do |e| 
+      ch.each do |e|
         o = e.user_object
         if dirs.include? o
           dirs.delete o
@@ -117,7 +116,7 @@ App.new do
     end # select
     #$def_bg_color = :blue
     @form.bgcolor = :blue
-    @t.expand_node last # 
+    @t.expand_node last #
     @t.mark_parents_expanded last # make parents visible
     @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll',
       :left_margin => 1
@@ -153,7 +152,7 @@ App.new do
         file_edit _f if File.exists? _f
       end
     end
-    @form.bind_key([?\\, ?l, ?1]){ 
+    @form.bind_key([?\\, ?l, ?1]){
       ll = @form.by_name["ll"]
       ll.renderer.formatter = proc do | fname, stat, prefix|
         "%s%-40s | %10d | %s " % [prefix, fname, stat.size, stat.mtime.strftime("%Y-%m-%d")]
@@ -164,7 +163,7 @@ App.new do
       ll.repaint
       #ll.fire_dimension_changed
     }
-    @form.bind_key([?\\, ?l, ?2]){ 
+    @form.bind_key([?\\, ?l, ?2]){
       ll = @form.by_name["ll"]
       ll.renderer.formatter = nil
       #ll.fire_dimension_changed
