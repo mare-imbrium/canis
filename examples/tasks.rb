@@ -2,7 +2,7 @@ require 'canis/core/util/app'
 require 'canis/core/include/defaultfilerenderer'
 #require 'canis/core/widgets/rlist'
 
-App.new do 
+App.new do
 def resize
   tab = @form.by_name["tasklist"]
   cols = Ncurses.COLS
@@ -18,13 +18,13 @@ end
 
   message "Press F10 or qq to quit "
 
-  file = "data/todo.txt"
+  file = File.expand_path("../data/todo.txt", __FILE__)
   alist = File.open(file,'r').read.split("\n") if File.exists? file
   #flow :margin_top => 1, :item_width => 50 , :height => FFI::NCurses.LINES-2 do
   #stack :margin_top => 1, :width => :expand, :height => FFI::NCurses.LINES-4 do
 
     #task = field :label => "    Task:", :width => 50, :maxlen => 80, :bgcolor => :cyan, :color => :black
-    #pri = field :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
+    #pri = field :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer,
       #:valid_range => 1..9, :bgcolor => :cyan, :color => :black , :default => "5"
     #pri.overwrite_mode = true
     # u,se voerwrite mode for this TODO and catch exception
@@ -44,26 +44,26 @@ end
     lb = listbox :list => alist.sort, :title => "[ todos ]", :name => "tasklist", :row => 1, :height => Ncurses.LINES-4, :width => Ncurses.COLS-1
     lb.should_show_focus = false
     lb.renderer dr
-    lb.bind_key(?d, "Delete Row"){ 
+    lb.bind_key(?d, "Delete Row"){
       if confirm("Delete #{lb.current_value} ?")
-        lb.delete_at lb.current_index 
+        lb.delete_at lb.current_index
         $data_modified = true
         # TODO reposition cursor at 0. use list_data_changed ?
       end
     }
-    lb.bind_key(?e, "Edit Row"){ 
+    lb.bind_key(?e, "Edit Row"){
       if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value, :maxlen => 80, :width => 70)) != nil)
 
         lb[lb.current_index]=value
         $data_modified = true
       end
     }
-    lb.bind_key(?a, "Add Record"){ 
+    lb.bind_key(?a, "Add Record"){
 
       # ADD
     task = LabeledField.new :label => "    Task:", :width => 60, :maxlen => 80, :bgcolor => :cyan, :color => :black,
     :name => 'task'
-    pri = LabeledField.new :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer, 
+    pri = LabeledField.new :label => "Priority:", :width => 1, :maxlen => 1, :type => :integer,
       :valid_range => 1..9, :bgcolor => :cyan, :color => :black , :default => "5", :name => 'pri'
     pri.overwrite_mode = true
     config = {}
@@ -77,10 +77,10 @@ end
     end
     index = tp.run
     if index == 0 # OK
-      # when does this memory get released ??? XXX 
-      _t = tp.form.by_name['pri'].text 
+      # when does this memory get released ??? XXX
+      _t = tp.form.by_name['pri'].text
       if _t != ""
-        val =  @default_prefix + tp.form.by_name['pri'].text + ". " + tp.form.by_name['task'].text 
+        val =  @default_prefix + tp.form.by_name['pri'].text + ". " + tp.form.by_name['task'].text
         w = @form.by_name["tasklist"]
         _l = w.list
         _l << val
@@ -92,11 +92,11 @@ end
     end
     }
     # decrease priority
-    lb.bind_key(?-, 'decrease priority'){ 
+    lb.bind_key(?-, 'decrease priority'){
       line = lb.current_value
       p = line[1,1].to_i
       if p < 9
-        p += 1 
+        p += 1
         line[1,1] = p.to_s
         lb[lb.current_index]=line
         lb.list(lb.list.sort)
@@ -104,11 +104,11 @@ end
       end
     }
     # increase priority
-    lb.bind_key(?+, 'increase priority'){ 
+    lb.bind_key(?+, 'increase priority'){
       line = lb.current_value
       p = line[1,1].to_i
       if p > 1
-        p -= 1 
+        p -= 1
         line[1,1] = p.to_s
         lb[lb.current_index]=line
         lb.list(lb.list.sort)
@@ -120,7 +120,7 @@ end
       end
     }
     # mark as done
-    lb.bind_key(?x, 'mark done'){ 
+    lb.bind_key(?x, 'mark done'){
       line = lb.current_value
       line[0,1] = "x"
       lb[lb.current_index]=line
@@ -128,7 +128,7 @@ end
       $data_modified = true
     }
     # flag task with a single character
-    lb.bind_key(?!, 'flag'){ 
+    lb.bind_key(?!, 'flag'){
       line = lb.current_value.chomp
       value = get_string("Flag for #{line}. Enter one character.", :maxlen => 1, :width => 1)
       #if ((value = get_string("Edit Task:", :width => 80, :default => lb.current_value)) != nil)
@@ -146,7 +146,7 @@ end
   @form.bind(:RESIZE) {  resize }
 
     keyarray = [
-      ["F1" , "Help"], ["F10" , "Exit"], 
+      ["F1" , "Help"], ["F10" , "Exit"],
       ["F2", "Menu"], ["F4", "View"],
       ["d", "delete item"], ["e", "edit item"],
       ["a", "add item"], ["x", "close item"],
@@ -156,7 +156,7 @@ end
     ]
 
     gw = get_color($reversecolor, 'green', 'black')
-    @adock = dock keyarray, { :row => Ncurses.LINES-2, :footer_color_pair => $datacolor, 
+    @adock = dock keyarray, { :row => Ncurses.LINES-2, :footer_color_pair => $datacolor,
       :footer_mnemonic_color_pair => gw }
 
   @window.confirm_close_command do
@@ -167,13 +167,13 @@ end
     w = @form.by_name["tasklist"]
     if confirm("Save tasks?", :default_button => 0)
       system("cp #{file} #{file}.bak")
-      File.open(file, 'w') {|f| 
-        w.list.each { |e|  
-          f.puts(e) 
-        } 
-      } 
+      File.open(file, 'w') {|f|
+        w.list.each { |e|
+          f.puts(e)
+        }
+      }
     end
     end # if modif
   end
-  
+
 end # app
