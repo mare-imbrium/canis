@@ -2,7 +2,7 @@ require 'canis/core/util/app'
 require 'canis/core/widgets/listfooter'
 require 'canis/core/util/promptmenu'
 
-App.new do 
+App.new do
   # TODO: combine this with widget menu
   def app_menu
       menu = PromptMenu.new self do
@@ -20,7 +20,7 @@ App.new do
   # to execute when app_menu is invoked
   # very tricky , this depends on the keys that have been mapped
   # Here we are pushing the mapped key to trigger a method.
-  # FIXME NOTE these have stopped working since I think i now clear keys 
+  # FIXME NOTE these have stopped working since I think i now clear keys
   #  after a key is processed, so unget will not work.
   #  Use +handle_key+ instead of +ungetch+, although that won't work if multiple
   #   keys involved.
@@ -71,7 +71,7 @@ def help_text
     <a>         - select all
     <*>         - invert selection
 
-    </>         - <slash> for searching, 
+    </>         - <slash> for searching,
                   <n> to continue searching
 
     Keys specific to this example
@@ -81,7 +81,7 @@ def help_text
     <o>         - insert a row after current one
     <U>         - undo delete
 
-         Motion keys 
+         Motion keys
 
     Usual for [[list]] and [[textpad]] such as :
     j, k, h, l
@@ -120,8 +120,8 @@ def _edit h, row, title
   config = { :width => 70, :title => title }
   bw = get_color $datacolor, :black, :white
   mb = MessageBox.new config do
-    h.each_with_index { |f, i| 
-      add LabeledField.new :label => "%*s:" % [_w, f], :text => row[i].chomp, :name => i.to_s, 
+    h.each_with_index { |f, i|
+      add LabeledField.new :label => "%*s:" % [_w, f], :text => row[i].chomp, :name => i.to_s,
         :bgcolor => :cyan,
         :width => 50,
         :label_color_pair => bw
@@ -130,7 +130,7 @@ def _edit h, row, title
   end
   index = mb.run
   return nil if index != 0
-  h.each_with_index { |e, i| 
+  h.each_with_index { |e, i|
     f = mb.widget(i.to_s)
     row[i] = f.text
   }
@@ -177,15 +177,15 @@ lf.command_right(){ |comp|
   " [#{comp.size} tasks]"
 }
 =end
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Table Demo", :text_right =>": menu", 
-      :color => :black, :bgcolor => :green #, :attr => :bold 
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Table Demo", :text_right =>": menu",
+      :color => :black, :bgcolor => :green #, :attr => :bold
   message "Press F10 to exit, F1 for help, : for menu"
   @form.help_manager.help_text = help_text()
   $orig_cols = Ncurses.COLS
   $orig_rows = Ncurses.LINES
 
   h = %w[ Id Title Priority Status]
-  file = "data/table.txt"
+  file = File.expand_path("../data/table.txt", __FILE__)
 
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
     tw = table :print_footer => true, :name => "tab"
@@ -204,7 +204,7 @@ lf.command_right(){ |comp|
     tw.bind_key(?e, 'edit row') {  edit_row tw }
     tw.bind_key(?o, 'insert row') {  insert_row tw }
     tw.create_default_sorter
-  
+
   end # stack
   status_line :row => FFI::NCurses.LINES-1
   @form.bind_key(?:, 'menu') {  app_menu }
