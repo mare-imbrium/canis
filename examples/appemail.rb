@@ -8,11 +8,11 @@ require './common/rmail'
 # this will go into top namespace so will conflict with other apps!
 def testchoose
   # list filters as you type
-  $log.debug "called CHOOSE " if $log.debug? 
+  $log.debug "called CHOOSE " if $log.debug?
   filter = "*"
   filter = ENV['PWD']+"/*"
   str = choose filter, :title => "Files", :prompt => "Choose a file: "
-  message "We got #{str} " 
+  message "We got #{str} "
 end
 def testnumberedmenu
   list1 =  %w{ ruby perl python erlang rake java lisp scheme chicken }
@@ -33,7 +33,7 @@ def testdisplay_text
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
-  str = ask("File?  ", Pathname)  do |q| 
+  str = ask("File?  ", Pathname)  do |q|
     q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
     q.helptext = "Enter start of filename and tab to get completion"
   end
@@ -42,16 +42,16 @@ end
 def test
 end
 def saveas1
-  @tv.saveas 
+  @tv.saveas
 end
 
-# experimental. 
+# experimental.
 # if components have some commands, can we find a way of passing the command to them
 # method_missing gave a stack overflow.
 def execute_this(meth, *args)
-  $log.debug "app email got #{meth}  " if $log.debug? 
+  $log.debug "app email got #{meth}  " if $log.debug?
   cc = @vim.current_component
-  [cc, @lb2, @tv].each do |c|  
+  [cc, @lb2, @tv].each do |c|
     if c.respond_to?(meth, true)
       c.send(meth, *args)
       return true
@@ -60,7 +60,7 @@ def execute_this(meth, *args)
   false
 end
 
-App.new do 
+App.new do
   ht = 24
   @messages = nil
   $unread_hash = {}
@@ -72,7 +72,7 @@ App.new do
 
   stack :margin_top => 1, :margin => 0, :width => :EXPAND do
     # NOTE: please fix the next 2 lines based on where your mbox files reside
-    model = ["~/mbox"] 
+    model = ["~/mbox"]
     others = "~/mail/"
     boxes = Dir.new(File.expand_path(others)).entries
     boxes.delete(".")
@@ -84,28 +84,28 @@ App.new do
     @vim = master_detail :width => :EXPAND
     @dirs = listbox :list => model, :height => ht, :border_attrib => borderattrib, :suppress_borders => true
     @dirs.one_key_selection = false
-    
+
     # commands that can be mapped to or executed using M-x
     # however, commands of components aren't yet accessible.
     def get_commands
       %w{ testchoose testnumberedmenu testdisplay_list testdisplay_text testdir saveas1 }
     end
-    # we override/open instance so as to only print basename. Also, print unread count 
+    # we override/open instance so as to only print basename. Also, print unread count
     def @dirs.convert_value_to_text(text, crow)
       str = File.basename(text)
       if $unread_hash.has_key?(str)
         str << " (#{$unread_hash[str]})"
       else
-        str 
+        str
       end
     end
     def test1XX
-      $log.debug "called test1 " if $log.debug? 
+      $log.debug "called test1 " if $log.debug?
       str = choose "*.rb", :title => "Files", :prompt => "Choose a file: "
     end
     def help_text
       <<-eos
-               APPEMAIL HELP 
+               APPEMAIL HELP
 
       This is some help text for appemail.
       We are testing out this feature.
@@ -131,7 +131,7 @@ App.new do
     end
     @vim.set_left_component @dirs
 
-    
+
     @mails = []
     headings = %w{ Stat #  Date From Subject }
     @lb2 = tabular_widget :suppress_borders => true

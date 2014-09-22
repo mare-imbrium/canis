@@ -8,11 +8,11 @@ class Tester
     acolor = $reversecolor
   end
   def run
-    @window = Canis::Window.root_window 
+    @window = Canis::Window.root_window
     @form = Form.new @window
 
     h = 20; w = 75; t = 3; l = 4
-   #$choice = 1 
+   #$choice = 1
     case $choice
     when 1
     root    =  TreeNode.new "ROOT"
@@ -29,7 +29,7 @@ class Tester
     leaf1 << "leaf11"
     leaf1 << "leaf12"
 
-    root.add "blocky", true do 
+    root.add "blocky", true do
       add "block2"
       add "block3" do
         add "block31"

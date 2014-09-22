@@ -1,20 +1,20 @@
 # NOTE: If the listbox is empty, that could mean that you have not generated
 #  ri documentation for this version of ruby. You can do so by doing:
-#    rvm docs generate-ri 
-#    or 
+#    rvm docs generate-ri
+#    or
 #    rvm docs generate
 #  (This assumes you are using rvm)
 #
-# WARNING : IF THIS PROGRAM HANGS check the ri command 
+# WARNING : IF THIS PROGRAM HANGS check the ri command
 # Maybe your version of ri has different options and is going interactive.
 # ruby 1.9.3's ri requires a -l option or else if becomes interactive.
 # this program tests out a listbox
-# This is written in the old style where we start and end ncurses and initiate a 
+# This is written in the old style where we start and end ncurses and initiate a
 # getch loop. It gives more control.
 # The new style is to use App which does the ncurses setup and teardown, as well
 # as manages keys. It also takes care of logger and includes major stuff.
 # NOTE : this is the new listbox (based on Textpad version, the original
-#  version has been moved to deprecated. 2014-04-08 - 18:32 
+#  version has been moved to deprecated. 2014-04-08 - 18:32
 require 'logger'
 require 'canis'
 require 'canis/core/widgets/listbox'
@@ -39,14 +39,14 @@ end
 Press <ENTER> on a class name on the first list, to view `ri` information
 for it on the right.
 
-Tab to right box, navigate to a method name, and press <ENTER> on a method 
+Tab to right box, navigate to a method name, and press <ENTER> on a method
 name, to see its details in a popup screen.
 Press */* <slash> in any box to search. e.g "/String" will take you to the
 first occurrence of "String". <n> will take you to the next match.
 
 To go quickly to the first Class starting with 'S', type <f> followed by <S>.
 Then press <n> to go to next match.
-    
+
 =========================================================================
 ## Vim Edit Keys
 
@@ -64,7 +64,7 @@ These are not of use here, but are demonstrative of list capabilities.
 ## Buffers
 
 Ordinary a [[textpad]] contains only one buffer. However, the one on the right
-is extended for multiple buffers. Pressing <ENTER> on the left on several 
+is extended for multiple buffers. Pressing <ENTER> on the left on several
 rows opens multiple buffers on the right. Use <M-n> (Alt-N) and <M-p> to navigate.
 ALternatively, <:> maps to a menu, so :n and :p may also be used.
 <BACKSPACE> will also go to previous buffer, like a browser.
@@ -81,15 +81,15 @@ if $0 == __FILE__
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-    logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
     $log = Logger.new(logfilename)
     $log.level = Logger::DEBUG
 
     @window = Canis::Window.root_window
     $log.debug "  WINDOW #{FFI::NCurses.LINES} "
     $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
-    # Initialize few color pairs 
-    # Create the window to be associated with the form 
+    # Initialize few color pairs
+    # Create the window to be associated with the form
     # Un post form and free the memory
 
     catch(:close) do
@@ -103,14 +103,14 @@ if $0 == __FILE__
       r = 1; fc = 1;
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
-      
+
       v = "F10 quits. F1 Help.  Try j k gg G o O C dd f<char> w yy p P / . Press ENTER on Class or Method"
-      var = Canis::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
+      var = Canis::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2,
         "col" => fc, "width" => 100}
 
       h = FFI::NCurses.LINES-3
       file = "./data/ports.txt"
-      #mylist = File.open(file,'r').readlines 
+      #mylist = File.open(file,'r').readlines
       mylist = `ri -l `.split("\n")
       w = 25
       #0.upto(100) { |v| mylist << "#{v} scrollable data" }
@@ -131,8 +131,8 @@ if $0 == __FILE__
       listb.vieditable_init_listbox
       include Io
       listb.bind_key(?r, 'get file'){ get_file("Get a file:") }
-      listb.bind(:PRESS) { 
-        w = @form.by_name["tv"]; 
+      listb.bind(:PRESS) {
+        w = @form.by_name["tv"];
         #lines = `ri -f bs #{listb.current_value}`.split("\n")
         #lines = `ri -f ansi #{listb.current_value} 2>&1`.gsub('[m','[0m').split("\n")
         lines = get_data listb.current_value
@@ -144,7 +144,7 @@ if $0 == __FILE__
 
       tv = Canis::TextPad.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
       :name => "tv", :title => "Press Enter on method"
-      tv.set_content ["Press Enter on list to view ri information in this area.", 
+      tv.set_content ["Press Enter on list to view ri information in this area.",
         "Press ENTER on method name to see details"]
       require 'canis/core/include/multibuffer'
       tv.extend(Canis::MultiBuffers)
@@ -157,7 +157,7 @@ if $0 == __FILE__
         w = ev.word_under_cursor.strip
         # check that user did not hit enter on empty area
         if w != ""
-          #_text = `ri -f bs #{tv.title}.#{w} 2>&1` 
+          #_text = `ri -f bs #{tv.title}.#{w} 2>&1`
           #_text = _text.split("\n")
           _text = get_data "#{tv.title}.#{w}"
           if _text && _text.size != 0
