@@ -1,5 +1,9 @@
 require 'canis/core/util/app'
-require 'sqlite3'
+begin
+  require 'sqlite3'
+rescue LoadError
+  puts "LoadError: You need sqlite3 installed for this example"
+end
 
 def menu_bar hash, config={}, &block
   if hash.is_a? Hash
@@ -27,9 +31,9 @@ def menu_bar hash, config={}, &block
     width = config[:title].size + 4 if width < config[:title].size + 4
   end
   height = config[:height]
-  height ||= [max_visible_items || 10+2, list.length+2].min 
-  #layout(1+height, width+4, row, col) 
-  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  height ||= [max_visible_items || 10+2, list.length+2].min
+  #layout(1+height, width+4, row, col)
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col }
   window = Canis::Window.new(layout)
   window.name = "WINDOW:popuplist"
   window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
@@ -44,17 +48,17 @@ def menu_bar hash, config={}, &block
   listconfig[:height] = height
   listconfig[:selection_mode] ||= :single
   listconfig.merge!(config)
-  listconfig.delete(:row); 
-  listconfig.delete(:col); 
+  listconfig.delete(:row);
+  listconfig.delete(:col);
   # trying to pass populists block to listbox
   lb = Canis::Listbox.new form, listconfig, &block
   #lb.should_show_focus = true
   #$row_focussed_attr = REVERSE
 
-  
-  # added next line so caller can configure listbox with 
+
+  # added next line so caller can configure listbox with
   # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
-  # 2011-11-11 
+  # 2011-11-11
   #yield lb if block_given? # No it won't work since this returns
   window.wrefresh
   Ncurses::Panel.update_panels
@@ -92,7 +96,7 @@ def menu_bar hash, config={}, &block
             if val.is_a? Hash or val.is_a? Array
               unentered_hash = val
               choices << lb.current_value
-              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb,
                 :bgcolor => :cyan
             end
           else
@@ -106,7 +110,7 @@ def menu_bar hash, config={}, &block
             if val
               choices << lb.current_value
               unentered_hash = val
-              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb, 
+              unentered_window, _list = display_submenu val, :row => lb.current_index, :col => lb.width, :relative_to => lb,
                 :bgcolor => :cyan
             end
 
@@ -190,9 +194,9 @@ def display_submenu hash, config={}, &block
     width = config[:title].size + 4 if width < config[:title].size + 4
   end
   height = config[:height]
-  height ||= [max_visible_items || 10+2, list.length+2].min 
-  #layout(1+height, width+4, row, col) 
-  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col } 
+  height ||= [max_visible_items || 10+2, list.length+2].min
+  #layout(1+height, width+4, row, col)
+  layout = { :height => 0+height, :width => 0+width, :top => row, :left => col }
   window = Canis::Window.new(layout)
   window.name = "WINDOW:popuplist"
   window.wbkgd(Ncurses.COLOR_PAIR($reversecolor));
@@ -205,15 +209,15 @@ def display_submenu hash, config={}, &block
   listconfig[:height] = height
   listconfig[:selection_mode] ||= :single
   listconfig.merge!(config)
-  listconfig.delete(:row); 
-  listconfig.delete(:col); 
+  listconfig.delete(:row);
+  listconfig.delete(:col);
   # trying to pass populists block to listbox
   lb = Canis::Listbox.new form, listconfig, &block
 
-  
-  # added next line so caller can configure listbox with 
+
+  # added next line so caller can configure listbox with
   # events such as ENTER_ROW, LEAVE_ROW or LIST_SELECTION_EVENT or PRESS
-  # 2011-11-11 
+  # 2011-11-11
   #yield lb if block_given? # No it won't work since this returns
   window.wrefresh
   Ncurses::Panel.update_panels
@@ -294,7 +298,7 @@ def create_menu
   # menu should have array of hashes (or just a string)
   #db = { :name => "Databases", :accelerator => "M-d", :enabled = true, :on_right => :get_databases }
   #or = { :name => "Open Recent", :accelerator => "M-o", :enabled = true, :on_right => :get_recent }
-  #find_array = {"Find ..." => :find, "Find Next" => :find_next, "Find Previous" => :find_prev} 
+  #find_array = {"Find ..." => :find, "Find Next" => :find_next, "Find Previous" => :find_prev}
   items["File    >"] = ["Open ...       C-o" , "Open Recent",  "Databases" , "Tables", "Exit"]
   items["Window  >"] = { "Tile" => nil, "Find   >" => {"Find ..." => :find, "Find Next" => :find_next, "Find Previous" => :find_prev},
    "Edit" => nil, "Whatever" => nil}
@@ -326,7 +330,7 @@ def create_menu
     ix = popuplist( items[value] , :row => r + 2 + ix, :col => 10, :bgcolor => :cyan, :color => :white)
   end
 end
-# 
+#
 # changed order of name and fields, thanks hramrach
 def view_data name, fields="*"
   fields = "*" if fields == ""
@@ -355,7 +359,7 @@ def view_sql stmt
     require 'canis/core/widgets/tabular'
     t = Tabular.new do |t|
       t.headings = $columns
-      t.data=content   
+      t.data=content
     end
     view t.render
   end
@@ -366,7 +370,7 @@ def view_sql stmt
   end
 end
 
-App.new do 
+App.new do
   $log = create_logger "canisdb.log"
   #header = app_header "canis #{Canis::VERSION}", :text_center => "Database Demo", :text_right =>"enabled"
   form = @form
@@ -384,7 +388,7 @@ App.new do
   end
   def help_text
     <<-eos
-               DBDEMO HELP 
+               DBDEMO HELP
 
       This is some help text for dbdemo.
       We are testing out this feature.
@@ -407,7 +411,7 @@ App.new do
       Alt-x    -   Command mode (<tab> to see commands and select)
       :        -   Command mode
       Alt-z    -   Commands in TextArea
-      
+
                 Sql Entry Area
       C-x e        Edit in $EDITOR or vi
       M-?          To see other key-bindings
@@ -442,13 +446,13 @@ App.new do
           @form.by_name["clist"].clear_selection
           @form.by_name["clist"].remove_all
         end
-        
+
       else
         alert "Can't find a .db or .sqlite file"
       end
   end
   @form.help_manager.help_text = help_text()
-  # TODO accelerators and 
+  # TODO accelerators and
   # getting a handle for later use
   mb = menubar do
     keep_visible true
@@ -456,7 +460,7 @@ App.new do
     menu "File" do
       item "Open", "O" do
         accelerator "Ctrl-O"
-        command do 
+        command do
           alert "HA!! you wanted to open a file?"
         end
       end
@@ -484,9 +488,9 @@ App.new do
           create_popup(get_column_names(text), :multiple) { |value| view_data( text, value.join(",") ) }
         end
       end
-      item "New", "N" 
+      item "New", "N"
       separator
-      item "Exit", "x"  do 
+      item "Exit", "x"  do
         accelerator "F10"
         command do
           throw(:close)
@@ -523,7 +527,7 @@ App.new do
     end
     menu "Shell" do
       require 'canis/core/include/appmethods.rb'
-      require './common/devel.rb'
+      require_relative './common/devel.rb'
       item "Shell Output ..." do
         command { shell_output }
       end
@@ -568,7 +572,7 @@ App.new do
         # too much confusion between selected and focussed row
         #$current_table = eve.text if $db
       #end
-      clist = listbox :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14, 
+      clist = listbox :name => "clist", :list => ["No columns"], :title => "Columns", :height => 14,
         :selection_mode => :multiple,
         :selected_color => :cyan, :selected_bgcolor => :white , :selected_attr => Ncurses::A_REVERSE,
         :help_text => "Enter to View selected fields, 'v' to select columns, w - where, o-order"
@@ -576,11 +580,11 @@ App.new do
 
       # change selected color when user enters or exits
       [clist , tlist].each do |o|
-        o.bind(:ENTER) do 
+        o.bind(:ENTER) do
           # reduce flicker by only modifying if necesssary
           o.selected_color = :cyan if o.selected_color != :cyan
         end
-        o.bind(:LEAVE) do 
+        o.bind(:LEAVE) do
           # reduce flicker by only modifying if necesssary
           o.selected_color = :blue unless o.selected_indices.empty?
         end
@@ -602,7 +606,7 @@ App.new do
           end
           view_data $selected_table, cols
         else
-          alert "Select a table first ('v' selects)." 
+          alert "Select a table first ('v' selects)."
         end
       end
       clist.bind_key('w', 'add to where condition') {
@@ -629,41 +633,41 @@ App.new do
         $log.debug "XXX: ORDER: #{$order_columns}. Press F4 when done"
       }
       @statusline = status_line :row => -3, :bgcolor => :magenta, :color => :black
-      @statusline.command { 
+      @statusline.command {
         # trying this out. If you want a persistent message that remains till the next on
         #  then send it in as $status_message
         text = $status_message.value || ""
         if !$current_db
           "[%-s] %s" % [ "#[bg=red,fg=white,bold]Select a Database#[end]", text]
         elsif !$current_table
-          "[DB: #[fg=white,bg=blue]%-s#[end] | %-s ] %s" % [ $current_db || "None", $current_table || "#[bg=red,fg=white]Select a table#[end]", text] 
+          "[DB: #[fg=white,bg=blue]%-s#[end] | %-s ] %s" % [ $current_db || "None", $current_table || "#[bg=red,fg=white]Select a table#[end]", text]
         else
-          "DB: #[fg=white,bg=green,bold]%-s#[end] | #[fg=white,bold]%-s#[end] ] %s" % [ $current_db || "None", $current_table || "----", text] 
+          "DB: #[fg=white,bg=green,bold]%-s#[end] | #[fg=white,bold]%-s#[end] ] %s" % [ $current_db || "None", $current_table || "----", text]
         end
       }
       @adock = nil
       keyarray = [
-        ["F1" , "Help"], ["F10" , "Exit"], 
+        ["F1" , "Help"], ["F10" , "Exit"],
         ["F2", "Menu"], ["F4", "View"],
         ["M-d", "Database"], ["M-t", "Table"],
         ["M-x", "Command"], nil
       ]
       tlist_keyarray = keyarray + [ ["v", "Select"], nil, ["Enter","View"] ]
 
-      clist_keyarray = keyarray + [ ["v", "Select"], ["V", "Range Sel"], 
+      clist_keyarray = keyarray + [ ["v", "Select"], ["V", "Range Sel"],
         ["Enter","View"], ['w', 'where'],
         ["o","order by"], ['O', 'order desc']
       ]
       tarea_keyarray = keyarray + [ ["M-z", "Commands"], nil ]
-      #tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["w","Save"], ["a", "Append next"], 
+      #tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["w","Save"], ["a", "Append next"],
       #["y", "Yank"], ["Y", "yank pop"] ]
-      tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["e", "Edit externally"], ["w","Kill Ring Save (M-w)"], ["a", "Append Next"], 
+      tarea_sub_keyarray = [ ["r", "Run"], ["c", "clear"], ["e", "Edit externally"], ["w","Kill Ring Save (M-w)"], ["a", "Append Next"],
         ["y", "Yank (C-y)"], ["Y", "yank pop (M-y)"],
         ["u", "Undo (C-_)"], ["R", "Redo (C-r)"],
       ]
 
       gw = get_color($reversecolor, 'green', 'black')
-      @adock = dock keyarray, { :row => Ncurses.LINES-2, :footer_color_pair => $datacolor, 
+      @adock = dock keyarray, { :row => Ncurses.LINES-2, :footer_color_pair => $datacolor,
         :footer_mnemonic_color_pair => gw }
       @adock.set_key_labels tlist_keyarray, :tables
       @adock.set_key_labels clist_keyarray, :columns
@@ -741,7 +745,7 @@ App.new do
           end
           view_data $current_table, cols
         else
-          alert "Select a table first." 
+          alert "Select a table first."
         end
       end
     end # stack
@@ -777,7 +781,7 @@ App.new do
       while((ch = @window.getchar()) != ?\C-c.getbyte(0) )
         if ch < 33 || ch > 126
           Ncurses.beep
-        elsif !keys.include?(ch.chr) 
+        elsif !keys.include?(ch.chr)
           Ncurses.beep
         else
           hash.fetch(ch.chr).call
@@ -795,7 +799,7 @@ App.new do
 
           if filename
             str = tarea.get_text
-            File.open(filename, 'a') {|f| f.write(str) } 
+            File.open(filename, 'a') {|f| f.write(str) }
             @oldfilename = filename
             @cmd_history << filename unless @cmd_history.include? filename
 
@@ -809,18 +813,18 @@ App.new do
           filter = "*"
           #str = choose filter, :title => "Files", :prompt => "Choose a file: "
           cproc = Proc.new { |str| Dir.glob(str + "*") }
-          str = rb_gets "Choose a file: ", :title => "Files", :tab_completion => cproc, 
+          str = rb_gets "Choose a file: ", :title => "Files", :tab_completion => cproc,
             :help_text => "Press <tab> to complete filenames. C-a, C-e, C-k. Alt-?"
           if str && File.exists?(str)
             begin
-              tarea.set_content(str) 
+              tarea.set_content(str)
               message "Read content from #{str} "
             rescue => err
               print_error_message "No file named: #{str}: #{err.to_s} "
             end
           end
         end
-        #ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do 
+        #ok_button = button( [button_row,30], "OK", {:mnemonic => 'O'}) do
         #end
       end
       blank

@@ -3,7 +3,7 @@ require 'canis'
 require 'canis/core/include/appmethods.rb'
 def help_text
       <<-eos
-# FIELD  HELP 
+# FIELD  HELP
 
 This is some help text for |Fields|
 
@@ -16,8 +16,8 @@ Use Alt (meta) with the highlighted character to jump to that field.
 <Alt-m> goes to line, <Alt-p> to password.
 
 Notice how the field label (for first 3 fields) becomes red when focused (as in Pine/Alpine). This uses
-the event `:ENTER` and `:LEAVE` and +set_label+. The other fields use `LabeledField+. In the first 3, the 
-labels row and col have not been specified, so are calculated. In the last 3, label's lcol and lrow are 
+the event `:ENTER` and `:LEAVE` and +set_label+. The other fields use `LabeledField+. In the first 3, the
+labels row and col have not been specified, so are calculated. In the last 3, label's lcol and lrow are
 specified for custom placement.
 
 
@@ -49,15 +49,15 @@ if $0 == __FILE__
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
 
     @lookfeel = :classic # :dialog # or :classic
 
     @window = Canis::Window.root_window
-    # Initialize few color pairs 
-    # Create the window to be associated with the form 
+    # Initialize few color pairs
+    # Create the window to be associated with the form
     # Un post form and free the memory
 
     catch(:close) do
@@ -70,11 +70,11 @@ if $0 == __FILE__
       mnemonics = %w[ n l r p]
       %w[ name line regex password].each_with_index do |w,i|
         field = Field.new @form do
-          name w 
-          row  r 
-          col  fc 
+          name w
+          row  r
+          col  fc
           width  30
-          #text "abcd " 
+          #text "abcd "
           set_label Label.new @form, {:text => w, :color=> :cyan, :mnemonic => mnemonics[i]}
         end
         r += 1
@@ -87,7 +87,7 @@ if $0 == __FILE__
 
       @form.by_name["name"].text( "Not focusable").
         focusable(false)
-      
+
       @form.by_name["regex"].valid_regex(/^[A-Z][a-z]*/).
         text( "SYNOP").
         width(10).
@@ -102,10 +102,10 @@ if $0 == __FILE__
     r += 3
     l1 = Label.new @form, :name => "LabeledField", :attr => 'bold', :text => "Profile", :row => r, :col => fc
     r += 1
-    f1 = LabeledField.new @form,  :name => "name1", :maxlen => 20, :width => 20, :bgcolor => :white, 
+    f1 = LabeledField.new @form,  :name => "name1", :maxlen => 20, :width => 20, :bgcolor => :white,
       :color => :black, :text => "abc", :label => '    Name: ', :row => r, :col => fc
     r += 1
-    f2 = LabeledField.new @form, :name => "email", :width => 20, :bgcolor => :white, 
+    f2 = LabeledField.new @form, :name => "email", :width => 20, :bgcolor => :white,
       :color => :blue, :text => "me@google.com", :label => '   Email: ', :row => r, :col => fc
     r += 3
     f3 = LabeledField.new @form
@@ -129,7 +129,7 @@ if $0 == __FILE__
           bgcolor(:white).color(:black).
           row(r+i).col(fc).lcol(01)
       end
-      @form.bind_key(FFI::NCurses::KEY_F3,'view log') { 
+      @form.bind_key(FFI::NCurses::KEY_F3,'view log') {
         require 'canis/core/util/viewer'
         Canis::Viewer.view(path || "canis14.log", :close_key => KEY_ENTER, :title => "<Enter> to close")
       }
@@ -162,10 +162,10 @@ if $0 == __FILE__
         begin
           @form.handle_key(ch)
 
-        rescue FieldValidationException => fve 
+        rescue FieldValidationException => fve
           #alert fve.to_s
           textdialog fve
-          
+
           f = @form.get_current_field
           # lets restore the value
           if f.respond_to? :restore_original_value

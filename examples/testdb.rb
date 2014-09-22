@@ -48,9 +48,9 @@ def _edit h, row, title
   bw = get_color $datacolor, :black, :white
   mb = MessageBox.new config do
     txt = nil
-    h.each_with_index { |f, i| 
+    h.each_with_index { |f, i|
       txt = row[i] || ""
-      add LabeledField.new :label => "%*s:" % [_w, f], :text => txt.chomp, :name => i.to_s, 
+      add LabeledField.new :label => "%*s:" % [_w, f], :text => txt.chomp, :name => i.to_s,
         :bgcolor => :cyan,
         :width => 50,
         :label_color_pair => bw
@@ -59,7 +59,7 @@ def _edit h, row, title
   end
   index = mb.run
   return nil if index != 0
-  h.each_with_index { |e, i| 
+  h.each_with_index { |e, i|
     f = mb.widget(i.to_s)
     row[i] = f.text
   }
@@ -69,7 +69,7 @@ begin
   # Initialize curses
   Canis::start_ncurses  # this is initializing colors via ColorMap.setup
   path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-  logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+  logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
   $log = Logger.new(logfilename)
   $log.level = Logger::DEBUG
 
@@ -84,7 +84,7 @@ begin
     @window = Canis::Window.root_window
     @form = Form.new @window
 
-    #header = app_header "0.0.1", :text_center => "Movie Database", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold 
+    #header = app_header "0.0.1", :text_center => "Movie Database", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold
 
 
 
@@ -146,7 +146,7 @@ begin
     tv.bind_key(?i) { insert_row(tv) }
     tv.bind_key(?D) { tv.delete_at tv.current_index }
     @form.bind_key(?\M-c, "Filter") {
-      tv = @form.by_name["tv"]; 
+      tv = @form.by_name["tv"];
       str = get_string "Enter name of director:"
       if str && str.length > 0
       m = tv.matching_indices do |ix, fields|

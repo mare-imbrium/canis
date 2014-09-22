@@ -4,7 +4,7 @@ require 'canis/core/widgets/rcombo'
 require 'canis/core/include/appmethods.rb'
 def help_text
       <<-eos
-# COMBO  HELP 
+# COMBO  HELP
 
 This is some help text for |Combos|
 
@@ -30,13 +30,13 @@ if $0 == __FILE__
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
 
     @window = Canis::Window.root_window
-    # Initialize few color pairs 
-    # Create the window to be associated with the form 
+    # Initialize few color pairs
+    # Create the window to be associated with the form
     # Un post form and free the memory
 
     catch(:close) do
@@ -49,7 +49,7 @@ if $0 == __FILE__
 
 
 
-        cb = ComboBox.new @form, :row => 7, :col => 2, :width => 20, 
+        cb = ComboBox.new @form, :row => 7, :col => 2, :width => 20,
           :list => %w[xterm xterm-color xterm-256color screen vt100 vt102],
           :arrow_key_policy => :popup,
           :label => "Declare terminal as: "

@@ -1,5 +1,5 @@
 # demo to test keypresses
-# press any key and see the value that ncurses or our routines catch. 
+# press any key and see the value that ncurses or our routines catch.
 # Press alt and control combinations and Function keys
 # Ideally each key should return only one value. Sometimes, some TERM setting
 # or terminal emulator may not give correct values or may give different values
@@ -37,7 +37,7 @@ if $0 == __FILE__
       # please use a hash to pass these values, avoid this old style
       # i want to move away from it as it comlpicates code
         texta = TextPad.new @form do
-          name   "mytext" 
+          name   "mytext"
           row  r
           col  c
           width w
@@ -49,7 +49,7 @@ if $0 == __FILE__
           title_attrib (Ncurses::A_BOLD)
         end
       help = "q to quit. escdelay is #{nd}. Check keys. F1..10, C-a..z, Alt a-zA-Z0-9, C-left,rt, Sh-F5..10 .: #{$0}"
-      help1 = "Press in quick succession: 1) M-[, w     and (2)  M-[, M-w.        (3)  M-Sh-O, w."  
+      help1 = "Press in quick succession: 1) M-[, w     and (2)  M-[, M-w.        (3)  M-Sh-O, w."
       Canis::Label.new @form, {'text' => help, "row" => r+h+1, "col" => 2, "color" => "yellow"}
       Canis::Label.new @form, {'text' => help1, "row" => r+h+2, "col" => 2, "color" => "green"}
       texta.text = ["Press any key, Function, control, alt etc to see ","if it works.",

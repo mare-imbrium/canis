@@ -13,20 +13,20 @@ require 'canis'
 require 'canis/core/include/appmethods.rb'
 def help_text
       <<-eos
-               BUTTONS  HELP 
+               BUTTONS  HELP
 
       This is some help text for testbuttons.
       To select any button press the SPACEBAR, although ENTER will also work.
       You may also press the mnemonic or hotkey on the label..
 
-      The toggle button toggles the kind of dialog for the Cancel button. Modern look 
+      The toggle button toggles the kind of dialog for the Cancel button. Modern look
       and feel refers to a popup with buttons. This is like the links editor.
 
       Classic look and feel refers to a line at the bottom of the screen, with a y/n prompt.
       THis is like a lot of older apps, i think Pine and maybe vim.
 
 
-      Alt-c/F10 -   Exit application 
+      Alt-c/F10 -   Exit application
 
 
 
@@ -42,7 +42,7 @@ if $0 == __FILE__
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
 
@@ -50,8 +50,8 @@ if $0 == __FILE__
     @lookfeel = :dialog # or :classic
 
     @window = Canis::Window.root_window
-    # Initialize few color pairs 
-    # Create the window to be associated with the form 
+    # Initialize few color pairs
+    # Create the window to be associated with the form
     # Un post form and free the memory
 
     catch(:close) do
@@ -67,7 +67,7 @@ if $0 == __FILE__
 
       _mess = "Message Comes Here"
       message_label = Canis::Label.new @form, {text: _mess,
-        :name=>"message_label",:row => Ncurses.LINES-1, :col => 1, :width => 60,  
+        :name=>"message_label",:row => Ncurses.LINES-1, :col => 1, :width => 60,
         :height => 2, :color => :cyan}
 
       $results = Variable.new
@@ -108,7 +108,7 @@ if $0 == __FILE__
         mnemonic('T')
         #underline 0
       togglebutton.command do
-        if togglebutton.value 
+        if togglebutton.value
           message_label.text "Modern look and feel for dialogs"
         else
           message_label.text "Classic look and feel for dialogs"
@@ -119,20 +119,20 @@ if $0 == __FILE__
       @form.bind(:LEAVE) { |f|  f.label && f.label.bgcolor = 'black'   if f.respond_to? :label}
 
       row += 1
-      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col, 
+      colorlabel = Label.new @form, {'text' => "Select a color:", "row" => row, "col" => col,
         "color"=>"cyan", "mnemonic" => 'S'}
       #$radio = Variable.new
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
 #
-      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget;
         #e.bgcolor tv.value };  }
 
       # whenever updated set colorlabel and messagelabel to bold
-      $results.update_command(colorlabel,checkbutton) {|tv, label, cb| 
+      $results.update_command(colorlabel,checkbutton) {|tv, label, cb|
         attrs =  cb.value ? 'bold' : 'normal'; label.attr(attrs); message_label.attr(attrs)}
 
 
-      checkbutton1.command do 
+      checkbutton1.command do
         attrs =  checkbutton1.value ? 'reverse' : 'normal'; colorlabel.attr(attrs); message_label.attr(attrs)
       end
       row += 1
@@ -178,17 +178,17 @@ if $0 == __FILE__
       end
       #$radio.update_command(colorlabel) {|tv, label|  label.color tv.value; }
 #
-      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+      #$radio.update_command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget;
         #e.bgcolor tv.value };  }
       colorlabel.label_for radio1
 
       group = ButtonGroup.new
-      [radio1, radio2, radio11, radio22].each { |r| 
+      [radio1, radio2, radio11, radio22].each { |r|
         group.add r
       }
       group.command(colorlabel) {|tv, label|  label.color tv.value; }
 #
-      group.command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget; 
+      group.command() {|tv|  @form.widgets.each { |e| next unless e.is_a? Widget;
         e.bgcolor tv.value };  }
 
       # instead of using frozen, I will use a PropertyVeto
@@ -202,7 +202,7 @@ if $0 == __FILE__
             raise PropertyVetoException.new("Cannot change this!", e)
         end
       }
-      [radio1, radio2, radio11, radio22].each { |r| 
+      [radio1, radio2, radio11, radio22].each { |r|
         r.bind(:PROPERTY_CHANGE) do |e| veto.call(e, r.text) end
       }
 
@@ -223,7 +223,7 @@ if $0 == __FILE__
         #highlight_foreground "blue"
         mnemonic 'O'
       end
-      ok_button.command() { |eve| 
+      ok_button.command() { |eve|
         alert("Hope you enjoyed this demo - Press the Cancel button to quit", {'title' => "Hello", :bgcolor => :blue , :color => :white})
       }
 
@@ -238,15 +238,15 @@ if $0 == __FILE__
         #highlight_background "white"
         #highlight_foreground "blue"
         #surround_chars ['{ ',' }']  ## change the surround chars
-      cancel_button.command { |aeve| 
+      cancel_button.command { |aeve|
         #if @lookfeel == :dialog
         if togglebutton.value == true
-          ret = confirm("Do your really want to quit?") 
+          ret = confirm("Do your really want to quit?")
         else
-          ret = rb_confirm("Do your really want to quit?") 
+          ret = rb_confirm("Do your really want to quit?")
         end
-        if ret 
-          throw(:close); 
+        if ret
+          throw(:close);
         else
           message_label.text = "Quit aborted"
         end
@@ -263,9 +263,9 @@ if $0 == __FILE__
         begin
           @form.handle_key(ch)
 
-        rescue FieldValidationException => fve 
+        rescue FieldValidationException => fve
           alert fve.to_s
-          
+
           f = @form.get_current_field
           # lets restore the value
           if f.respond_to? :restore_original_value

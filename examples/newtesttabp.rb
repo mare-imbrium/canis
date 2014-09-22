@@ -24,8 +24,8 @@ class TestTabbedPane
       tp.add_tab "&Language" do
         _r = 2
         colors = [:red, :green, :cyan]
-        %w[ ruby jruby macruby].each_with_index { |e, i| 
-          item RadioButton.new nil, 
+        %w[ ruby jruby macruby].each_with_index { |e, i|
+          item RadioButton.new nil,
             :variable => $config_hash,
             :name => "radio1",
             :text => e,
@@ -40,7 +40,7 @@ class TestTabbedPane
         butts = [ "Use &HTTP/1.0", "Use &frames", "&Use SSL" ]
         bcodes = %w[ HTTP, FRAMES, SSL ]
         butts.each_with_index do |t, i|
-          item Canis::CheckBox.new nil, 
+          item Canis::CheckBox.new nil,
             :text => butts[i],
             :variable => $config_hash,
             :name => bcodes[i],

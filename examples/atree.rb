@@ -1,11 +1,11 @@
 require 'canis/core/util/app'
 
-App.new do 
+App.new do
   var = Variable.new
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Tree Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Tree Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold
   message "Press Enter to expand/collapse"
 
-      @form.bind_key(FFI::NCurses::KEY_F3) { 
+      @form.bind_key(FFI::NCurses::KEY_F3) {
         require 'canis/core/util/viewer'
         Canis::Viewer.view("canis14.log", :close_key => KEY_ENTER, :title => "<Enter> to close")
       }
@@ -37,7 +37,7 @@ App.new do
         stack :margin_top => 0, :width_pc => "30" do
 
           # using an Array, these would be expanded on selection, using an event
-          tree :data => Dir.glob("*"), :title=> "[ Array ]" do 
+          tree :data => Dir.glob("*"), :title=> "[ Array ]" do
             command do |node|
               # insert dir entries unless done so already
               if node.children && !node.children.empty?
@@ -71,7 +71,7 @@ App.new do
           leaf1 << "leaf12"
 
           # more rubyish way
-          root.add "blocky", true do 
+          root.add "blocky", true do
             add "block2"
             add "block3" do
               add "block31"
@@ -86,14 +86,14 @@ App.new do
           # using height_pc as 100 was causing prefresh to fail if file lines went beyond 31
           # tput lines gives 32 so only when file length exceeded was it actually writing beyond screen
           t = textview  :suppress_borders => true, :height_pc => 90, :color => :green, :bgcolor => :black
-            var.command do |filename| 
+            var.command do |filename|
               filename = filename.value
               if File.directory? filename
                 lines = Dir.entries(filename )
                 t.set_content lines
               elsif File.exist? filename
                 # next line bombs on "invalid byte sequence on UTF-8" on split.
-                lines = File.open(filename,'r').read.split("\n") 
+                lines = File.open(filename,'r').read.split("\n")
                 # next line bombs on binary files. normally we would check file type using +file+ command
                 t.set_content lines
               else
