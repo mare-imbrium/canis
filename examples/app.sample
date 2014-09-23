@@ -6,11 +6,11 @@ here as you want
 eos
 end
 
-App.new do 
+App.new do
     ## application code comes here
     @form.help_manager.help_text = help_text()
 
-    @header = app_header "My App #{MyApp::VERSION}", :text_center => "Yet Another Email Client that sucks", :text_right =>"Some text", :color => :black, :bgcolor => :white
+    @header = app_header "My App #{App::VERSION}", :text_center => "Yet Another Email Client that sucks", :text_right =>"Some text", :color => :black, :bgcolor => :white
 
     @status_line = status_line
     @status_line.command {

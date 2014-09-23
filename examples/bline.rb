@@ -3,7 +3,7 @@ require 'canis/core/util/rcommandwindow'
 require 'fileutils'
 require 'pathname'
 require 'canis/core/include/defaultfilerenderer'
-require './common/devel.rb'
+require_relative './common/devel.rb'
 
 # this will go into top namespace so will conflict with other apps!
 def testnumberedmenu
@@ -32,7 +32,7 @@ def testdisplay_text
 end
 def testdir
   # this behaves like vim's file selector, it fills in values
-  str = rb_gets("File?  ", Pathname)  do |q| 
+  str = rb_gets("File?  ", Pathname)  do |q|
     #q.completion_proc = Proc.new {|str| Dir.glob(str +"*").collect { |f| File.directory?(f) ? f+"/" : f  } }
     q.help_text = "Enter start of filename and tab to get completion"
   end
@@ -43,9 +43,9 @@ end
 # method_missing gave a stack overflow.
 def execute_this(meth, *args)
   alert " #{meth} not found ! "
-  $log.debug "app email got #{meth}  " if $log.debug? 
+  $log.debug "app email got #{meth}  " if $log.debug?
   cc = @form.get_current_field
-  [cc].each do |c|  
+  [cc].each do |c|
     if c.respond_to?(meth, true)
       c.send(meth, *args)
       return true
@@ -54,7 +54,7 @@ def execute_this(meth, *args)
   false
 end
 
-App.new do 
+App.new do
   @startdir ||= File.expand_path("..")
   def show file
     w = @form.by_name["tv"]
@@ -63,43 +63,43 @@ App.new do
       w.text lines
       w.title "[ #{file} ]"
     elsif File.exists? file
-      lines = File.open(file,'r').readlines 
+      lines = File.open(file,'r').readlines
       w.text lines
       w.title "[ #{file} ]"
     end
   end
   def testchoosedir
     # list filters as you type
-    $log.debug "called CHOOSE " if $log.debug? 
-    str = choose_file  :title => "Select a file", 
+    $log.debug "called CHOOSE " if $log.debug?
+    str = choose_file  :title => "Select a file",
       :recursive => true,
       :dirs => true,
       :directory => @startdir,
       :help_text => "Enter pattern, use UP DOWN to traverse, Backspace to delete, ENTER to select. Esc-Esc to quit"
     if str
-      message "We got #{str} " 
+      message "We got #{str} "
       show str
     end
   end
   def testchoosefile
     # list filters as you type a pattern
     glob = "**/*.rb"
-    str = choose_file  glob, :title => "Select a file", 
+    str = choose_file  glob, :title => "Select a file",
       :directory => @startdir,
       :help_text => "Enter pattern, use UP DOWN to traverse, Backspace to delete, ENTER to select. Esc-Esc to quit"
     if str and str != ""
-      message "We got #{str} " 
+      message "We got #{str} "
       show str
     end
   end
   ht = 24
   borderattrib = :reverse
-  @header = app_header "canis #{Canis::VERSION}", :text_center => "rCommandline Test", 
+  @header = app_header "canis #{Canis::VERSION}", :text_center => "rCommandline Test",
     :text_right =>"Press :", :color => :white, :bgcolor => 236
   message "Press F10 (or qq) to exit, F1 Help, : for Menu  "
 
 
-    
+
     # commands that can be mapped to or executed using M-x
     # however, commands of components aren't yet accessible.
     def get_commands
@@ -107,7 +107,7 @@ App.new do
     end
     def help_text
       <<-eos
-               rCommandLine HELP 
+               rCommandLine HELP
 
       These are some features for either getting filenames from user
       at the bottom of the window like vim and others do, or filtering
@@ -130,7 +130,7 @@ App.new do
       testdir          - vim style, tabbing completes matching files
       testnumberedmenu - use menu indexes to select options
       testdisplaylist  - display a list at bottom of screen
-                         Press <ENTER> to select, arrow keys to traverse, 
+                         Press <ENTER> to select, arrow keys to traverse,
                          and characters to filter list.
       testdisplaytext  - display text at bottom (current file contents)
                          Press <ENTER> when done.
@@ -164,10 +164,10 @@ App.new do
       menu.display_new :title => "Menu"
     end
   @form.bind_key(?:, "App Menu") { app_menu; }
-  @form.bind_key(?=, "Choose File") { 
+  @form.bind_key(?=, "Choose File") {
       @curdir ||= Dir.pwd
       Dir.chdir(@curdir) if Dir.pwd != @curdir
-    #testdisplay_list; 
+    #testdisplay_list;
     testchoosefile;
   }
 
@@ -175,7 +175,7 @@ App.new do
     tv = textview :height_pc => 100, :width_pc => 100, :name => "tv", :suppress_borders => true
     tv.renderer ruby_renderer
   end # stack
-    
+
   sl = status_line :row => Ncurses.LINES-1
-  testdisplay_list 
+  testdisplay_list
 end # app

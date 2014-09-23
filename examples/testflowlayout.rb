@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------- #
 #         File: testflowlayout.rb
-#  Description: 
+#  Description:
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-09 - 20:24
 #      License: MIT
@@ -21,7 +21,7 @@ if __FILE__ == $PROGRAM_NAME
     lb2 = Listbox.new @form, :list => `gem list --local`.split("\n") , :name => "mylist2"
 =begin
 
-    alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra pylons django cakephp grails] 
+    alist = %w[ ruby perl python java jruby macruby rubinius rails rack sinatra pylons django cakephp grails]
     str = "Hello, people of Earth.\nI am HAL, a textbox.\nUse arrow keys, j/k/h/l/gg/G/C-a/C-e/C-n/C-p\n"
     str << alist.join("\n")
     tv = TextPad.new @form, :name => "text", :text => str.split("\n")
@@ -40,4 +40,4 @@ if __FILE__ == $PROGRAM_NAME
 
     st = status_line :row => -1
   end # app
-end # if 
+end # if

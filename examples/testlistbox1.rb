@@ -2,7 +2,7 @@ require 'canis/core/util/app'
 require 'canis/core/include/appmethods'
 require 'canis/core/widgets/listbox'
 require 'canis/core/util/promptmenu'
-require './common/devel.rb'
+require_relative './common/devel.rb'
 
   def my_help_text
     <<-eos
@@ -11,17 +11,17 @@ require './common/devel.rb'
     **Basic Usage**
 
     This simple example shows 2 lists inside a "flow". Each takes 50 percent
-    of the screen's width. 
+    of the screen's width.
 
     If you have brew installed, you can refresh the list to show actual
     brew packages on your system, using ':r'. Then you can view info, edit,
     or see the man page for that program.
 
     In the second list, you can refresh the list with your gems using ":r".
-    Place cursor on any gem, and execute any of the ":" commands to see the 
+    Place cursor on any gem, and execute any of the ":" commands to see the
     output. "edit" shells out to your EDITOR.
 
-    You can try multiple selection using <v> and <V> for range 
+    You can try multiple selection using <v> and <V> for range
     select. Check the general help screen for more [[list]] commands. The selections
     are not mapped to any command.
 
@@ -34,7 +34,7 @@ require './common/devel.rb'
 
 
 # just a simple test to ensure that rbasiclistbox is running inside a container.
-App.new do 
+App.new do
   devel_bindings
   def disp_menu
     # ideally this shuld get action_manager and add_action so these are added to widgets actions
@@ -101,12 +101,12 @@ App.new do
     res = %x[ gem which #{name} ].split("\n")
     res = res[0]
     if File.exists? res
-      require './common/file.rb'
+      require_relative './common/file.rb'
       file_edit res
     end
   end
   #
-  # general purpose command to catch miscellaneous actions that can be 
+  # general purpose command to catch miscellaneous actions that can be
   # executed in the same way. Or even take complex command lines
   # such as what vim has.
   def execute_this *cmd
@@ -143,7 +143,7 @@ App.new do
   colors = Ncurses.COLORS
   back = :blue
   back = 234 if colors >= 256
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Basic List Demo", :text_right =>"New Improved!", :color => :white, :bgcolor => back #, :attr => :bold 
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Basic List Demo", :text_right =>"New Improved!", :color => :white, :bgcolor => back #, :attr => :bold
   message "Press F10 to escape from here"
   #install_help_text my_help_text
   @form.help_manager.help_text = my_help_text
@@ -163,14 +163,14 @@ App.new do
 
   # testing triple bindings, along with a fall-back with only two bindings.
   @form.bind_key([?\\, ?\\, ?h]){ ht = @form.current_widget.help_text || "No help for this widget"; alert ht }
-  @form.bind_key([?\\, ?\\, ?H]){ ht = @form.current_widget.help_text || "No help for this widget"; 
+  @form.bind_key([?\\, ?\\, ?H]){ ht = @form.current_widget.help_text || "No help for this widget";
                                   str = get_string("Enter help text:", :default => ht);
                                   @form.current_widget.help_text = str
                                   }
   @form.bind_key([?\\, ?\\]){ alert "Enter h for seeing helptext on this widget, H for setting it"; }
 
-  alist = File.open("data/brew.txt",'r').readlines
-  list2 = File.open("data/gemlist.txt",'r').readlines
+  alist = File.open(File.expand_path("../data/brew.txt", __FILE__),'r').readlines
+  list2 = File.open(File.expand_path("../data/gemlist.txt", __FILE__),'r').readlines
   lb = nil
 
   flow :margin_top => 1, :height => FFI::NCurses.LINES-2 do
@@ -178,22 +178,22 @@ App.new do
       :left_margin => 0, :width_pc => 50, :name => 'lb1', :selection_mode => :single
     lb.show_selector = false
     lb.help_text = "Brew packages on your system. Use vim keys to navigate, or : to run a command"
-    
+
     lb2 = listbox :list => list2, :justify => :left, :title => "[ gems ]", :suppress_borders => false,
       :left_margin => 0, :width_pc => 50, :name => 'lb2'
     end
-  
- 
+
+
   label({:text => "F1 Help, F10 Quit. : for menu. Press F4 and F5 to test popup, v to select", :row => Ncurses.LINES-1, :col => 0, :name => 'lab'})
 
   @form.bind(:RESIZE) { resize() }
-  @form.bind_key(FFI::NCurses::KEY_F4, "Popup") { row = lb.visual_index+lb.row; col=lb.col+lb.current_value.length+1;  
-                                         
+  @form.bind_key(FFI::NCurses::KEY_F4, "Popup") { row = lb.visual_index+lb.row; col=lb.col+lb.current_value.length+1;
+
                                          row = [row, FFI::NCurses.LINES - 8].min
                                          ret = popuplist(%w[ chopin berlioz strauss tchaiko matz beethoven], :row => row, :col => col, :title => "Names", :bgcolor => :blue, :color => :white) ; alert "got #{ret} "}
 
   @form.bind_key(FFI::NCurses::KEY_F5, "Popup") {  list = %x[ls].split("\n");ret = popuplist(list, :title => "Files"); alert "Got #{ret} #{list[ret]} " }
 
-  @form.bind_key(?:, "Menu") { disp_menu; 
+  @form.bind_key(?:, "Menu") { disp_menu;
   }
 end # app

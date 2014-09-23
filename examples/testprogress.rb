@@ -20,7 +20,7 @@ if $0 == __FILE__
   # Initialize curses
     Canis::start_ncurses  # this is initializing colors via ColorMap.setup
     path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+    file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT)
     $log = Logger.new(path)
     $log.level = Logger::DEBUG
 
@@ -34,16 +34,16 @@ if $0 == __FILE__
       Label.new @form, {:text => "Old style and modern style progress bars", :row => 12, :col => 10}
       r = 14; fc = 12;
 
-      pbar1 = Progress.new @form, {:width => 20, :row => r, :col => fc, 
+      pbar1 = Progress.new @form, {:width => 20, :row => r, :col => fc,
         :name => "pbar1", :style => :old}
         #:bgcolor => :white, :color => 'red', :name => "pbar1", :style => :old}
-      pbar = Progress.new @form, {:width => 20, :row => r+2, :col => fc, 
+      pbar = Progress.new @form, {:width => 20, :row => r+2, :col => fc,
         :bgcolor => :white, :color => :red, :name => "pbar"}
-      
+
       pbar.visible false
       pb =  @form.by_name["pbar"]
       pb.visible true
-      len = 1 
+      len = 1
       ct = (100) * 1.00
       pb.fraction(len/ct)
       pbar1.fraction(len/ct)
@@ -61,7 +61,7 @@ if $0 == __FILE__
       # this is so there's no wait for a key, i want demo to proceed without key press, but
       # respond if there is one
       Ncurses::nodelay(@window.get_window, bf = true)
-     
+
       # sleep seconds between refresh of progress
       slp = 0.1
       ##while((ch = @window.getchar()) != FFI::NCurses::KEY_F10 )

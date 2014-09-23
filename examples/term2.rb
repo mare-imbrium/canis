@@ -12,8 +12,8 @@ require 'canis/core/widgets/scrollbar'
 
     The 2 tables on the right differ in behaviour. The first puts tabular data
     into a listbox so you get single/multiple selection. The second puts tabular
-    data into a textview, so there's no selection. <space> scrolls instead of 
-    selects <ENTER> allows us to use the word under cursor for further actions. 
+    data into a textview, so there's no selection. <space> scrolls instead of
+    selects <ENTER> allows us to use the word under cursor for further actions.
 
     To see an example of placing tabular data in a tabular widget, see tabular.rb.
     The advantage of tabular_widget is column resizing, hiding, aligning and sorting.
@@ -23,8 +23,8 @@ require 'canis/core/widgets/scrollbar'
 
     eos
   end
-App.new do 
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold 
+App.new do
+  header = app_header "canis #{Canis::VERSION}", :text_center => "Tabular Demo", :text_right =>"New Improved!", :color => :black, :bgcolor => :white, :attr => :bold
   message "F10 quit, F1 Help, ? Bindings"
   #install_help_text my_help_text
   @form.help_manager.help_text = my_help_text
@@ -45,8 +45,8 @@ App.new do
     end # stack
 
 
-    file = "data/tasks.csv"
-    lines = File.open(file,'r').readlines 
+    file = File.expand_path("../data/tasks.csv", __FILE__)
+    lines = File.open(file,'r').readlines
     heads = %w[ id sta type prio title ]
     t = Tabular.new do |t|
       t.headings = heads
@@ -63,9 +63,9 @@ App.new do
       res = r.split("\n")
 
       t = Tabular.new do
-        #      self.headings = 'Perm', 'Gr', 'User', 'U',  'Size', 'Mon', 'Date', 'Time', 'File' # changed 2011 dts  
+        #      self.headings = 'Perm', 'Gr', 'User', 'U',  'Size', 'Mon', 'Date', 'Time', 'File' # changed 2011 dts
         self.headings = 'User',  'Size', 'Mon', 'Date', 'Time', 'File'
-        res.each { |e| 
+        res.each { |e|
           cols = e.split
           next if cols.count < 6
           cols = cols[3..-1]

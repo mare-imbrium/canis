@@ -28,7 +28,7 @@ if $0 == __FILE__
       when 1
         require 'canis/core/widgets/listbox'
         nn = "mylist"
-        l = Listbox.new  nil, :row => 2, :col => 5, :list => %w[john tim lee wong kepler edward why chad andy], 
+        l = Listbox.new  nil, :row => 2, :col => 5, :list => %w[john tim lee wong kepler edward why chad andy],
           :selection_mode => :multiple, :height => 10, :width => 20 , :selected_color => :green, :selected_bgcolor => :white, :selected_indices => [2,6], :name => nn
        #default_values %w[ lee why ]
 
@@ -85,7 +85,7 @@ if $0 == __FILE__
         button_type :ok
       end
       field = mb.widget("user")
-      field.bind(:ENTER) do |f|   
+      field.bind(:ENTER) do |f|
         listconfig = {:bgcolor => :blue, :color => :white,
                       :relative_to => field, :col => field.col + 6, :width => field.width}
         users= %w[john tim lee wong kepler edward _why chad andy]
@@ -107,7 +107,7 @@ if $0 == __FILE__
         #listb.bind(:ENTER_ROW) { field.text listb.selected_item }
         # if you find that cursor goes into listbox while typing, then
         # i've put set_form_row in listbox list_data_changed
-        field.bind(:CHANGE) do |f|   
+        field.bind(:CHANGE) do |f|
           flist = Dir.glob("*"+f.getvalue+"*")
           #l.insert( 0, *flist) if flist
           listb.list flist
@@ -129,8 +129,8 @@ if $0 == __FILE__
         mb.run
         $log.debug "MBOX :1selected #{listb}"
         $log.debug "MBOX :selected #{listb.selected_value}"
-      end 
-      
+      end
+
     end
   rescue => ex
   ensure
