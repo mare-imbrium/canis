@@ -159,6 +159,14 @@ module Canis
   class Tree < TextPad
     include Canis::ListOperations
 
+    TREE_EVENTS = [:ENTER_ROW,
+                   :LEAVE_ROW,
+                   :TREE_COLLAPSED_EVENT,
+                   :TREE_EXPANDED_EVENT,
+                   :TREE_SELECTION_EVENT,
+                   :TREE_WILL_COLLAPSE_EVENT,
+                   :TREE_WILL_EXPAND_EVENT]
+
     dsl_accessor :print_footer
     attr_reader :treemodel
     dsl_accessor :default_value  # node to show as selected - what if user doesn't have it?
@@ -168,7 +176,7 @@ module Canis
       @col_min_width = 3
 
       @expanded_state = {}
-      register_events([:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
+      register_events(TREE_EVENTS)
       super
       #@_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
       create_default_renderer unless @renderer # 2014-04-10 - 11:01 
