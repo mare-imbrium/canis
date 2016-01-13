@@ -63,8 +63,13 @@ App.new do
       return path
     end
   end
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Dorado", :text_right =>"Directory Lister" , :color => :white, :bgcolor => 242 #, :attr =>  Ncurses::A_BLINK
+
+  header = app_header "canis #{Canis::VERSION}",
+    :text_center => "Dorado",
+    :text_right =>"Directory Lister" ,
+    :color => :white, :bgcolor => 242 #, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse, v to view in lister. <F1> Help"
+
   @form.help_manager.help_text = help_text()
 
   pwd = Dir.getwd

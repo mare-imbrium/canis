@@ -114,10 +114,10 @@ module Canis
         raise "attrib is nil in tree render 104" unless att
         raise "color pair is nil in tree render 104" unless cp
         # added for selection, but will crash if selection is not extended !!! XXX
-          if @source.is_row_selected? lineno
-            att = @row_selected_attr || $row_selected_attr
-            # FIXME currentl this overflows into next row
-          end
+        if @source.is_row_selected? lineno
+          att = @row_selected_attr || $row_selected_attr
+          # FIXME currentl this overflows into next row
+        end
         
         FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
         FFI::NCurses.mvwaddstr(pad, lineno, 0, _value)

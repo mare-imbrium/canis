@@ -1577,8 +1577,8 @@ module Canis
     # concrete / derived classes should override this for their specific uses.
     # Called if only a row is changed.
     def render pad, lineno, text
-      FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) if @clearstring
-      FFI::NCurses.mvwaddstr(pad,lineno, 0, text)
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, @clearstring) if @clearstring
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
     end
   end
 
@@ -1600,8 +1600,8 @@ module Canis
       ## messabox does have a method to paint the whole window in bg color its in rwidget.rb
       att = NORMAL
       FFI::NCurses.wattron(pad, @cp | att)
-      FFI::NCurses.mvwaddstr(pad,lineno, 0, @clearstring) if @clearstring
-      FFI::NCurses.mvwaddstr(pad,lineno, 0, @list[lineno])
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, @clearstring) if @clearstring
+      FFI::NCurses.mvwaddstr(pad, lineno, 0, @list[lineno])
 
       #FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
       FFI::NCurses.wattroff(pad, @cp | att)
