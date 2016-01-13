@@ -73,16 +73,18 @@ module Canis
         # adding setting column_model auto on 2014-04-10 - 10:53 why wasn;t this here already
         #tree_model(source.tree_model)
       end
+
       # set fg and bg color of content rows, default is $datacolor (white on black).
       def content_colors fg, bg
         @color = fg
         @bgcolor = bg
         @color_pair = get_color($datacolor, fg, bg)
       end
+
       def content_attrib att
         @attrib = att
       end
-      #
+
       # @param pad for calling print methods on
       # @param lineno the line number on the pad to print on
       # @param text data to print
@@ -120,7 +122,6 @@ module Canis
         FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
         FFI::NCurses.mvwaddstr(pad, lineno, 0, _value)
         FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-
       end
       # check if we need to individually color columns or we can do the entire
       # row in one shot
@@ -157,15 +158,13 @@ module Canis
     require 'canis/core/include/listoperations'
 
   class Tree < TextPad
-
     include Canis::ListOperations
 
     dsl_accessor :print_footer
-    attr_reader :treemodel        # returns treemodel for further actions 2011-10-2 
+    attr_reader :treemodel
     dsl_accessor :default_value  # node to show as selected - what if user doesn't have it?
 
     def initialize form = nil, config={}, &block
-
       @_header_adjustment = 0 #1
       @col_min_width = 3
 
@@ -183,9 +182,11 @@ module Canis
       @list_selection_model = nil
       @list_selection_model = Canis::DefaultListSelectionModel.new self
     end
+
     def create_default_renderer
-      renderer( DefaultTreeRenderer.new(self) )
+      renderer DefaultTreeRenderer.new(self)
     end
+
     def init_vars
       # show_selector and symbol etc unused
       if @show_selector
@@ -199,8 +200,8 @@ module Canis
       @internal_width = 2 # taking into account borders accounting for 2 cols
       @internal_width = 0 if @suppress_borders # should it be 0 ???
       super
-
     end
+
     # maps keys to methods
     # checks @key_map can be :emacs or :vim.
     def map_keys
@@ -223,6 +224,7 @@ module Canis
       #require 'canis/core/include/listbindings'
       #bindings
     end
+
     # Returns root if no argument given.
     # Now we return root if already set
     # Made node nillable so we can return root. 
@@ -242,7 +244,6 @@ module Canis
     # pass data to create this tree model
     # used to be list
     def data alist=nil
-
       # if nothing passed, print an empty root, rather than crashing
       alist = [] if alist.nil?
       @data = alist # data given by user
@@ -276,6 +277,7 @@ module Canis
       fire_dimension_changed
       self
     end
+
     # private, for use by repaint
     def _list
       if @_structure_changed 
@@ -290,6 +292,7 @@ module Canis
       end
       return @list
     end
+
     # repaint whenever a change heppens
     # 2014-04-16 - 22:31 - I need to put a call to _list somewhere whenever a change happens
     # (i.e. recreate list from the tree model object)..
@@ -298,11 +301,13 @@ module Canis
       _list()
       super
     end
+
     def convert_to_list tree
       @list = @native_text = get_expanded_descendants(tree.root)
       #$log.debug "XXX convert #{tree.root.children.size} "
       #$log.debug " converted tree to list. #{@list.size} "
     end
+
     def traverse node, level=0, &block
       raise "disuse"
       #icon = node.is_leaf? ? "-" : "+"
@@ -312,6 +317,7 @@ module Canis
         traverse e, level+1, &block
       end
     end
+
     # return object under cursor
     # Note: this should not be confused with selected row/s. User may not have selected this.
     # This is only useful since in some demos we like to change a status bar as a user scrolls down
@@ -338,6 +344,7 @@ module Canis
       toggle_row_selection
       @default_value = nil
     end
+
     ### START FOR scrollable ###
     def get_content
       #@list 2008-12-01 23:13 
@@ -345,9 +352,11 @@ module Canis
       # called by next_match in listscrollable
       @list
     end
+
     def get_window
       @graphic 
     end
+
     ### END FOR scrollable ###
     # override widgets text
     def getvalue
@@ -366,8 +375,6 @@ module Canis
 
     #------- data modification methods ------#
 
-
-#
 
     ## add a row to the table
     # The name add will be removed soon, pls use << instead.
@@ -671,11 +678,13 @@ module Canis
       }
       return found
     end
+
     # default block
     # @since 1.5.0 2011-11-22 
     def command *args, &block
       bind :TREE_WILL_EXPAND_EVENT, *args, &block
     end
+
     private
     # please do not rely on this yet, name could change
     def _structure_changed tf=true

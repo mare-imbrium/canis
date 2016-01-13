@@ -40,6 +40,7 @@ App.new do
 [index]
       eos
   end
+
   # print the dir list on the right listbox upon pressing ENTER or row_selector (v)
   # separated here so it can be called from two places.
   def lister node
@@ -79,8 +80,6 @@ App.new do
   nodes.last.add entries
   model = DefaultTreeModel.new nodes.first
   model.root_visible = false
-
-
 
   ht = FFI::NCurses.LINES - 2
   borderattrib = :normal
