@@ -29,16 +29,7 @@ deprecated
 .srclist
 NOTES
 bug
-examples/common/rmail.rb
 examples/dump.yml
-examples/oldwidgetshortcuts.rb
-examples/test2.rb
-examples/testskel.rb
-examples/teststackflow.rb
-examples/todo.txt
-examples/ugu.rb
-examples/x.tsv
-examples/xxx.rb
 issues.txt
 tags
 test.yml
