@@ -53,9 +53,9 @@ module Canis
       attr_accessor :icon_can_collapse, :icon_can_expand, :icon_not_visited, :icon_no_children
       attr_accessor :row_selected_attr
 
-      PLUS_PLUS = "++"
-      PLUS_MINUS = "+-"
-      PLUS_Q     = "+?"
+      PLUS_PLUS  = "++".freeze
+      PLUS_MINUS = "+-".freeze
+      PLUS_Q     = "+?".freeze
       # source is the textpad or extending widget needed so we can call show_colored_chunks
       # if the user specifies column wise colors
       def initialize source
@@ -65,11 +65,10 @@ module Canis
         @color_pair = $datacolor
         @attrib = NORMAL
         @_check_coloring = nil
-        @icon_can_collapse = "+-"
-        @icon_can_expand = "++"
-        @icon_not_visited = "+?"
-        @icon_no_children = "+-"
-
+        @icon_can_collapse = PLUS_MINUS
+        @icon_can_expand = PLUS_PLUS
+        @icon_not_visited = PLUS_Q
+        @icon_no_children = "+-" # how about '+|'
         # adding setting column_model auto on 2014-04-10 - 10:53 why wasn;t this here already
         #tree_model(source.tree_model)
       end
