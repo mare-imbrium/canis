@@ -8,7 +8,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis-core/
 #         Date: 
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-09-01 13:09
+#  Last update: 2016-01-13 18:42
 #
 #  CHANGES:
 #              For some terminals, like xterm-256color which were not printing spaces
@@ -60,6 +60,8 @@ module Canis
       @text2 ||= ""
       @text_center ||= ""
       @text_right ||= ""
+      # 2016-01-13 - added since "1" was giving problems in mvhline in some cases
+      @space_char = " ".codepoints.first
     end
     # returns value of text1, i.e. text on left of header
     def getvalue
@@ -79,7 +81,9 @@ module Canis
       len = Ncurses.COLS-0 if len == 0
       # print a bar across the screen 
       @window.attron(Ncurses.COLOR_PAIR(@color_pair) | att)
-      @window.mvhline(@row, @col, 1, len)
+      # 2016-01-13 - changed since "1" was giving problems in mvhline in some cases
+      #@window.mvhline(@row, @col, 1, len)
+      @window.mvhline(@row, @col, @space_char, len)
       @window.attroff(Ncurses.COLOR_PAIR(@color_pair) | att)
       #print_header(@text1 + " %15s " % @text2 + " %20s" % @text_center , posy=0, posx=0)
 
