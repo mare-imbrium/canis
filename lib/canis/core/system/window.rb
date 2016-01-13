@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-20 15:08
+#  Last update: 2016-01-13 18:40
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -318,7 +318,7 @@ module Canis
     #--
     # removing some methods that not used or used once
     # leaving here so we not what to do to print in these cases 
-    def print(string, width = width)
+    def print(string, width = self.width)
       w = width == 0? Ncurses.COLS : width
       waddnstr(string.to_s, w) # changed 2011 dts  
     end
