@@ -109,8 +109,8 @@ http://rubydoc.info/gems/canis/0.0.8/frames
 
 ## Contributing
 
-0. Please give suggestions on how to improve the documentation.
-0.1. Please give suggestion on how to improve canis.
+- Please give suggestions on how to improve the documentation.
+- Please give suggestions on how to improve canis.
 
 1. Fork it ( https://github.com/[my-github-username]/canis/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
