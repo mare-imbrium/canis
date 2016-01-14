@@ -25,7 +25,6 @@ a user friendly string to identifiy the action, as well as a disabled option.
     Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
 
 =end
-#require 'logger'
 require 'canis'
 
 include Canis
@@ -897,9 +896,14 @@ module Canis
       @win.bkgd(Ncurses.COLOR_PAIR(5)); # <---- FIXME
       len = @window.width
       len = Ncurses.COLS-0 if len == 0
+
+      # 2016-01-14 - replacing 1 with space since junk is showing up in some cases.
+      space_char = " ".codepoints.first
+
       # print a bar across the screen , which hopefully will not go blank in some terms
       @window.attron(Ncurses.COLOR_PAIR(@color_pair) | att)
-      @window.mvhline(0, 0, 1, len)
+      #@window.mvhline(0, 0, 1, len)
+      @window.mvhline(0, 0, space_char, len)
       @window.attroff(Ncurses.COLOR_PAIR(@color_pair) | att)
       @panel = @win.panel
       return @window
