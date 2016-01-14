@@ -319,7 +319,7 @@ module Canis
       #icon = node.is_leaf? ? "-" : "+"
       #puts "%*s %s" % [ level+1, icon,  node.user_object ]
       yield node, level if block_given?
-      node.children.each do |e| 
+      node.children.each do |e|
         traverse e, level+1, &block
       end
     end
@@ -490,18 +490,20 @@ module Canis
         expand_node node
       end
     end
+
     def row_to_node row=@current_index
       @list[row]
     end
+
     # convert a given node to row
     def node_to_row node
       crow = nil
-      @list.each_with_index { |e,i| 
+      @list.each_with_index do |e,i|
         if e == node
           crow = i
           break
         end
-      }
+      end
       crow
     end
     # private
@@ -543,9 +545,9 @@ module Canis
     def mark_parents_expanded node
       # i am setting parents as expanded, but NOT firing handlers - XXX separate this into expand_parents
       _path = node.tree_path
-      _path.each do |e| 
+      _path.each do |e|
         # if already expanded parent then break we should break
-        set_expanded_state(e, true) 
+        set_expanded_state(e, true)
       end
     end
     # goes up to root of this node, and expands down to this node
@@ -553,7 +555,7 @@ module Canis
     # as in a dir listing when current dir is deep in heirarchy.
     def expand_parents node
       _path = node.tree_path
-      _path.each do |e| 
+      _path.each do |e|
         # if already expanded parent then break we should break
         #set_expanded_state(e, true) 
         expand_node(e)
@@ -603,17 +605,19 @@ module Canis
       goto_parent node
       collapse_node parent
     end
+
     def goto_parent node=:current_index
       node = row_to_node if node == :current_index
       parent = node.parent
       return if parent.nil?
       crow = @current_index
-      @list.each_with_index { |e,i| 
+      # TODO we have beautiful ruby stuff to do that! (find)
+      @list.each_with_index do |e,i| 
         if e == parent
           crow = i
           break
         end
-      }
+      end
       @repaint_required = true
       #set_form_row  # will not work if off form
       #set_focus_on crow
@@ -669,19 +673,18 @@ module Canis
       $log.debug "TREE #{user_path} " if $log.debug? 
       root = @treemodel.root
       found = nil
-      user_path.each { |e| 
+      user_path.each do |e|
         success = false
-        root.children.each { |c| 
+        root.children.each do |c|
           if c.user_object == e
             found = c
             success = true
             root = c
             break
           end
-        }
+        end
         return false unless success
-
-      }
+      end
       return found
     end
 
