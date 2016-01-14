@@ -42,14 +42,13 @@ module Canis
 # structures {{{
   TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
 # structures }}}
-    # renderer {{{
+  # renderer {{{
   #
   # TODO see how jtable does the renderers and columns stuff.
   #
   # perhaps we can combine the two but have different methods or some flag
   # that way oter methods can be shared
     class DefaultTreeRenderer < AbstractTextPadRenderer
-
       attr_accessor :icon_can_collapse, :icon_can_expand, :icon_not_visited, :icon_no_children
       attr_accessor :row_selected_attr
 
@@ -438,7 +437,7 @@ module Canis
       ha = @_header_adjustment
       # ha takes into account whether there are headers or not
       footer = "#{@current_index+1-ha} of #{@list.length-ha} "
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+      @graphic.printstring(@row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib)
       @repaint_footer_required = false 
     end
     def is_row_selected? row=@current_index
