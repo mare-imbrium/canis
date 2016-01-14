@@ -87,6 +87,9 @@ module Canis
       @graphic = my_win unless @graphic
       return unless @repaint_required
 
+      # 2016-01-14 - replacing 1 with space in mvvline since junk is showing up in some cases.
+      space_char = " ".codepoints.first
+
       # first print a right side vertical line
       #bc = $bottomcolor  # dark blue
       bc = $datacolor
@@ -97,7 +100,7 @@ module Canis
 
       @graphic.attron(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
       #$log.debug " XXX SCROLL #{@row} #{@col} #{@length} "
-      @graphic.mvvline(@row+0, @col, 1, @length-0)
+      @graphic.mvvline(@row+0, @col, space_char, @length-0)
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
 
       # now calculate and paint the scrollbar
@@ -116,7 +119,7 @@ module Canis
       r = @row + scloc
       c = @col + 0
       #$log.debug " XXX SCROLLBAR #{r} #{c} #{sclen} "
-      @graphic.mvvline(r, c, 1, sclen)
+      @graphic.mvvline(r, c, space_char, sclen)
       @graphic.attroff(Ncurses.COLOR_PAIR(@scroll_pair) | borderatt)
       @repaint_required = false
     end
