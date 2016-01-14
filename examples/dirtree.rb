@@ -40,6 +40,7 @@ App.new do
 [index]
       eos
   end
+
   # print the dir list on the right listbox upon pressing ENTER or row_selector (v)
   # separated here so it can be called from two places.
   def lister node
@@ -62,8 +63,13 @@ App.new do
       return path
     end
   end
-  header = app_header "canis #{Canis::VERSION}", :text_center => "Dorado", :text_right =>"Directory Lister" , :color => :white, :bgcolor => 242 #, :attr =>  Ncurses::A_BLINK
+
+  header = app_header "canis #{Canis::VERSION}",
+    :text_center => "Dorado",
+    :text_right =>"Directory Lister" ,
+    :color => :white, :bgcolor => 242 #, :attr =>  Ncurses::A_BLINK
   message "Press Enter to expand/collapse, v to view in lister. <F1> Help"
+
   @form.help_manager.help_text = help_text()
 
   pwd = Dir.getwd
@@ -80,15 +86,13 @@ App.new do
   model = DefaultTreeModel.new nodes.first
   model.root_visible = false
 
-
-
   ht = FFI::NCurses.LINES - 2
   borderattrib = :normal
   flow :margin_top => 1, :margin_left => 0, :width => :expand, :height => ht do
-    @t = tree :data => model, :width_pc => 30, :border_attrib => borderattrib
-    rend = @t.renderer # just test method out.
+    @tree = tree :data => model, :width_pc => 30, :border_attrib => borderattrib
+    rend = @tree.renderer # just test method out.
     rend.row_selected_attr = BOLD
-    @t.bind :TREE_WILL_EXPAND_EVENT do |node|
+    @tree.bind :TREE_WILL_EXPAND_EVENT do |node|
       path = File.join(*node.user_object_path)
       dirs = _directories path
       ch = node.children
@@ -104,11 +108,11 @@ App.new do
       node.add dirs
       lister node
     end
-    @t.bind :TREE_WILL_COLLAPSE_EVENT do |node|
+    @tree.bind :TREE_WILL_COLLAPSE_EVENT do |node|
       # FIXME do if ony not already showing on other side
       lister node
     end
-    @t.bind :TREE_SELECTION_EVENT do |ev|
+    @tree.bind :TREE_SELECTION_EVENT do |ev|
       if ev.state == :SELECTED
         node = ev.node
         lister node
@@ -116,8 +120,8 @@ App.new do
     end # select
     #$def_bg_color = :blue
     @form.bgcolor = :blue
-    @t.expand_node last #
-    @t.mark_parents_expanded last # make parents visible
+    @tree.expand_node last #
+    @tree.mark_parents_expanded last # make parents visible
     @l = listbox :width_pc => 70, :border_attrib => borderattrib, :selection_mode => :single, :name => 'll',
       :left_margin => 1
     @l.renderer directory_renderer(@l)

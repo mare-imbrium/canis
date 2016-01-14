@@ -42,20 +42,19 @@ module Canis
 # structures {{{
   TreeSelectionEvent = Struct.new(:node, :tree, :state, :previous_node, :row_first)
 # structures }}}
-    # renderer {{{
+  # renderer {{{
   #
   # TODO see how jtable does the renderers and columns stuff.
   #
   # perhaps we can combine the two but have different methods or some flag
   # that way oter methods can be shared
     class DefaultTreeRenderer < AbstractTextPadRenderer
-
       attr_accessor :icon_can_collapse, :icon_can_expand, :icon_not_visited, :icon_no_children
       attr_accessor :row_selected_attr
 
-      PLUS_PLUS = "++"
-      PLUS_MINUS = "+-"
-      PLUS_Q     = "+?"
+      PLUS_PLUS  = "++".freeze
+      PLUS_MINUS = "+-".freeze
+      PLUS_Q     = "+?".freeze
       # source is the textpad or extending widget needed so we can call show_colored_chunks
       # if the user specifies column wise colors
       def initialize source
@@ -65,24 +64,25 @@ module Canis
         @color_pair = $datacolor
         @attrib = NORMAL
         @_check_coloring = nil
-        @icon_can_collapse = "+-"
-        @icon_can_expand = "++"
-        @icon_not_visited = "+?"
-        @icon_no_children = "+-"
-
+        @icon_can_collapse = PLUS_MINUS
+        @icon_can_expand = PLUS_PLUS
+        @icon_not_visited = PLUS_Q
+        @icon_no_children = "+-" # how about '+|'
         # adding setting column_model auto on 2014-04-10 - 10:53 why wasn;t this here already
         #tree_model(source.tree_model)
       end
+
       # set fg and bg color of content rows, default is $datacolor (white on black).
       def content_colors fg, bg
         @color = fg
         @bgcolor = bg
         @color_pair = get_color($datacolor, fg, bg)
       end
+
       def content_attrib att
         @attrib = att
       end
-      #
+
       # @param pad for calling print methods on
       # @param lineno the line number on the pad to print on
       # @param text data to print
@@ -112,15 +112,14 @@ module Canis
         raise "attrib is nil in tree render 104" unless att
         raise "color pair is nil in tree render 104" unless cp
         # added for selection, but will crash if selection is not extended !!! XXX
-          if @source.is_row_selected? lineno
-            att = @row_selected_attr || $row_selected_attr
-            # FIXME currentl this overflows into next row
-          end
+        if @source.is_row_selected? lineno
+          att = @row_selected_attr || $row_selected_attr
+          # FIXME currentl this overflows into next row
+        end
         
         FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
         FFI::NCurses.mvwaddstr(pad, lineno, 0, _value)
         FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
-
       end
       # check if we need to individually color columns or we can do the entire
       # row in one shot
@@ -157,20 +156,26 @@ module Canis
     require 'canis/core/include/listoperations'
 
   class Tree < TextPad
-
     include Canis::ListOperations
 
+    TREE_EVENTS = [:ENTER_ROW,
+                   :LEAVE_ROW,
+                   :TREE_COLLAPSED_EVENT,
+                   :TREE_EXPANDED_EVENT,
+                   :TREE_SELECTION_EVENT,
+                   :TREE_WILL_COLLAPSE_EVENT,
+                   :TREE_WILL_EXPAND_EVENT]
+
     dsl_accessor :print_footer
-    attr_reader :treemodel        # returns treemodel for further actions 2011-10-2 
+    attr_reader :treemodel
     dsl_accessor :default_value  # node to show as selected - what if user doesn't have it?
 
     def initialize form = nil, config={}, &block
-
       @_header_adjustment = 0 #1
       @col_min_width = 3
 
       @expanded_state = {}
-      register_events([:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
+      register_events(TREE_EVENTS)
       super
       #@_events.push(*[:ENTER_ROW, :LEAVE_ROW, :TREE_COLLAPSED_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :TREE_WILL_COLLAPSE_EVENT, :TREE_WILL_EXPAND_EVENT])
       create_default_renderer unless @renderer # 2014-04-10 - 11:01 
@@ -183,9 +188,11 @@ module Canis
       @list_selection_model = nil
       @list_selection_model = Canis::DefaultListSelectionModel.new self
     end
+
     def create_default_renderer
-      renderer( DefaultTreeRenderer.new(self) )
+      renderer DefaultTreeRenderer.new(self)
     end
+
     def init_vars
       # show_selector and symbol etc unused
       if @show_selector
@@ -199,8 +206,8 @@ module Canis
       @internal_width = 2 # taking into account borders accounting for 2 cols
       @internal_width = 0 if @suppress_borders # should it be 0 ???
       super
-
     end
+
     # maps keys to methods
     # checks @key_map can be :emacs or :vim.
     def map_keys
@@ -223,6 +230,7 @@ module Canis
       #require 'canis/core/include/listbindings'
       #bindings
     end
+
     # Returns root if no argument given.
     # Now we return root if already set
     # Made node nillable so we can return root. 
@@ -242,7 +250,6 @@ module Canis
     # pass data to create this tree model
     # used to be list
     def data alist=nil
-
       # if nothing passed, print an empty root, rather than crashing
       alist = [] if alist.nil?
       @data = alist # data given by user
@@ -276,6 +283,7 @@ module Canis
       fire_dimension_changed
       self
     end
+
     # private, for use by repaint
     def _list
       if @_structure_changed 
@@ -290,6 +298,7 @@ module Canis
       end
       return @list
     end
+
     # repaint whenever a change heppens
     # 2014-04-16 - 22:31 - I need to put a call to _list somewhere whenever a change happens
     # (i.e. recreate list from the tree model object)..
@@ -298,20 +307,23 @@ module Canis
       _list()
       super
     end
+
     def convert_to_list tree
       @list = @native_text = get_expanded_descendants(tree.root)
       #$log.debug "XXX convert #{tree.root.children.size} "
       #$log.debug " converted tree to list. #{@list.size} "
     end
+
     def traverse node, level=0, &block
       raise "disuse"
       #icon = node.is_leaf? ? "-" : "+"
       #puts "%*s %s" % [ level+1, icon,  node.user_object ]
       yield node, level if block_given?
-      node.children.each do |e| 
+      node.children.each do |e|
         traverse e, level+1, &block
       end
     end
+
     # return object under cursor
     # Note: this should not be confused with selected row/s. User may not have selected this.
     # This is only useful since in some demos we like to change a status bar as a user scrolls down
@@ -338,6 +350,7 @@ module Canis
       toggle_row_selection
       @default_value = nil
     end
+
     ### START FOR scrollable ###
     def get_content
       #@list 2008-12-01 23:13 
@@ -345,9 +358,11 @@ module Canis
       # called by next_match in listscrollable
       @list
     end
+
     def get_window
       @graphic 
     end
+
     ### END FOR scrollable ###
     # override widgets text
     def getvalue
@@ -366,8 +381,6 @@ module Canis
 
     #------- data modification methods ------#
 
-
-#
 
     ## add a row to the table
     # The name add will be removed soon, pls use << instead.
@@ -424,7 +437,7 @@ module Canis
       ha = @_header_adjustment
       # ha takes into account whether there are headers or not
       footer = "#{@current_index+1-ha} of #{@list.length-ha} "
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+      @graphic.printstring(@row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib)
       @repaint_footer_required = false 
     end
     def is_row_selected? row=@current_index
@@ -477,18 +490,20 @@ module Canis
         expand_node node
       end
     end
+
     def row_to_node row=@current_index
       @list[row]
     end
+
     # convert a given node to row
     def node_to_row node
       crow = nil
-      @list.each_with_index { |e,i| 
+      @list.each_with_index do |e,i|
         if e == node
           crow = i
           break
         end
-      }
+      end
       crow
     end
     # private
@@ -530,9 +545,9 @@ module Canis
     def mark_parents_expanded node
       # i am setting parents as expanded, but NOT firing handlers - XXX separate this into expand_parents
       _path = node.tree_path
-      _path.each do |e| 
+      _path.each do |e|
         # if already expanded parent then break we should break
-        set_expanded_state(e, true) 
+        set_expanded_state(e, true)
       end
     end
     # goes up to root of this node, and expands down to this node
@@ -540,7 +555,7 @@ module Canis
     # as in a dir listing when current dir is deep in heirarchy.
     def expand_parents node
       _path = node.tree_path
-      _path.each do |e| 
+      _path.each do |e|
         # if already expanded parent then break we should break
         #set_expanded_state(e, true) 
         expand_node(e)
@@ -590,17 +605,19 @@ module Canis
       goto_parent node
       collapse_node parent
     end
+
     def goto_parent node=:current_index
       node = row_to_node if node == :current_index
       parent = node.parent
       return if parent.nil?
       crow = @current_index
-      @list.each_with_index { |e,i| 
+      # TODO we have beautiful ruby stuff to do that! (find)
+      @list.each_with_index do |e,i| 
         if e == parent
           crow = i
           break
         end
-      }
+      end
       @repaint_required = true
       #set_form_row  # will not work if off form
       #set_focus_on crow
@@ -656,26 +673,27 @@ module Canis
       $log.debug "TREE #{user_path} " if $log.debug? 
       root = @treemodel.root
       found = nil
-      user_path.each { |e| 
+      user_path.each do |e|
         success = false
-        root.children.each { |c| 
+        root.children.each do |c|
           if c.user_object == e
             found = c
             success = true
             root = c
             break
           end
-        }
+        end
         return false unless success
-
-      }
+      end
       return found
     end
+
     # default block
     # @since 1.5.0 2011-11-22 
     def command *args, &block
       bind :TREE_WILL_EXPAND_EVENT, *args, &block
     end
+
     private
     # please do not rely on this yet, name could change
     def _structure_changed tf=true
