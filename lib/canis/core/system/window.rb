@@ -4,7 +4,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: Around for a long time
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2016-01-13 18:40
+#  Last update: 2016-01-14 11:31
 #
 #  == CHANGED
 #     removed dead or redudant code - 2014-04-22 - 12:53 
@@ -590,8 +590,11 @@ module Canis
       # this works for newmessagebox but not for old one.
       # Even now in some cases some black shows through, if the widget is printing spaces
       # such as field or textview on a messagebox.
+      # 2016-01-14 - replacing 1 with space since junk is showing up in some cases.
+      space_char = " ".codepoints.first
       (row-1).upto(row+height-1) do |r|
-        mvwhline(r, col, 1, len)
+        # this loop clears the screen, printing spaces does not work since ncurses does not do anything
+        mvwhline(r, col, space_char, len)
       end
       #attroff(Ncurses.COLOR_PAIR(color) | att)
 
