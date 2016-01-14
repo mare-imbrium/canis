@@ -165,7 +165,11 @@ module Canis
         @window.box 0,0
       elsif @box
         @window.attron(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
-        @window.mvhline 0,0,1,@width
+
+        # 2016-01-14 - replacing 1 with space since junk is showing up in some cases.
+        space_char = " ".codepoints.first
+        #@window.mvhline 0,0,1,@width
+        @window.mvhline 0,0,space_char,@width
         @window.printstring 0,0,@title, $normalcolor #, 'normal' if @title
         @window.attroff(Ncurses.COLOR_PAIR($normalcolor) | Ncurses::A_REVERSE)
       else
