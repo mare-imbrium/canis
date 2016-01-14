@@ -98,6 +98,10 @@ module Canis
     def repaint
       woffset = 2
       coffset = 1
+
+      # 2016-01-14 - replacing 1 with space since junk is showing up in some cases (in mvvline/mvhline)
+      space_char = " ".codepoints.first
+
       if @parent
         woffset = 0 if @parent.suppress_borders
         @border_attrib ||= @parent.border_attrib
@@ -142,9 +146,9 @@ module Canis
       $log.debug " XXX DIVIDER #{@row} #{@col} #{@length} "
       case @side
       when :right, :left
-        @graphic.mvvline(@row, @col, 1, @length)
+        @graphic.mvvline(@row, @col, space_char, @length)
       when :top, :bottom
-        @graphic.mvhline(@row, @col, 1, @length)
+        @graphic.mvhline(@row, @col, space_char, @length)
       end
       @graphic.attroff(Ncurses.COLOR_PAIR(bordercolor) | borderatt)
       _paint_marker
