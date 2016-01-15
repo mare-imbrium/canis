@@ -245,9 +245,16 @@ module Canis
       return w
     end
     def tree config={}, &block
-      #require 'canis/core/widgets/rtree'
       require 'canis/core/widgets/tree'
-      events = [:TREE_WILL_EXPAND_EVENT, :TREE_EXPANDED_EVENT, :TREE_SELECTION_EVENT, :PROPERTY_CHANGE, :LEAVE, :ENTER , :ENTER_ROW, :TREE_COLLAPSED_EVENT, :TREE_WILL_EXPAND_EVENT]
+      events = [:TREE_WILL_EXPAND_EVENT,
+                :TREE_EXPANDED_EVENT,
+                :TREE_SELECTION_EVENT,
+                :PROPERTY_CHANGE,
+                :LEAVE,
+                :ENTER ,
+                :ENTER_ROW,
+                :TREE_COLLAPSED_EVENT,
+                :TREE_WILL_EXPAND_EVENT] # EXPAND double?
       block_event = :TREE_WILL_EXPAND_EVENT
       #config[:height] ||= 10
       # if no width given, expand to flows width
