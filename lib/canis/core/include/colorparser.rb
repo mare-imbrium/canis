@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 07.11.11 - 12:31 
 #  Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-09-11 19:51
+#  Last update: 2017-03-09 23:13
 # ------------------------------------------------------------ #
 #
 
@@ -178,9 +178,9 @@ module Canis
       # NOTE: tested with pad only. Not with window.
       #  Moved from textpad, this is the one method textpad is to call.
       #  @param [Pad] pad on which to print
-      #  @param [Fixnum] lineno to print (zero-based)
-      #  @param [Fixnum] column to start printing on, usually 0
-      #  @param [Fixnum] width of pad, usually @content_cols
+      #  @param [Integer] lineno to print (zero-based)
+      #  @param [Integer] column to start printing on, usually 0
+      #  @param [Integer] width of pad, usually @content_cols
       #  @param [color_pair] colorpair of textpad or widget
       #  @param [attr] attr of textpad or widget
       def print pad, lineno, col, width, color_pair, attr
