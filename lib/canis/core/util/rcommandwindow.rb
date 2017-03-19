@@ -437,7 +437,7 @@ module Canis
     # key handler of Controlphandler 
     # This sets +@keyint+ with the value  read by window.
     # This sets +@keychr+ with the +chr+ value of +ch+ if ch between 32 and 127 exclusive.
-    # @param [Fixnum] ch is key read by window.
+    # @param [Integer] ch is key read by window.
     def handle_key ch
       $log.debug "  KeyDispatcher GOT KEY #{ch} "
       @keyint = ch
@@ -458,7 +458,7 @@ module Canis
     end
 
     # checks the key against +@key_map+ if its set
-    # @param [Fixnum] ch character read by +Window+
+    # @param [Integer] ch character read by +Window+
     # @return [0, :UNHANDLED] 0 if processed, :UNHANDLED if not processed so higher level can process
     def process_key ch
       chr = nil
@@ -866,7 +866,7 @@ module Canis
 
     # key handler of Controlphandler which overrides KeyDispatcher since we need to
     # intercept KEY_ENTER
-    # @param [Fixnum] ch is key read by window.
+    # @param [Integer] ch is key read by window.
     # WARNING: Please note that if this is used in +Viewer.view+, that +view+
     # has already trapped CLOSE_KEY which is KEY_ENTER/13 for closing, so we won't get 13 
     # anywhere
