@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-06-02 - 20:26
 #      License: MIT
-#  Last update: 2014-08-30 17:50
+#  Last update: 2017-03-09 23:13
 # ----------------------------------------------------------------------------- #
 #  devel.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/appmethods'
@@ -96,7 +96,7 @@ module Canis
         val = val.keys
       end
       case val
-      when String, Fixnum, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
+      when String, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
         ;
       else
         val = "Not shown"
@@ -144,7 +144,7 @@ module Canis
         end
       end
       case val
-      when String, Fixnum, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
+      when String, Integer, TrueClass, FalseClass, NilClass, Array, Hash, Symbol
         ;
       else
         val = "Not shown"
