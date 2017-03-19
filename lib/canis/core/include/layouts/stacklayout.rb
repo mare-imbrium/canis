@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 18:33
 #      License: MIT
-#  Last update: 2014-05-09 19:58
+#  Last update: 2017-03-09 23:14
 # ----------------------------------------------------------------------------- #
 #  stacklayout.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/layouts/abstractlayout'
@@ -26,7 +26,7 @@ class StackLayout < AbstractLayout
   # send in the widget and its weightage.
   #
   # @param [Widget] widget whose weightage is to be specified
-  # @param [Float, Fixnum] weightage for the given widget (@see add_with_weight)
+  # @param [Float, Integer] weightage for the given widget (@see add_with_weight)
   def weightage item, wt
     @wts[item] = wt
   end
@@ -79,7 +79,7 @@ class StackLayout < AbstractLayout
       e.col = c
       wt = @wts[e]
       if wt
-        if wt.is_a? Fixnum
+        if wt.is_a? Integer
           e.height = wt
         elsif wt.is_a? Float
           e.height = (wt * balance_ht).floor
