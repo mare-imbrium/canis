@@ -1,5 +1,7 @@
 # Canis
 
+## Last update on 2017-03-19 for ruby 2.4 (fixnum to Integer).
+
 wrapper over ruby ffi-ncurses library with essential components/controls only.
 
 Canis has taken over the codebase of rbcurse. Canis is _not_ backward compatible with rbcurse.
