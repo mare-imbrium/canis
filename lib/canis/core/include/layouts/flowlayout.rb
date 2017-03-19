@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-08 - 18:33
 #      License: MIT
-#  Last update: 2014-05-09 20:58
+#  Last update: 2017-03-09 23:13
 # ----------------------------------------------------------------------------- #
 #  stacklayout.rb  Copyright (C) 2012-2014 j kepler
 require 'canis/core/include/layouts/abstractlayout'
@@ -74,7 +74,7 @@ class FlowLayout < AbstractLayout
       e.col = c
       wt = cget(e, :weight)
       if wt
-        if wt.is_a? Fixnum
+        if wt.is_a? Integer
           e.width = wt
         elsif wt.is_a? Float
           e.width = (wt * balance_ht).floor
