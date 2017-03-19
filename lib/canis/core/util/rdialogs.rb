@@ -297,7 +297,7 @@ def _print_message type, text, aconfig={}, &block  #:nodoc:
   if aconfig[:wait]
     #try this out, if user wants a wait, then it will wait for 5 seconds, or if a key is pressed sooner
     value = aconfig[:wait]
-    if value.is_a? Fixnum
+    if value.is_a? Integer
       value = value * 10
     else 
       value = 50
