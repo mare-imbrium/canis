@@ -59,8 +59,8 @@ if $0 == __FILE__
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != 999 )
-        str = keycode_tos ch if ch.is_a? Fixnum
-        #str1 = @window.key_tos ch if ch.is_a? Fixnum
+        str = keycode_tos ch if ch.is_a? Integer
+        #str1 = @window.key_tos ch if ch.is_a? Integer
         str1 = $key_chr
         $log.debug  "#{ch} got (#{str} $key_chr:#{str1})"
         texta << "#{ch} got (#{str}) #{str1}"
