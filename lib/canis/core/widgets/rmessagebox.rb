@@ -5,7 +5,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 03.11.11 - 22:15
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-08-30 17:47
+#  Last update: 2017-03-09 23:14
 #  == CHANGES
 #  == TODO 
 #     _ <ENTER> should result in OK being pressed if its default, ESC should result in cancel esp 2 time
@@ -423,7 +423,7 @@ module Canis
     # e.g. a list was declared and we wish to know the selected_indices
     def widget n
       case n
-      when Fixnum
+      when Integer
         @form.widgets[n]
       when String, Symbol
         @form.by_name[n] 
