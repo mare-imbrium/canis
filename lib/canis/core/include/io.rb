@@ -183,7 +183,7 @@ module Canis
     # unlike rb_gets allows user to enter control or alt or function character too.
     # @param [String] prompt or label to show.
     # @param [Hash] configuration such as default or regexp for validation
-    # @return [Fixnum] nil if canceled, or ret value of getchar which is numeric
+    # @return [Integer] nil if canceled, or ret value of getchar which is numeric
     # If default provided, then ENTER returns the default
     def rb_getchar(prompt, config={}) # yield field
       begin
@@ -238,7 +238,7 @@ module Canis
     # Prompt user for a file name, allowing him to tab to complete filenames
     # @see #choose_file from rcommandwindow.rb
     # @param [String] label to print before field
-    # @param [Fixnum] max length of field
+    # @param [Integer] max length of field
     # @return [String] filename or blank if user cancelled
     def get_file prompt, config={}  #:nodoc:
       maxlen = 70
@@ -294,7 +294,7 @@ module Canis
     # The first 3 params are no longer required since we create a window
     # of our own. 
     # @param [String] prompt - label to show
-    # @param [Fixnum] maxlen - max length of input
+    # @param [Integer] maxlen - max length of input
     # @param [Hash] config - :default, :width of Field, :help_text, :tab_completion
     # help_text is displayed on F1
     # tab_completion is a proc which helps to complete user input
