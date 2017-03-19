@@ -1,3 +1,6 @@
+2017-03-09 - 23:29
+Replaced Fixnum with Integer since Fixnum deprecated in Ruby 2.4.
+
 2014-04-22 - 00:13 
 
 Made some changes in getchar to return STRINGS but not implemented. Evaluating benefits
