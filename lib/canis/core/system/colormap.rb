@@ -23,7 +23,7 @@ module Canis
     def ColorMap.get_color_const colorstring
       # added check for fixnum if we go beyond these constants 2011-11-28 
       # e.g. to use full 256 colors
-      return colorstring if colorstring.is_a? Fixnum 
+      return colorstring if colorstring.is_a? Integer 
       ret = FFI::NCurses.const_get "COLOR_#{colorstring.to_s.upcase}"
     end
     ## private
@@ -43,7 +43,7 @@ module Canis
     #
     # returns the colors that make up the given pair
     # you may want to find what makes up $bottomcolor and set color and bgcolor with it.
-    # @param [Fixnum] color_pair
+    # @param [Integer] color_pair
     # @return [Symbol, Symbol]  foreground and backgrounf color
     # @example 
     #     color, bgcolor = get_colors_for_pair $datacolor
@@ -71,7 +71,7 @@ module Canis
     # @param [Symbol] color such as :black :cyan :yellow
     # @return [Boolean] true if valid, else false
     def ColorMap.is_color? color
-      return true if color.is_a? Fixnum # so we can use 256 colors
+      return true if color.is_a? Integer # so we can use 256 colors
       @@colors.include? color.to_sym
     end
 
