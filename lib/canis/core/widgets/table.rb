@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-06-01 13:10
+#  Last update: 2017-03-09 23:14
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -497,7 +497,7 @@ module Canis
     # Convert current cursor position to a table column
     # calculate column based on curpos since user may not have
     # user w and b keys (:next_column)
-    # @return [Fixnum] column index base 0
+    # @return [Integer] column index base 0
     def _convert_curpos_to_column  #:nodoc:
       _calculate_column_offsets unless @coffsets
       x = 0
