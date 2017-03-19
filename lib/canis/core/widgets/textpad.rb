@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2014-09-03 17:54
+#  Last update: 2017-03-09 23:14
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1422,9 +1422,9 @@ module Canis
     # First time, starts searching current line from cursor position onwards to end of file
     #  If no match, then checks from start of file to current line.
     # @param [String, Regex] pattern to search (uses +:index+)
-    # @param [Fixnum] line number to start with. Optional. +nil+ means start search from current position.
-    # @param [Fixnum] line number to end with. Optional. +nil+ means end search at end of array
-    # @return [Array<Fixnum, Fixnum>] index of line where pattern found, index of offset in line.
+    # @param [Integer] line number to start with. Optional. +nil+ means start search from current position.
+    # @param [Integer] line number to end with. Optional. +nil+ means end search at end of array
+    # @return [Array<Integer, Integer>] index of line where pattern found, index of offset in line.
     #     +nil+ returned if no match.
     # NOTE:
     #    startline and endline are more for internal purposes, externally we would call this only with
