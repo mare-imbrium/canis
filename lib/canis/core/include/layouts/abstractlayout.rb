@@ -4,7 +4,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-05-09 - 17:15
 #      License: MIT
-#  Last update: 2014-05-09 20:38
+#  Last update: 2017-03-09 23:13
 # ----------------------------------------------------------------------------- #
 #  abstractlayout.rb  Copyright (C) 2012-2014 j kepler
 
@@ -87,7 +87,7 @@ class AbstractLayout
 
 
   # Add a component, giving a weightage for height
-  # @param [Fixnum, Float] give absolute weight, or fraction of layouts height
+  # @param [Integer, Float] give absolute weight, or fraction of layouts height
   # if wt is >= 1 then it is absolute height, else if between 0 and 1 ,
   # it is a percentage.
   def add_with_weight item, weight
@@ -183,7 +183,7 @@ class AbstractLayout
       e.col = c
       wt = @wts[e]
       if wt
-        if wt.is_a? Fixnum
+        if wt.is_a? Integer
           e.height = wt
         elsif wt.is_a? Float
           e.height = (wt * balance_ht).floor
