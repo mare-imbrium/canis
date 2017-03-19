@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2014-08-28 16:58
+  * Last update: 2017-03-09 23:10
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -47,7 +47,7 @@ end
 # 2009-10-04 14:13 added RK after suggestion on http://www.ruby-forum.com/topic/196618#856703
 # these are for 1.8 compatibility
 unless "a"[0] == "a"
-  class Fixnum
+  class Integer
     def ord
       self
     end
@@ -177,7 +177,7 @@ module Canis
         ch.getbyte(0)
       end
       # returns a string representation of a given int keycode
-      # @param [Fixnum] keycode read by window
+      # @param [Integer] keycode read by window
       #    In some case, such as Meta/Alt codes, the window reads two ints, but still we are using the param
       #    as the value returned by ?\M-a.getbyte(0) and such, which is typically 128 + key
       # @return [String] a string representation which is what is to be used when binding a key to an
@@ -315,7 +315,7 @@ module Canis
       # Use this in order to create a color pair with the colors
       # provided, however, if user has not provided, use supplied
       # default.
-      # @param [Fixnum] color_pair created by ncurses
+      # @param [Integer] color_pair created by ncurses
       # @param [Symbol] color name such as white black cyan magenta red green yellow
       # @param [Symbol] bgcolor name such as white black cyan magenta red green yellow
       # @example get_color $promptcolor, :white, :cyan
@@ -330,13 +330,13 @@ module Canis
       # convert a string to integer attribute
       # FIXME: what if user wishes to OR two attribs, this will give error
       # @param [String] e.g. reverse bold normal underline
-      #     if a Fixnum is passed, it is returned as is assuming to be 
+      #     if a Integer is passed, it is returned as is assuming to be 
       #     an attrib
       def get_attrib str
         return FFI::NCurses::A_NORMAL unless str
         # next line allows us to do a one time conversion and keep the value
         #  in the same variable
-        if str.is_a? Fixnum
+        if str.is_a? Integer
           if [
             FFI::NCurses::A_BOLD,
             FFI::NCurses::A_REVERSE,    
@@ -733,7 +733,7 @@ module Canis
             end
 
             h.each_pair { |name, val| 
-              if name.is_a? Fixnum
+              if name.is_a? Integer
                 name = keycode_tos name
               elsif name.is_a? String
                 name = keycode_tos(name.getbyte(0))
@@ -1480,7 +1480,7 @@ module Canis
        oldvalue = @color_pair
        case val.size
        when 1
-         raise ArgumentError, "Expecting fixnum for color_pair." unless val[0].is_a? Fixnum
+         raise ArgumentError, "Expecting fixnum for color_pair." unless val[0].is_a? Integer
          @color_pair = val[0]
          @color, @bgcolor = ColorMap.get_colors_for_pair @color_pair
        when 2
@@ -2295,7 +2295,7 @@ module Canis
     # this accesses the field created or passed with set_label
     #attr_reader :label
     # this is the class of the field set in +text()+, so value is returned in same class
-    # @example : Fixnum, Integer, Float
+    # @example : Integer, Integer, Float
     attr_accessor :datatype                    # crrently set during set_buffer
     attr_reader :original_value                # value on entering field
     attr_accessor :overwrite_mode              # true or false INSERT OVERWRITE MODE
@@ -2333,10 +2333,10 @@ module Canis
 
     # NOTE: earlier there was some confusion over type, chars_allowed and datatype
     # Now type and chars_allowed are merged into one.
-    # If you pass a symbol such as :integer, :float or Float Fixnum then some
+    # If you pass a symbol such as :integer, :float or Float Integer then some
     #  standard chars_allowed will be used. Otherwise you may pass a regexp.
     #
-    # @param symbol :integer, :float, :alpha, :alnum, Float, Fixnum, Numeric, Regexp
+    # @param symbol :integer, :float, :alpha, :alnum, Float, Integer, Numeric, Regexp
     def type *val
       return @chars_allowed if val.empty?
 
@@ -2348,7 +2348,7 @@ module Canis
       end
       dtype = dtype.to_s.downcase.to_sym if dtype.is_a? String
       case dtype # missing to_sym would have always failed due to to_s 2011-09-30 1.3.1
-      when :integer, Fixnum, Integer
+      when :integer, Integer
         @chars_allowed = /\d/
       when :numeric, :float, Numeric, Float
         @chars_allowed = /[\d\.]/ 
@@ -2368,7 +2368,7 @@ module Canis
     # NOTE: this should return self for chaining operations and throw an exception
     # if disabled or exceeding size
     # @param [char] a character to add
-    # @return [Fixnum] 0 if okay, -1 if not editable or exceeding length
+    # @return [Integer] 0 if okay, -1 if not editable or exceeding length
     def putch char
       return -1 if !@editable 
       return -1 if !@overwrite_mode && (@buffer.length >= @maxlen)
@@ -2460,7 +2460,7 @@ module Canis
       case dt.to_s
       when "String"
         return @buffer
-      when "Fixnum"
+      when "Integer"
         return @buffer.to_i
       when "Float"
         return @buffer.to_f
@@ -3226,7 +3226,7 @@ module Canis
           _color   = @selected_color || _color
         end
         $log.debug "XXX: button #{text}   STATE is #{@state} color #{_color} , bg: #{_bgcolor} "
-        if _bgcolor.is_a?( Fixnum) && _color.is_a?( Fixnum)
+        if _bgcolor.is_a?( Integer) && _color.is_a?( Integer)
           # i think this means they are colorpairs not colors, but what if we use colors on the 256 scale ?
           #  i don;t like this at all. 
         else
