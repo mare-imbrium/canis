@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2017-03-09 23:10
+  * Last update: 2018-05-15 09:41
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -97,15 +97,14 @@ class Module  # dsl_accessor {{{
             oldvalue = @#{sym}
             tmp = val.size == 1 ? val[0] : val
             newvalue = tmp
-            if oldvalue.nil? || @_object_created.nil?
+            if @_object_created.nil?
                @#{sym} = tmp
             end
-            return(self) if oldvalue.nil? || @_object_created.nil?
+            return(self) if @_object_created.nil?
 
             if oldvalue != newvalue
               # trying to reduce calls to fire, when object is being created
                begin
-                 @property_changed = true
                  fire_property_change("#{sym}", oldvalue, newvalue) if !oldvalue.nil?
                  @#{sym} = tmp
                  @config["#{sym}"]=@#{sym}
@@ -1023,12 +1022,11 @@ module Canis
           return :NO_BLOCK
         end # if
       end
-      ## added on 2009-01-08 00:33 
       # goes with dsl_property
-      # Need to inform listeners - done 2010-02-25 23:09 
       # Can throw a FieldValidationException or PropertyVetoException
       def fire_property_change text, oldvalue, newvalue
-        return if oldvalue.nil? || @_object_created.nil? # added 2010-09-16 so if called by methods it is still effective
+        return if @_object_created.nil? #  2018-05-15 - removed check for nil, as object can be nil on creation
+                                        # but set later.
         #$log.debug " FPC #{self}: #{text} #{oldvalue}, #{newvalue}"
         $log.debug " FPC #{self}: #{text} "
         if @pce.nil?
@@ -1037,7 +1035,7 @@ module Canis
           @pce.set( self, text, oldvalue, newvalue)
         end
         fire_handler :PROPERTY_CHANGE, @pce
-        @repaint_required = true # this was a hack and shoudl go, someone wanted to set this so it would repaint (viewport line 99 fire_prop
+        @repaint_required = true 
         repaint_all(true) # for repainting borders, headers etc 2011-09-28 V1.3.1 
       end
 
