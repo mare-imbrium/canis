@@ -9,7 +9,7 @@
   * Author: jkepler (ABCD)
   * Date: 2008-11-19 12:49 
   * License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-  * Last update: 2018-05-15 09:41
+  * Last update: 2018-05-16 12:40
 
   == CHANGES
   * 2011-10-2 Added PropertyVetoException to rollback changes to property
@@ -908,9 +908,9 @@ module Canis
       # create a logger giving a path.
       def create_logger path
         #path = File.join(ENV["LOGDIR"] || "./" ,"canis14.log")
-        file   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
-        logg = Logger.new(path)
-        raise "Could not create logger  " unless logg
+        _path   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
+        logg = Logger.new(_path)
+        raise "Could not create logger: #{path}" unless logg
         # if not set, will default to 0 which is debug. Other values are 1 - info, 2 - warn
         logg.level = ENV["CANIS_LOG_LEVEL"].to_i
         colors = Ncurses.COLORS
