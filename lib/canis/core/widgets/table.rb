@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2017-03-09 23:14
+#  Last update: 2018-05-19 16:17
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -623,7 +623,8 @@ module Canis
       # update the names in column model 
       array.each_with_index { |n,i| 
         c = get_column(i)
-        c.name = name
+        #c.name = name     ## 2018-05-19 - seems to be a bug
+        c.name = n
       }
       self
     end
