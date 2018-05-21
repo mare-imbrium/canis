@@ -10,7 +10,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2017-03-09 23:14
+#  Last update: 2018-05-21 08:09
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
@@ -1137,18 +1137,15 @@ module Canis
       return nil if @list.nil? || @list.size == 0
 
       @repaint_footer_required = true
-      #alert "on_enter rr #{@repaint_required}, #{@repaint_all} oi #{@oldindex}, ci #{@current_index}, or #{@oldrow}  "
 
       ## can this be done once and stored, and one instance used since a lot of traversal will be done
       require 'canis/core/include/ractionevent'
       aev = TextActionEvent.new self, :ENTER_ROW, current_value().to_s, @current_index, @curpos
       fire_handler :ENTER_ROW, aev
-      #@repaint_required = true
     end
 
     #
     # called when this widget is entered, by form
-    # 2014-05-27 - 17:02 we were not calling super, so :ENTER was not triggered !!!
     def on_enter
       super
       set_form_row
@@ -1161,11 +1158,6 @@ module Canis
     def set_form_col
     end
 
-    private
-    
-    # check that current_index and prow are within correct ranges
-    # sets row (and someday col too)
-    # sets repaint_required
 
     public
     def bounds_check
