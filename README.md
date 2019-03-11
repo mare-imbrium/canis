@@ -1,10 +1,10 @@
 # Canis
 
-Kindly note that ``````````canis`` is not, and will never be, production-ready.
+Kindly note that `canis` is not, and will never be, production-ready.
 Very few ruby programmers are using ncurses so the usage of canis is
 very low if any. So kindly do not use for critical work.
 
-That is why I made a much simpler and stripped version of ``canis`` called ``umbra.``
+That is why I made a much simpler and stripped version of `canis` called `umbra`.
 I use `umbra` mostly, but that too for a screen with a few fields and a single table,
 and some popups.
 
