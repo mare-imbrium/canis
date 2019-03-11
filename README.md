@@ -1,7 +1,18 @@
 # Canis
 
+Kindly note that ``````````canis`` is not, and will never be, production-ready.
+Very few ruby programmers are using ncurses so the usage of canis is
+very low if any. So kindly do not use for critical work.
 
-## Last update on 2018-03-05 for ruby 2.5 
+That is why I made a much simpler and stripped version of ``canis`` called ``umbra.``
+I use `umbra` mostly, but that too for a screen with a few fields and a single table,
+and some popups.
+
+Umbra will be easier for you to go through, and hack (if you come across a problem) than canis. Having said that, I am perhaps the only user of `umbra`, so again it is at your own risk.
+
+If anyone wishes to take over and maintain `canis` please contact me.
+
+## Last update on 2018-03-05 for ruby 2.5
 
 Everything seems to be working fine without any changes.
 
@@ -23,7 +34,7 @@ document reader, `rigel` which is based on the code of `ribhu` (which was rbcurs
 ## Usage
 
 Until, we have better documentation, the best way to understand "canis" is to run the examples in the examples
-folder. This gives a good idea of what the library does. Now you can open the source and get a feel of the 
+folder. This gives a good idea of what the library does. Now you can open the source and get a feel of the
 structure of the code and what to study. One can also select an example that is close to the application one has in mind
 and use the source as a starting point.
 
@@ -51,8 +62,8 @@ TODO: Write usage instructions here
 
 Commonly used widgets and features:
 
-- Textpad - to display non-editable multiline text. Text can be colored. 
-- Listbox - identical to the textpad except that it allows single or multiple selection, and has 
+- Textpad - to display non-editable multiline text. Text can be colored.
+- Listbox - identical to the textpad except that it allows single or multiple selection, and has
     some extra events such as entering and leaving or row, and selection.
 - Field - user entry of a single line of data.
 - Label - readonly text
@@ -80,7 +91,7 @@ Lesser used widgets and features:
 Some Issues with rbcurse:
 
 Widgets required explicit coordinates. To that effect the App class allowed for `Stack` and `Flow` (idea borrowed from
-the **Shoes** project. This works well, but all stack and flow information is lost when controls are placed meaning that a 
+the **Shoes** project. This works well, but all stack and flow information is lost when controls are placed meaning that a
 change in the window size (if user resizes) does not (and cannot) resize the application.
 
 Canis has recently introduced Layout objects which have the ability to re-locate and resize objects when screen size
@@ -91,7 +102,7 @@ Currently there are three layout objects:
 - `StackLayout` : does only stacking of objects (vertical placement)
 - `FlowLayout` : does only horizontal placement of obects
 - `SplitLayout` : allows for multiple stacks and flows by means of splitting a split either horizontally or vertically
-  and either placing an object in it, or splitting it further. 
+  and either placing an object in it, or splitting it further.
 These are based on an `AbstractLayout` which can be used to derive further layouts.
 
 It is my intention to move usage over to these layouts since they are simpler, and allow for resizing (and to abandon
@@ -103,7 +114,7 @@ Issues canis would like to address:
   I would like to do this before reaching 1.0.
 
 - Keymapping. Currently, takes codes as integers, but i would have liked moving to strings as in vim.
-  Currently we have to map `?\C-a.getbytes(0)` or `[?g, ?g]`, whereas a string would allow us to map `"<C-x>s"` 
+  Currently we have to map `?\C-a.getbytes(0)` or `[?g, ?g]`, whereas a string would allow us to map `"<C-x>s"`
   or `"<F1>"` or `"gg"`. The issue is that there is too much rework within the library since each widget uses integer mappings.
   Mapping and matching multiple keys would be a lot easier if stored internally as a string, currently multiple
   mappings require a hash or tree at each level.
@@ -114,6 +125,9 @@ This tutorial needs to be updated for canis. Although, canis has diverged/forked
 
 There is some on-line documentation of classes at:
 http://rubydoc.info/gems/canis/0.0.8/frames
+
+Umbra/ncumbra is at:
+https://github.com/mare-imbrium/umbra
 
 ## Contributing
 
