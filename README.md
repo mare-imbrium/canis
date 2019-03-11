@@ -1,6 +1,6 @@
 # Canis
 
-Kindly note that `canis` is not, and will never be, production-ready.
+**2019-03-11**. Kindly note that `canis` is not, and will never be, production-ready.
 Very few ruby programmers are using ncurses so the usage of canis is
 very low if any. So kindly do not use for critical work.
 
