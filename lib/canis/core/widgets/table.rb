@@ -7,11 +7,11 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2018-05-19 16:17
+#  Last update: 2019-03-11 11:33
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
-# == CHANGES: 
+# == CHANGES:
 #  - changed @content to @list since all multirow wids and utils expect @list
 #  - changed name from tablewidget to table
 #
@@ -29,7 +29,7 @@ require 'logger'
 require 'canis'
 require 'canis/core/widgets/textpad'
 
-## 
+##
 # The motivation to create yet another table widget is because tabular_widget
 # is based on textview etc which have a lot of complex processing and rendering
 # whereas textpad is quite simple. It is easy to just add one's own renderer
@@ -83,8 +83,8 @@ module Canis
     # It's a pretty simple sorter and uses sort, not sort_by.
     # Improvements welcome.
     # Usage: provide model in constructor or using model method
-    # Call toggle_sort_order(column_index) 
-    # Call sort. 
+    # Call toggle_sort_order(column_index)
+    # Call sort.
     # Currently, this sorts the provided model in-place. Future versions
     # may maintain a copy, or use a table that provides a mapping of model to result.
     # # TODO check if column_sortable
@@ -123,11 +123,11 @@ module Canis
         # with textpad, this way we avoid touching it
         header = @model.delete_at 0
         begin
-          # next line often can give error "array within array" - i think on date fields that 
+          # next line often can give error "array within array" - i think on date fields that
           #  contain nils
-        @model.sort!{|x,y| 
+        @model.sort!{|x,y|
           res = 0
-          @sort_keys.each { |ee| 
+          @sort_keys.each { |ee|
             e = ee.abs-1 # since we had offsetted by 1 earlier
             abse = e.abs
             if ee < 0
@@ -173,7 +173,7 @@ module Canis
         # internally, reverse sort is maintained by multiplying number by -1
         @sort_keys ||= []
         if @sort_keys.first && index == @sort_keys.first.abs
-          @sort_keys[0] *= -1 
+          @sort_keys[0] *= -1
         else
           @sort_keys.delete index # in case its already there
           @sort_keys.delete(index*-1) # in case its already there
@@ -241,7 +241,7 @@ module Canis
       # and returns an array which is used for printing
       #
       # return an array so caller can color columns if need be
-      def convert_value_to_text r  
+      def convert_value_to_text r
         str = []
         fmt = nil
         field = nil
@@ -314,7 +314,7 @@ module Canis
             att = REVERSE
             # FIXME currentl this overflows into next row
           end
-        
+
         FFI::NCurses.wattron(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
         FFI::NCurses.mvwaddstr(pad, lineno, 0, text)
         FFI::NCurses.wattroff(pad,FFI::NCurses.COLOR_PAIR(cp) | att)
@@ -323,6 +323,7 @@ module Canis
       def render_header pad, lineno, col, columns
         # I could do it once only but if user sets colors midway we can check once whenvever
         # repainting
+        $log.debug "INSIDE render_header XXXXX"
         check_colors #if @_check_coloring.nil?
         #text = columns.join " | "
         #text = @fmstr % columns
@@ -349,7 +350,7 @@ module Canis
         }
       end
       def each_column
-        @chash.each_with_index { |c, i| 
+        @chash.each_with_index { |c, i|
           next if c.hidden
           yield c,i if block_given?
         }
@@ -395,10 +396,10 @@ module Canis
     #   focus, and should be used for row operations.
     #
     #   In order to use Textpad easily, the first row of the table model is the column names. Data is maintained
-    #   in an Array. Several operations are delegated to Array, or have the same name. You can get the list 
+    #   in an Array. Several operations are delegated to Array, or have the same name. You can get the list
     #   using `list()` to run other Array operations on it.
     #
-    #   If you modify the Array directly, you may have to use `fire_row_changed(index)` to reflect the update to 
+    #   If you modify the Array directly, you may have to use `fire_row_changed(index)` to reflect the update to
     #   a single row. If you delete or add a row, you will have to use `fire_dimension_changed()`. However,
     #   internal functions do this automatically.
     #
@@ -423,7 +424,7 @@ module Canis
 
       self.extend DefaultListSelection
       super
-      create_default_renderer unless @renderer # 2014-04-10 - 11:01 
+      create_default_renderer unless @renderer # 2014-04-10 - 11:01
       # NOTE listselection takes + and - for ask_select
       bind_key(?w, "next column") { self.next_column }
       bind_key(?b, "prev column") { self.prev_column }
@@ -441,9 +442,9 @@ module Canis
       @list_selection_model = nil
       @list_selection_model = Canis::DefaultListSelectionModel.new self
     end
-    
+
     # retrieve the column info structure for the given offset. The offset
-    # pertains to the visible offset not actual offset in data model. 
+    # pertains to the visible offset not actual offset in data model.
     # These two differ when we move a column.
     # @return ColumnInfo object containing width align color bgcolor attrib hidden
     def get_column index
@@ -454,7 +455,7 @@ module Canis
       @chash[index] = c
       return c
     end
-    ## 
+    ##
     # returns collection of ColumnInfo objects
     def column_model
       @chash
@@ -463,8 +464,8 @@ module Canis
     # calculate pad width based on widths of columns
     def content_cols
       total = 0
-      #@chash.each_pair { |i, c| 
-      #@chash.each_with_index { |c, i| 
+      #@chash.each_pair { |i, c|
+      #@chash.each_with_index { |c, i|
         #next if c.hidden
       each_column {|c,i|
         w = c.width
@@ -474,7 +475,7 @@ module Canis
       return total
     end
 
-    # 
+    #
     # This calculates and stores the offset at which each column starts.
     # Used when going to next column or doing a find for a string in the table.
     # TODO store this inside the hash so it's not calculated again in renderer
@@ -483,8 +484,8 @@ module Canis
       @coffsets = []
       total = 0
 
-      #@chash.each_pair { |i, c| 
-      #@chash.each_with_index { |c, i| 
+      #@chash.each_pair { |i, c|
+      #@chash.each_with_index { |c, i|
         #next if c.hidden
       each_column {|c,i|
         w = c.width
@@ -501,10 +502,10 @@ module Canis
     def _convert_curpos_to_column  #:nodoc:
       _calculate_column_offsets unless @coffsets
       x = 0
-      @coffsets.each_with_index { |i, ix| 
-        if @curpos < i 
+      @coffsets.each_with_index { |i, ix|
+        if @curpos < i
           break
-        else 
+        else
           x += 1
         end
       }
@@ -526,7 +527,7 @@ module Canis
       # TODO take care of multipliers
       _calculate_column_offsets unless @coffsets
       c = @column_pointer.next
-      cp = @coffsets[c] 
+      cp = @coffsets[c]
       #$log.debug " next_column #{c} , #{cp} "
       @curpos = cp if cp
       down() if c < @column_pointer.last_index
@@ -538,13 +539,13 @@ module Canis
       # TODO take care of multipliers
       _calculate_column_offsets unless @coffsets
       c = @column_pointer.previous
-      cp = @coffsets[c] 
+      cp = @coffsets[c]
       #$log.debug " prev #{c} , #{cp} "
       @curpos = cp if cp
       up() if c > @column_pointer.last_index
       fire_column_event :ENTER_COLUMN
     end
-    # a column traversal has happened. 
+    # a column traversal has happened.
     # FIXME needs to be looked into. is this consistent naming wise and are we using the correct object
     # In old system it was TABLE_TRAVERSAL_EVENT
     def fire_column_event eve
@@ -579,7 +580,7 @@ module Canis
     end
     def contract_column
       x = _convert_curpos_to_column
-      w = get_column(x).width 
+      w = get_column(x).width
       return if w <= @col_min_width
       column_width x, w-1 if w
       @coffsets = nil
@@ -601,7 +602,7 @@ module Canis
 
   ##
   # getter and setter for columns
-  # 2014-04-10 - 13:49 
+  # 2014-04-10 - 13:49
   # @param [Array] columns to set as Array of Strings
   # @return if no args, returns array of column names as Strings
     #  NOTE
@@ -620,8 +621,8 @@ module Canis
       @list << array
       _init_model array
 
-      # update the names in column model 
-      array.each_with_index { |n,i| 
+      # update the names in column model
+      array.each_with_index { |n,i|
         c = get_column(i)
         #c.name = name     ## 2018-05-19 - seems to be a bug
         c.name = n
@@ -648,7 +649,7 @@ module Canis
     def _init_model array
       # clear the column data -- this line should be called otherwise previous tables stuff will remain.
       @chash.clear
-      array.each_with_index { |e,i| 
+      array.each_with_index { |e,i|
         # if columns added later we could be overwriting the width
         c = get_column(i)
         c.width ||= 10
@@ -659,7 +660,7 @@ module Canis
     # size each column based on widths of this row of data.
     def model_row index
       array = @list[index]
-      array.each_with_index { |c,i| 
+      array.each_with_index { |c,i|
         # if columns added later we could be overwriting the width
         ch = get_column(i)
         ch.width = c.to_s.length + 2
@@ -671,7 +672,7 @@ module Canis
     # estimate columns widths based on data in first 10 or so rows
     # This will override any previous widths, so put custom widths
     # after calling this.
-    def estimate_column_widths  
+    def estimate_column_widths
       each_column {|c,i|
         c.width  = suggest_column_width(i)
       }
@@ -684,7 +685,7 @@ module Canis
       #ret = @cw[col] || 2
       ret = get_column(col).width || 2
       ctr = 0
-      @list.each_with_index { |r, i| 
+      @list.each_with_index { |r, i|
         #next if i < @toprow # this is also a possibility, it checks visible rows
         break if ctr > 10
         ctr += 1
@@ -737,7 +738,7 @@ module Canis
     #
     #     table = Table.new ...
     #     table.filename 'contacts.tsv', :separator => '|', :columns => true
-    #   
+    #
     def filename name, _config = {}
       arr = File.open(name,"r").read.split("\n")
       lines = []
@@ -783,7 +784,7 @@ module Canis
         l = @list
       end
 
-      File.open(outfile, 'w') {|f| 
+      File.open(outfile, 'w') {|f|
         l.each {|r|
           line = r.join "\t"
           f.puts line
@@ -806,7 +807,7 @@ module Canis
     end
     alias :<< :add
 
-    # delete a data row at index 
+    # delete a data row at index
     #
     # NOTE : This does not adjust for header_adjustment. So zero will refer to the header if there is one.
     #   This is to keep consistent with textpad which does not know of header_adjustment and uses the actual
@@ -814,7 +815,7 @@ module Canis
     #
     def delete_at ix
       return unless @list
-      raise ArgumentError, "Argument must be within 0 and #{@list.length}" if ix < 0 or ix >=  @list.length 
+      raise ArgumentError, "Argument must be within 0 and #{@list.length}" if ix < 0 or ix >=  @list.length
       fire_dimension_changed
       #@list.delete_at(ix + @_header_adjustment)
       @list.delete_at(ix)
@@ -844,7 +845,7 @@ module Canis
       fire_row_changed actrow
       self
     end
-    
+
     #------- column related methods ------#
     #
     # convenience method to set width of a column
@@ -872,11 +873,11 @@ module Canis
     def _invalidate_width_cache    #:nodoc:
       @coffsets = nil
     end
-    ## 
+    ##
     # should all this move into table column model or somepn
     # move a column from offset ix to offset newix
     def move_column ix, newix
-      acol = @chash.delete_at ix 
+      acol = @chash.delete_at ix
       @chash.insert newix, acol
       _invalidate_width_cache
       #tmce = TableColumnModelEvent.new(ix, newix, self, :MOVE)
@@ -895,7 +896,7 @@ module Canis
     def calculate_column_width col, maxrows=99
       ret = 3
       ctr = 0
-      @list.each_with_index { |r, i| 
+      @list.each_with_index { |r, i|
         #next if i < @toprow # this is also a possibility, it checks visible rows
         break if ctr > maxrows
         ctr += 1
@@ -918,7 +919,7 @@ module Canis
       retval = FFI::NCurses.prefresh(@pad,0,@pcol, sr , sc , 2 , @cols+ sc );
       # now print rest of data
       # h is header_adjustment
-      h = 1 
+      h = 1
       retval = FFI::NCurses.prefresh(@pad,@prow + h,@pcol, sr + h , sc , @rows + sr  , @cols+ sc );
       $log.warn "XXX:  PADREFRESH #{retval}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
       # padrefresh can fail if width is greater than NCurses.COLS
@@ -931,7 +932,7 @@ module Canis
     # set a default renderer
     #--
     #  we were not doing this automatically, so repaint was going to TP and failing on mvaddstr
-    #  2014-04-10 - 10:57 
+    #  2014-04-10 - 10:57
     #++
     def create_default_renderer
       r = DefaultTableRenderer.new self
@@ -959,7 +960,7 @@ module Canis
       end
       super
     end
-    ## 
+    ##
     # Find the next row that contains given string
     # Overrides textpad since each line is an array
     # NOTE does not go to next match within row
@@ -983,7 +984,7 @@ module Canis
           # value can be numeric
           col = f.to_s.index str
           if col
-            col += @coffsets[jx] 
+            col += @coffsets[jx]
             first ||= [ ix, col ]
             if ix > @current_index
               return [ix, col]
@@ -997,14 +998,14 @@ module Canis
     # if yield returns true,  collects index of row into array and returns the array
     # @returns array of indices which can be empty
     # Value yielded can be fixnum or date etc
-    def matching_indices 
+    def matching_indices
       raise "block required for matching_indices" unless block_given?
       @indices = []
       ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
       @list.each_with_index do |fields, ix|
         flag = yield ix, fields
         if flag
-          @indices << ix 
+          @indices << ix
         end
       end
       #$log.debug "XXX:  INDICES found #{@indices}"
@@ -1024,7 +1025,7 @@ module Canis
       end
       @indices = nil
     end
-    ## 
+    ##
     # Ensure current row is visible, if not make it first row
     #  This overrides textpad due to header_adjustment, otherwise
     #  during next_match, the header overrides the found row.
@@ -1039,7 +1040,7 @@ module Canis
     # yields non-hidden columns (ColumnInfo) and the offset/index
     # This is the order in which columns are to be printed
     def each_column
-      @chash.each_with_index { |c, i| 
+      @chash.each_with_index { |c, i|
         next if c.hidden
         yield c,i if block_given?
       }
@@ -1064,8 +1065,8 @@ module Canis
       ha = @_header_adjustment
       # ha takes into account whether there are headers or not
       footer = "#{@current_index+1-ha} of #{@list.length-ha} "
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
-      @repaint_footer_required = false 
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib)
+      @repaint_footer_required = false
     end
 
   end # class Table
