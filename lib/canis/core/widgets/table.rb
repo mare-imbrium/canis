@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2019-03-11 11:33
+#  Last update: 2019-03-12 00:41
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -285,12 +285,12 @@ module Canis
       def render pad, lineno, str
         #lineno += 1 # header_adjustment
         # header_adjustment means columns have been set
-        return render_header pad, lineno, 0, str if lineno == 0 && @source.header_adjustment > 0
+        return render_header pad, lineno, 0, str if lineno == 0  && @source.header_adjustment > 0
         #text = str.join " | "
         #text = @fmstr % str
         text = convert_value_to_text str
         if @_check_coloring
-          #$log.debug "XXX:  INSIDE COLORIIN"
+          $log.debug "XXX:  INSIDE COLORIIN"
           text = colorize pad, lineno, text
           return
         end
@@ -323,7 +323,7 @@ module Canis
       def render_header pad, lineno, col, columns
         # I could do it once only but if user sets colors midway we can check once whenvever
         # repainting
-        $log.debug "INSIDE render_header XXXXX"
+        # $log.debug "INSIDE render_header XXXXX #{@source.name}, #{lineno}, #{col}"
         check_colors #if @_check_coloring.nil?
         #text = columns.join " | "
         #text = @fmstr % columns
@@ -419,7 +419,7 @@ module Canis
       #  When printing we should loop through chash and get the index in data
       #
       # should be zero here, but then we won't get textpad correct
-      @_header_adjustment = 0 #1
+      @_header_adjustment = 0
       @col_min_width = 3
 
       self.extend DefaultListSelection
@@ -1053,7 +1053,7 @@ module Canis
         end
       else
         @list.each_with_index { |line, ix|
-          #FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix])
+          # FFI::NCurses.mvwaddstr(@pad,ix, 0, @list[ix].to_s)
           render @pad, ix, line
         }
       end
