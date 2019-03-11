@@ -4,17 +4,17 @@
 # ----------------------------------------------------------------------------- #
 #         File: textpad.rb
 #  Description: A class that displays text using a pad.
-#         The motivation for this is to put formatted text and not care about truncating and 
+#         The motivation for this is to put formatted text and not care about truncating and
 #         stuff. Also, there will be only one write, not each time scrolling happens.
 #         I found textview code for repaint being more complex than required.
 #       Author: jkepler http://github.com/mare-imbrium/mancurses/
 #         Date: 2011-11-09 - 16:59
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2018-05-21 08:09
+#  Last update: 2019-03-12 00:17
 #
 #  == CHANGES
 #   - changed @content to @list since all multirow widgets use that and so do utils etc
-#  == TODO 
+#  == TODO
 #  Take care of 3 cases:
 #     1. complete data change, then recreate pad, and call init_vars resetting row, col and curpos etc
 #        This is done by method text().
@@ -33,7 +33,7 @@ require 'forwardable'
 include Canis
 module Canis
   extend self
-  class TextPad < Widget # 
+  class TextPad < Widget #
     include BorderTitle
     extend Forwardable
 
@@ -116,17 +116,17 @@ module Canis
     end
 
     # calculates the dimensions of the pad which will be used when the pad refreshes, taking into account
-    # whether borders are printed or not. This must be called whenever there is a change in height or width 
+    # whether borders are printed or not. This must be called whenever there is a change in height or width
     # otherwise @rows will not be recalculated.
     # Internal.
     def __calc_dimensions
-      ## NOTE 
+      ## NOTE
       #  ---------------------------------------------------
       #  Since we are using pads, you need to get your height, width and rows correct
       #  Make sure the height factors in the row, else nothing may show
       #  ---------------------------------------------------
-      
-     
+
+
       raise " CALC inside #{@name} h or w is nil #{@height} , #{@width} " if @height.nil? or @width.nil?
       @rows = @height
       @cols = @width
@@ -149,13 +149,13 @@ module Canis
         #@cols -=0
         @cols -=1
         @scrollatrows = @height - 1 # check this out 0 or 1
-        @row_offset = @col_offset = 0 
+        @row_offset = @col_offset = 0
       end
       @top = @row
       @left = @col
       @lastrow = @row + @row_offset
       @lastcol = @col + @col_offset
-      $log.debug "  CALC_DIMENSION #{@rows} , #{@cols}, #{@height} , #{@width} , #{@top} , #{@left} "
+      $log.debug "  CALC_DIMENSION r:#{@rows} , c:#{@cols}, h:#{@height} , w:#{@width} , top:#{@top} , left:#{@left} "
     end
     def scrollatrows
       unless @suppress_borders
@@ -189,12 +189,12 @@ module Canis
     ## creates the pad
     def create_pad
       destroy if @pad
-      #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}" 
+      #$log.debug "XXXCP: create_pad #{@content_rows} #{@content_cols} , w:#{@width} c #{@cols} , r: #{@rows}"
 
       @content_rows = @content_cols = nil
       @content_rows = pad_rows()
       @content_cols = pad_cols()
-      $log.debug "XXXCP: create_pad :#{@content_rows} , #{@content_cols} . w:#{@width} c #{@cols} , r: #{@rows}" 
+      $log.debug "XXXCP: create_pad :#{@content_rows} , #{@content_cols} . w:#{@width} c #{@cols} , r: #{@rows}"
       raise "create_pad content_rows is nil " unless @content_rows
       raise "create_pad content_cols is nil " unless @content_cols
 
@@ -204,7 +204,7 @@ module Canis
     # content_rows can be more than size of pad, but never less. Same for cols.
     # height of pad, or number of row, earlier called @content_rows
     public
-    def pad_rows 
+    def pad_rows
       # content_rows can be more than size of pad, but never less. Same for cols.
       return @content_rows if @content_rows
       content_rows = @list.count
@@ -234,7 +234,7 @@ module Canis
       @clearstring = nil
       $log.debug "  populate pad color = #{@color} , bg = #{@bgcolor} "
       #cp = get_color($datacolor, color(), bgcolor())
-      # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37 
+      # commenting off next line meant that textdialog had a black background 2014-05-01 - 23:37
       #@cp = FFI::NCurses.COLOR_PAIR(cp)
       # we seem to be clearing always since a pad is often reused. so making the variable whenever pad created.
 
@@ -271,7 +271,7 @@ module Canis
       # REST IS REQUIRED otherwise sometimes last line of window is not cleared
       # Happens in bline.rb. i think the above clears the new pad size in the window
       #  which if it is smaller then does not clear complete window.
-      ## TRYING OUT COMMENTING OFF THE REMAINDER 2014-05-31 - 14:35 
+      ## TRYING OUT COMMENTING OFF THE REMAINDER 2014-05-31 - 14:35
       # next part is messing up messageboxes which have a white background
       # so i use this copied from print_border
       # In messageboxes the border is more inside. but pad cannot clear the entire
@@ -292,7 +292,7 @@ module Canis
       sp = " " * ww
       #if color == $datacolor
       $log.debug "  clear_pad: colors #{@cp}, ( #{_bgcolor} #{_color} ) #{$datacolor} , attrib #{att} . r #{r} w #{ww}, h #{@height} top #{@window.top}  "
-      # 2014-05-15 - 11:01 seems we were clearing an extra row at bottom. 
+      # 2014-05-15 - 11:01 seems we were clearing an extra row at bottom.
       # earlier it was r+1 but that was missing the first row, so now made it r+0 2014-06-20 - 01:15 XXX
         (r+0).upto(r+@height-startcol-1) do |rr|
           @window.printstring( rr, _col ,sp , color, att)
@@ -317,7 +317,7 @@ module Canis
     public
     def padrefresh
       # sometimes padref is called directly from somewhere but dimensions have changed.
-      # 2014-05-27 - 11:42 
+      # 2014-05-27 - 11:42
       unless @__first_time
         __calc_dimensions
         @__first_time = true
@@ -350,7 +350,7 @@ module Canis
         #sr -= _t
         #$log.warn "XXX PADRE after correcting ser #{sr} and #{ser} "
       end
-      # there are some freak cases where prow or pcol comes as -1, but prefresh does not return a -1. However, this 
+      # there are some freak cases where prow or pcol comes as -1, but prefresh does not return a -1. However, this
       # could affect some other calculation somewhere.
 
       retval = FFI::NCurses.prefresh(@pad,@prow,@pcol, sr , sc , ser , sec );
@@ -376,10 +376,11 @@ module Canis
       #$log.debug "XXX:  PADREFRESH #{retval} #{self.class}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{ser}, #{sec}." if retval == 0
       # padrefresh can fail if width is greater than NCurses.COLS
       # or if height exceeds tput lines. As long as content is less, it will work
-      # the moment content_rows exceeds then this issue happens. 
+      # the moment content_rows exceeds then this issue happens.
       # @rows + sr < tput lines
       #FFI::NCurses.prefresh(@pad,@prow,@pcol, @startrow + top, @startcol + left, @rows + @startrow + top, @cols+@startcol + left);
     end
+
     # length of longest string in array
     # This will give a 'wrong' max length if the array has ansi color escape sequences in it
     # which inc the length but won't be printed. Such lines actually have less length when printed
@@ -390,10 +391,12 @@ module Canis
       return 0 unless longest
       longest.length
     end
+
     public
-    # to be called with program / user has added a row or changed column widths so that 
+
+    # to be called with program / user has added a row or changed column widths so that
     # the pad needs to be recreated. However, cursor positioning is maintained since this
-    # is considered to be a minor change. 
+    # is considered to be a minor change.
     # We do not call `init_vars` since user is continuing to do some work on a row/col.
     # NOTE : if height and width are changed then only render_all is required
     #    not a reparse since content has not changed.
@@ -405,7 +408,7 @@ module Canis
       fire_handler :DIMENSION_CHANGED, _method
       @__first_time = nil
     end
-    # repaint only one row since content of that row has changed. 
+    # repaint only one row since content of that row has changed.
     # No recreate of pad is done.
     def fire_row_changed ix
       return if ix >= @list.length
@@ -414,7 +417,7 @@ module Canis
       fire_handler :ROW_CHANGED, ix
       _arr = _getarray
       render @pad, ix, _arr[ix]
-    
+
     end
 # ---- end pad related ----- }}}
 # ---- Section render related  ----- {{{
@@ -447,13 +450,13 @@ module Canis
     # in Window and Pad stuff and perhaps include it conditionally.
 
 
-    # before updating a single row in a table 
+    # before updating a single row in a table
     # we need to clear the row otherwise previous contents can show through
     def clear_row pad, lineno
       if @renderer and @renderer.respond_to? :clear_row
           @renderer.clear_row pad, lineno
       else
-        # need pad width not window width, the other clearstring uses width of 
+        # need pad width not window width, the other clearstring uses width of
         #  widget to paint on window.
         @_clearstring ||= " " * @content_cols
         # what about bg color ??? XXX, left_margin and internal width
@@ -461,7 +464,7 @@ module Canis
         cp = @cp || FFI::NCurses.COLOR_PAIR($datacolor)
         att = attr() || NORMAL
         FFI::NCurses.wattron(pad,cp | att)
-        FFI::NCurses.mvwaddstr(pad,lineno, 0, @_clearstring) 
+        FFI::NCurses.mvwaddstr(pad,lineno, 0, @_clearstring)
         FFI::NCurses.wattroff(pad,cp | att)
       end
     end
@@ -471,7 +474,7 @@ module Canis
       return unless @print_footer
       return unless @suppress_borders
       footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
-      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib) 
+      @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, @footer_attrib)
 =begin
       if @list_footer
         if false
@@ -480,18 +483,18 @@ module Canis
           footer_attrib = @list_footer.config[:attrib] ||  Ncurses::A_REVERSE
           #footer = "R: #{@current_index+1}, C: #{@curpos+@pcol}, #{@list.length} lines  "
           $log.debug " print_foot calling printstring with #{@row} + #{@height} -1, #{@col}+2"
-          @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib) 
+          @graphic.printstring( @row + @height -1 , @col+2, footer, @color_pair || $datacolor, footer_attrib)
         end
         # use default print method which only prints on left
         @list_footer.print self
       end
 =end
-      @repaint_footer_required = false # 2010-01-23 22:55 
+      @repaint_footer_required = false # 2010-01-23 22:55
     end
 
     # ---- Section render related  end ----- }}}
 # ---- Section data related start {{{
-    
+
     # supply a filename as source for textpad
     # Reads up file into @list
     # One can optionally send in a method which takes a filename and returns an array of data
@@ -553,7 +556,7 @@ module Canis
 
           @document = val[0]
           @document.source ||= self
-          @document.parse_required # added 2014-09-03 - 17:54 
+          @document.parse_required # added 2014-09-03 - 17:54
           @list = @document.text
         when Array
           # This is the complex case which i would like to phase out.
@@ -597,7 +600,7 @@ module Canis
 
         @document = val
         @document.source ||= self
-        @document.parse_required # added 2014-09-03 - 17:54 
+        @document.parse_required # added 2014-09-03 - 17:54
         @list = @document.text
       end
       @_populate_needed = true
@@ -618,8 +621,8 @@ module Canis
       fmt = val.size == 2 ? val[1] : nil
       case fmt
       when Hash
-        #raise "textpad.text expected content_type in Hash : #{fmt}" 
-        c = fmt[:content_type] 
+        #raise "textpad.text expected content_type in Hash : #{fmt}"
+        c = fmt[:content_type]
         t = fmt[:title]
         @title = t if t
         @content_type = c if c
@@ -631,11 +634,11 @@ module Canis
         @content_type = fmt
       when NilClass
       else
-        raise "textpad.text expected symbol or content_type in Hash, got #{fmt.class} " 
+        raise "textpad.text expected symbol or content_type in Hash, got #{fmt.class} "
       end
 
       ## some programs like testlistbox which uses multibuffers calls this with a config
-      # in arg2 containing :content_type and :title 
+      # in arg2 containing :content_type and :title
 
 
       # added so callers can have one interface and avoid an if condition
@@ -708,7 +711,7 @@ module Canis
       #@native_text[@current_index]
       _getarray[@current_index]
     end
-    ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with 
+    ## NOTE : 2014-04-09 - 14:05 i think this does not have line wise operations since we deal with
     #    formatting of data
     #    But what if data is not formatted. This imposes a severe limitation. listbox does have linewise
     #    operations, so lets try them
@@ -723,10 +726,10 @@ module Canis
       self
     end
     # @deprecated : row_count used just for compat, use length or size
-    def row_count ; @list.length ; end  
+    def row_count ; @list.length ; end
 
     ## ------ LIST / ARRAY OPERATIONS ----
-    # All multirow widgets must use Array semantics 2014-04-10 - 17:29 
+    # All multirow widgets must use Array semantics 2014-04-10 - 17:29
     # NOTE some operations will make selected indices in selection modules invalid
     # clear will need to clear indices, delete_at and insert may need to also adjust
     # selection or focus index/es.
@@ -739,7 +742,7 @@ module Canis
     # delegate some modify operations to Array: insert, clear, delete_at, []= <<
     # However, we should check if content array is nil ?
     # fire_dim is called, although it is not required in []=
-    %w[ insert delete_at << push].each { |e| 
+    %w[ insert delete_at << push].each { |e|
       eval %{
       def #{e}(*args)
         @list ||= []
@@ -755,7 +758,7 @@ module Canis
     def clear
       return unless @list
       @list.clear
-      @native_text.clear if @native_text # check this line, should it be removed 2014-08-27 - 20:54 
+      @native_text.clear if @native_text # check this line, should it be removed 2014-08-27 - 20:54
       fire_dimension_changed :clear
       init_vars
     end
@@ -805,7 +808,7 @@ module Canis
       $multiplier = 0
     end
     def top_of_window
-      @current_index = @prow 
+      @current_index = @prow
       $multiplier ||= 0
       if $multiplier > 0
         @current_index += $multiplier
@@ -884,7 +887,7 @@ module Canis
       @prow = @current_index - @scrollatrows
     end
 
-    # scrolls lines backward a window full at a time, on pressing pageup 
+    # scrolls lines backward a window full at a time, on pressing pageup
     # C-u may not work since it is trapped by form earlier. Need to fix
     def scroll_backward
       #@oldindex = @current_index
@@ -985,7 +988,7 @@ module Canis
       # if curpos is at zero , we should be checking previous line !
       $multiplier.times {
         # if at start of line, go to previous line
-        if pos == 0 
+        if pos == 0
           if @current_index > 0
             line -= 1
             pos = _arr[line].to_s.size
@@ -1056,7 +1059,7 @@ module Canis
       @curpos = _arr[@current_index].size
       @repaint_required = true
     end
-    # 
+    #
     # moves cursor to start of line, panning if required
     def cursor_bol
       # copy of C-a - start of line
@@ -1064,7 +1067,7 @@ module Canis
       @pcol = 0
       @curpos = 0
     end
-    # 
+    #
     # return true if the given row is visible
     def is_visible? index
       j = index - @prow #@toprow
@@ -1117,7 +1120,7 @@ module Canis
     # event when user hits ENTER on a row, user would bind :PRESS
     # callers may use +text()+ to get the value of the row, +source+ to get parent object.
     #
-    #     obj.bind :PRESS { |eve| eve.text } 
+    #     obj.bind :PRESS { |eve| eve.text }
     #
     def fire_action_event
       return if @list.nil? || @list.size == 0
@@ -1129,7 +1132,7 @@ module Canis
     def text_action_event
       aev = TextActionEvent.new self, :PRESS, current_value().to_s, @current_index, @curpos
     end
-    # 
+    #
     # execute binding when a row is entered, used more in lists to display some text
     # in a header or footer as one traverses
     #
@@ -1190,7 +1193,7 @@ module Canis
         @repaint_required = true
       end
     end
-    # 
+    #
     # save last cursor position so when reentering, cursor can be repositioned
     def lastcurpos r,c
       @lastrow = r
@@ -1220,7 +1223,7 @@ module Canis
       #$log.debug "  check_prow after prow #{@prow} , list count #{cc} "
       # we still need to check the max that prow can go otherwise
       # the pad shows earlier stuff.
-      # 
+      #
       return
     end
     public
@@ -1229,7 +1232,7 @@ module Canis
         __calc_dimensions
         @__first_time = true
       end
-      return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32 
+      return unless @list # trying out since it goes into padrefresh even when no data 2014-04-10 - 00:32
       @graphic = @form.window unless @graphic
       @window ||= @graphic
       raise "Window not set in textpad" unless @window
@@ -1245,16 +1248,16 @@ module Canis
       #$log.debug "  repaint textpad RR #{@repaint_required} #{@window.top} "
       unless @repaint_required
         print_foot if @repaint_footer_required  # set in on_enter_row
-        # trying out removing this, since too many refreshes 2014-05-01 - 12:45 
-        #padrefresh 
-        return 
+        # trying out removing this, since too many refreshes 2014-05-01 - 12:45
+        #padrefresh
+        return
       end
-      # if repaint is required, print_foot not called. unless repaint_all is set, and that 
+      # if repaint is required, print_foot not called. unless repaint_all is set, and that
       # is rarely set.
-      
+
       preprocess_text
 
-      # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28 
+      # in textdialog, @window was nil going into create_pad 2014-04-15 - 01:28
 
       # creates pad and calls render_all
       populate_pad if !@pad or @_populate_needed
@@ -1287,8 +1290,8 @@ module Canis
           @window.print_border_only @top, @left, @height-1, @width, clr
           print_title
 
-          # oldrow changed to oldindex 2014-04-13 - 16:55 
-          @repaint_footer_required = true if @oldindex != @current_index 
+          # oldrow changed to oldindex 2014-04-13 - 16:55
+          @repaint_footer_required = true if @oldindex != @current_index
           print_foot if @print_footer && !@suppress_borders && @repaint_footer_required
 
           @window.wrefresh
@@ -1306,15 +1309,15 @@ module Canis
       bindings
 =begin
       bind_key([?g,?g], 'goto_start'){ goto_start } # mapping double keys like vim
-      bind_key(279, 'goto_start'){ goto_start } 
-      bind_keys([?G,277], 'goto end'){ goto_end } 
-      bind_keys([?k,KEY_UP], "Up"){ up } 
-      bind_keys([?j,KEY_DOWN], "Down"){ down } 
-      bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down } 
-      bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up } 
-      bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward } 
-      # adding CTRL_SPACE as back scroll 2014-04-14 
-      bind_keys([0,?\C-b,339], "Scroll Backward"){ scroll_backward } 
+      bind_key(279, 'goto_start'){ goto_start }
+      bind_keys([?G,277], 'goto end'){ goto_end }
+      bind_keys([?k,KEY_UP], "Up"){ up }
+      bind_keys([?j,KEY_DOWN], "Down"){ down }
+      bind_key(?\C-e, "Scroll Window Down"){ scroll_window_down }
+      bind_key(?\C-y, "Scroll Window Up"){ scroll_window_up }
+      bind_keys([32,338, ?\C-d], "Scroll Forward"){ scroll_forward }
+      # adding CTRL_SPACE as back scroll 2014-04-14
+      bind_keys([0,?\C-b,339], "Scroll Backward"){ scroll_backward }
       # the next one invalidates the single-quote binding for bookmarks
       #bind_key([?',?']){ goto_last_position } # vim , goto last row position (not column)
       bind_key(?/, :ask_search)
@@ -1343,7 +1346,7 @@ module Canis
 # ----------- end internal stuff --------------- }}}
     public
 # ---- Section search related start ----- {{{
-    ## 
+    ##
     # Ask user for string to search for
     # This uses the dialog, but what if user wants the old style.
     # Isn't there a cleaner way to let user override style, or allow user
@@ -1355,7 +1358,7 @@ module Canis
       # the following is a change that enables callers to prompt for the string
       # using some other style, basically the classical style and send the string in
       str = get_string("Enter pattern: ", :title => "Find pattern") unless str
-      return if str.nil? 
+      return if str.nil?
       str = @last_regex if str == ""
       return if !str or str == ""
       str = Regexp.new str if str.is_a? String
@@ -1368,7 +1371,7 @@ module Canis
       @curpos = ix[1]
       ensure_visible
     end
-    ## 
+    ##
     # Find next matching row for string accepted in ask_search
     #
     def find_more
@@ -1381,7 +1384,7 @@ module Canis
       ensure_visible
     end
 
-    ## 
+    ##
     # Find the next row that contains given string
     # @return row and col offset of match, or nil
     # FIXME: 2014-05-26 - 01:26 currently if there are two matches in a row skips the second
@@ -1421,7 +1424,7 @@ module Canis
     # NOTE:
     #    startline and endline are more for internal purposes, externally we would call this only with
     #    the pattern.
-    # @example 
+    # @example
     #     pos = next_match /abc/
     #     # pos is nil or [line, col]
     #
@@ -1440,7 +1443,7 @@ module Canis
         _line = to_searchable(startline)
         _col = _line.index(str, pos) if _line
         if _col
-          return [startline, _col] 
+          return [startline, _col]
         end
         startline += 1 # FIXME check this end of file
       end
@@ -1477,10 +1480,10 @@ module Canis
     def to_searchable index
       _getarray[index].to_s
     end
-    ## 
+    ##
     # Ensure current row is visible, if not make it first row
     # NOTE - need to check if its at end and then reduce scroll at rows, check_prow does that
-    # 
+    #
     # @param current_index (default if not given)
     #
     def ensure_visible row = @current_index
@@ -1494,7 +1497,7 @@ module Canis
     # where the current index is actually being displayed (example if it wishes to display
     # a popup at that row)
     # An argument is not being taken since the index should be visible.
-    def visual_index 
+    def visual_index
       row = @current_index
       row - @prow
     end
@@ -1509,7 +1512,7 @@ module Canis
     #
     # This was just indicative, and is not used anywhere
     def DEADhighlight_row index = @current_index, cfg={}
-      return unless index 
+      return unless index
       c = 0 # we are using pads so no col except for left_margin if present
       # in a pad we don't need to convert index to printable
       r = index
@@ -1522,7 +1525,7 @@ module Canis
     end
 ##---- dead unused }}}
 
-  end  # class textpad 
+  end  # class textpad
 
 # renderer {{{
 # Very basic renderer that only prints based on color pair of the textpad
@@ -1532,7 +1535,7 @@ module Canis
     # content cols is the width in columns of pad
     # list is the data array
     attr_accessor :content_cols, :list
-    # the widget this is associated with. 
+    # the widget this is associated with.
     attr_accessor :source
 
     def initialize source=nil
@@ -1550,7 +1553,7 @@ module Canis
     alias :update_colors :pre_render
 
     # derived classes may choose to override this.
-    # However, they should set size and color and attrib at the start since these 
+    # However, they should set size and color and attrib at the start since these
     # can change after the object has been created depending on the application.
     def render_all pad, arr
       pre_render
@@ -1601,7 +1604,7 @@ module Canis
   end
 # renderer }}}
 # This is the default key handler.
-  # It takes care of catching numbers so that vim's movement can use numeric args. 
+  # It takes care of catching numbers so that vim's movement can use numeric args.
   # That is taken care of by multiplier. Other than that it has the key_map process the key.
   #
   class DefaultKeyHandler # ---- {{{
@@ -1641,10 +1644,10 @@ module Canis
           end
           # --- NOTE ABOUT BLACK RECT LEFT on SCREEN {{{
           ## NOTE if textpad does not handle the event and it goes to form which pops
-          # up a messagebox, then padrefresh does not happen, since control does not 
+          # up a messagebox, then padrefresh does not happen, since control does not
           # come back here, so a black rect is left on screen
-          # please note that a bounds check will not happen for stuff that 
-          # is triggered by form, so you'll have to to it yourself or 
+          # please note that a bounds check will not happen for stuff that
+          # is triggered by form, so you'll have to to it yourself or
           # call setrowcol explicity if the cursor is not updated
           # --- }}}
 
