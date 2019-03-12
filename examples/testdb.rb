@@ -12,7 +12,7 @@ require 'sqlite3'
 #
 def get_data
   dbname = "movie.sqlite"
-  raise unless File.exists? dbname
+  raise "Database #{dbname} not found."unless File.exists? dbname
   db = SQLite3::Database.new(dbname)
   sql = "select * from movie"
   $columns, *rows = db.execute2(sql)
@@ -105,7 +105,7 @@ begin
     #file = "movies1000.txt"
 
     arr = get_data
-    tv = Canis::Table.new @form, :row => 1, :col => 0, :height => h, :width => w, :name => "tv", :suppress_borders => false do |b|
+    tv = Canis::Table.new @form, :row => 2, :col => 0, :height => h, :width => w, :name => "tv", :suppress_borders => false do |b|
 
       b.resultset $columns, arr
 
