@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2019-03-12 00:41
+#  Last update: 2019-03-12 15:11
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -907,7 +907,7 @@ module Canis
       }
       ret
     end
-    ##
+
     # refresh pad onto window
     # overrides super due to header_adjustment and the header too
     def padrefresh
@@ -916,13 +916,26 @@ module Canis
       sr = @startrow + top
       sc = @startcol + left
       # first do header always in first row
-      retval = FFI::NCurses.prefresh(@pad,0,@pcol, sr , sc , 2 , @cols+ sc );
+      # -- prefresh arguments are:
+      # 1. pad
+      # 2. pminrow
+      # 3. pmincol (pad upper left)
+      # 4, sminrow (screen upper left row)
+      # 5, smincol
+      # 6, smaxrow
+      # 7, smaxcol
+      # changed next line on 2019-03-12 - since table not printing header
+      #  unless it is on line 1
+      # retval = FFI::NCurses.prefresh(@pad, 0, @pcol, sr, sc, 2, @cols + sc)
       # now print rest of data
       # h is header_adjustment
       h = 1
-      retval = FFI::NCurses.prefresh(@pad,@prow + h,@pcol, sr + h , sc , @rows + sr  , @cols+ sc );
+      retval = FFI::NCurses.prefresh(@pad, @prow + h, @pcol, sr + h, sc,
+                                     @rows + sr, @cols + sc)
       $log.warn "XXX:  PADREFRESH #{retval}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{@rows+sr}, #{@cols+sc}." if retval == -1
       # padrefresh can fail if width is greater than NCurses.COLS
+      retval = FFI::NCurses.prefresh(@pad, @prow, @pcol, sr, sc, sr + 1, @cols + sc)
+      $log.warn "XXX:  PADREFRESH HEADER #{retval}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{1+sr}, #{@cols+sc}." if retval == -1
     end
 
     def create_default_sorter
@@ -960,40 +973,7 @@ module Canis
       end
       super
     end
-    ##
-    # Find the next row that contains given string
-    # Overrides textpad since each line is an array
-    # NOTE does not go to next match within row
-    # NOTE: FIXME ensure_visible puts prow = current_index so in this case, the header
-    #   overwrites the matched row.
-    # @return row and col offset of match, or nil
-    # @param String to find
-    #@ deprecate since it does not get second match in line. textpad does
-    # however, the offset textpad shows is wrong
-    def OLDnext_match str
-      _calculate_column_offsets unless @coffsets
-      first = nil
-      ## content can be string or Chunkline, so we had to write <tt>index</tt> for this.
-      @list.each_with_index do |fields, ix|
-        #col = line.index str
-        #fields.each_with_index do |f, jx|
-        #@chash.each_with_index do |c, jx|
-          #next if c.hidden
-        each_column do |c,jx|
-          f = fields[c.index]
-          # value can be numeric
-          col = f.to_s.index str
-          if col
-            col += @coffsets[jx]
-            first ||= [ ix, col ]
-            if ix > @current_index
-              return [ix, col]
-            end
-          end
-        end
-      end
-      return first
-    end
+
     # yields each column to caller method
     # if yield returns true,  collects index of row into array and returns the array
     # @returns array of indices which can be empty
