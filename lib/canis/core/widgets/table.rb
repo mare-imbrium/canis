@@ -7,7 +7,7 @@
 #       Author: jkepler http://github.com/mare-imbrium/canis/
 #         Date: 2013-03-29 - 20:07
 #      License: Same as Ruby's License (http://www.ruby-lang.org/LICENSE.txt)
-#  Last update: 2019-03-12 00:41
+#  Last update: 2019-03-12 15:17
 # ----------------------------------------------------------------------------- #
 #   table.rb  Copyright (C) 2012-2014 kepler
 
@@ -916,7 +916,19 @@ module Canis
       sr = @startrow + top
       sc = @startcol + left
       # first do header always in first row
-      retval = FFI::NCurses.prefresh(@pad,0,@pcol, sr , sc , 2 , @cols+ sc );
+      # -- prefresh arguments are:
+      # 1. pad
+      # 2. pminrow
+      # 3. pmincol (pad upper left)
+      # 4, sminrow (screen upper left row)
+      # 5, smincol
+      # 6, smaxrow
+      # 7, smaxcol
+
+      # 2019-03-12 - fixed bug in table, only printed header if table on row 1
+      retval = FFI::NCurses.prefresh(@pad, @prow, @pcol, sr, sc, sr + 1, @cols + sc)
+      $log.warn "XXX:  PADREFRESH HEADER #{retval}, #{@prow}, #{@pcol}, #{sr}, #{sc}, #{1+sr}, #{@cols+sc}." if retval == -1
+      # retval = FFI::NCurses.prefresh(@pad,0,@pcol, sr , sc , 2 , @cols+ sc );
       # now print rest of data
       # h is header_adjustment
       h = 1
