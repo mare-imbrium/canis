@@ -1,12 +1,20 @@
 # Canis
 
+## When __not__ to use canis
+
+- Do not use for any critical work. This is not robust or fully-tested.
+- Do not use if you cannot debug or go into the code
+- Do not use if your needs are simple and can be met by writing some custom code, or by using a simpler library such as ``umbra``, or possibly others.
+
+2019-03-13 - Prior to using this library, please check the ``umbra`` library (ncumbra gem).
+Canis is large and complex and no longer maintained.
+
 **2019-03-11**. Kindly note that `canis` is not, and will never be, production-ready.
 Very few ruby programmers are using ncurses so the usage of canis is
 very low if any. So kindly do not use for critical work.
 
 That is why I made a much simpler and stripped version of `canis` called `umbra`.
-I use `umbra` mostly, but that too for a screen with a few fields and a single table,
-and some popups.
+I use `umbra` mostly, but that too for simple purposes such as a screen with a few fields and a single table, and some popups.
 
 Umbra will be easier for you to go through, and hack (if you come across a problem) than canis. Having said that, I am perhaps the only user of `umbra`, so again it is at your own risk.
 
