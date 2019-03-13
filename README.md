@@ -6,7 +6,7 @@
 - Do not use if you cannot debug or go into the code
 - Do not use if your needs are simple and can be met by writing some custom code, or by using a simpler library such as ``umbra``, or possibly others.
 
-2019-03-13 - Prior to using this library, please check the ``umbra`` library (ncumbra gem).
+**2019-03-13** - Prior to using this library, please check the ``umbra`` library (ncumbra gem).
 Canis is large and complex and no longer maintained.
 
 **2019-03-11**. Kindly note that `canis` is not, and will never be, production-ready.
